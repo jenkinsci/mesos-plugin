@@ -1,0 +1,11 @@
+# Eclude Eclipse files that can be generated with mvn eclipse:eclipse
+.classpath
+.project
+target/
+
+# Used as a local build/deploy dev-cycle script
+deploy.sh
+
+# Where Maven generates its output.
+*/target/*
+*/build/*
