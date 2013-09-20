@@ -44,6 +44,7 @@ import javax.servlet.ServletException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.apache.mesos.MesosNativeLibrary;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -51,6 +52,7 @@ import org.kohsuke.stapler.StaplerResponse;
 
 public class MesosCloud extends Cloud {
 
+  private String nativeLibraryPath;
   private String master;
   private String description;
 
@@ -70,11 +72,12 @@ public class MesosCloud extends Cloud {
   private static final Logger LOGGER = Logger.getLogger(MesosCloud.class.getName());
 
   @DataBoundConstructor
-  public MesosCloud(String master, String description, int slaveCpus,
+  public MesosCloud(String nativeLibraryPath, String master, String description, int slaveCpus,
       int slaveMem, int maxExecutors, int executorCpus, int executorMem, int idleTerminationMinutes)
           throws NumberFormatException {
     super("MesosCloud");
 
+    this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
     this.description = description;
     this.slaveCpus = slaveCpus;
@@ -83,6 +86,16 @@ public class MesosCloud extends Cloud {
     this.executorCpus = executorCpus;
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
+
+    // First, we attempt to load the library from the given path.
+    // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
+    try {
+      MesosNativeLibrary.load(nativeLibraryPath);
+    } catch (UnsatisfiedLinkError error) {
+      LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
+                     "': " + error.getMessage());
+      MesosNativeLibrary.load();
+    }
 
     // Restart the scheduler if the master has changed or a scheduler is not up.
     if (!master.equals(staticMaster) || !Mesos.getInstance().isSchedulerRunning()) {
@@ -143,6 +156,14 @@ public class MesosCloud extends Cloud {
     return label.matches(Label.parse(labelString));
   }
 
+  public String getNativeLibraryPath() {
+    return this.nativeLibraryPath;
+  }
+
+  public void setNativeLibraryPath(String nativeLibraryPath) {
+    this.nativeLibraryPath = nativeLibraryPath;
+  }
+
   public String getMaster() {
     return this.master;
   }
@@ -170,6 +191,7 @@ public class MesosCloud extends Cloud {
 
   @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
+    private String nativeLibraryPath;
     private String master;
     private String description;
 
@@ -180,6 +202,7 @@ public class MesosCloud extends Cloud {
 
     @Override
     public boolean configure(StaplerRequest request, JSONObject object) throws FormException {
+      nativeLibraryPath = object.getString("nativeLibraryPath");
       master = object.getString("master");
       description = object.getString("description");
       save();
@@ -204,6 +227,10 @@ public class MesosCloud extends Cloud {
 
       if (master.startsWith("http://")) {
         return FormValidation.error("Please omit 'http://'.");
+      }
+
+      if (!nativeLibraryPath.startsWith("/")) {
+        return FormValidation.error("Please provide an absolute path");
       }
 
       try {

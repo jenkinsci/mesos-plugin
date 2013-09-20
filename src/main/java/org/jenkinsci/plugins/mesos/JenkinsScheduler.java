@@ -77,28 +77,6 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   public synchronized void init() {
-    // Load the Mesos native library bundled with the plugin.
-    // TODO(vinod): Instead of loading the library here, it would
-    // be great if the plugin can dynamically set the MESOS_NATIVE_LIBRARY
-    // environment variable or java.library.path system property.
-    final URL resourceURL =
-        Jenkins.getInstance().getPlugin("mesos").getWrapper().baseResourceURL;
-
-    String MESOS_NATIVE_LIBRARY = resourceURL.getPath() + "libmesos.so";
-    if (System.getProperty("os.name").indexOf("Mac") >= 0) {
-      MESOS_NATIVE_LIBRARY = resourceURL.getPath() + "libmesos.dylib";
-    }
-
-    // First, we attempt to load the library from the plugin directory.
-    // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
-    try {
-      MesosNativeLibrary.load(MESOS_NATIVE_LIBRARY);
-    } catch (UnsatisfiedLinkError error) {
-      LOGGER.warning("Failed to load native Mesos library from '" + MESOS_NATIVE_LIBRARY +
-                     "': " + error.getMessage());
-      MesosNativeLibrary.load();
-    }
-
     // Start the framework.
     new Thread(new Runnable() {
       @Override
