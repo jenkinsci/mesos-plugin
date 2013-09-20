@@ -21,7 +21,7 @@ Build the plugin as follows:
 
         $ mvn package
 
-This should build the Mesos plugin (mesos.hpi) in the 'target' folder.
+This should build the Mesos plugin (mesos.hpi) in the `target` folder.
 
 > NOTE: If you want to build against a different version of Mesos than
 > the default you'll need to update the `mesos` version in `pom.xml`.
@@ -48,7 +48,7 @@ If you simply want to play with the `mesos-jenkins` plugin, you can also bring u
 
 First, [download](http://mesos.apache.org/downloads/) Mesos.
 
-> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in the pom.xml.
+> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in `pom.xml`.
 
 Now, build it as follows:
 
@@ -57,7 +57,7 @@ Now, build it as follows:
 		$ ../configure
 		$ make
 
-This should build the Mesos native library in the 'build/src/.libs' folder.
+This should build the Mesos native library in the `build/src/.libs` folder.
 
 
 ### Configuring the plugin ###
@@ -74,7 +74,7 @@ Login to the Mesos master's Web UI to verify that the plugin is registered as
 
 ### Configuring Jenkins jobs ###
 
-Finally, just add 'mesos' label to the jobs that you want to be run on a
+Finally, just add `mesos` label to the jobs that you want to be run on a
 Jenkins slave launched on Mesos.
 
 Thats it!
