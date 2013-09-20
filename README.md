@@ -1,7 +1,7 @@
 Jenkins on Mesos
 ----------------
 
-This Jenkins plugin allows Jenkins to dynamically launch Jenkins slaves on a
+The `mesos-jenkins` plugin allows Jenkins to dynamically launch Jenkins slaves on a
 Mesos cluster depending on the workload!
 
 Put simply, whenever the Jenkins `Build Queue` starts getting bigger, this plugin
@@ -17,7 +17,7 @@ You need to have access to a running Mesos cluster. For instructions on setting 
 
 ### Building the plugin ###
 
-Now build the plugin:
+Build the plugin as follows:
 
         $ mvn package
 
@@ -25,13 +25,13 @@ This should build the Mesos plugin (mesos.hpi) in the 'target' folder.
 
 > NOTE: If you want to build against a different version of Mesos than
 > the default you'll need to update the `mesos` version in `pom.xml`.
-> It is recommended to use the same/compatible version as the one your
-> Mesos cluster is running on.
+> You should use the same (**recommended**) or compatible version as the
+> one your Mesos cluster is running on.
 
 
 ### Installing the plugin ###
 
-Go to 'Manage Plugins' page in Jenkins Web UI and manually upload and
+Go to 'Manage Plugins' page in the Jenkins Web UI and manually upload and
 install the plugin.
 
 Alternatively, you can just copy the plugin to your Jenkins plugins directory
@@ -39,15 +39,20 @@ Alternatively, you can just copy the plugin to your Jenkins plugins directory
 
         $ cp target/mesos.hpi ${JENKINS_HOME}/plugins
 
+If you simply want to play with the `mesos-jenkins` plugin, you can also bring up a local Jenkins instance with the plugin pre-installed as follows:
+
+		$ mvn hpi:run
+
 
 ### Building the Mesos native library ##
 
-This plugin needs access to the Mesos native library. You can build it as follows:
+First, [download](http://mesos.apache.org/downloads/) Mesos.
 
-		$ git clone git://git.apache.org/mesos.git
+> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in the pom.xml.
+
+Now, build it as follows:
+
 		$ cd mesos
-		$ git checkout 0.13.0  # Use the same/compatible version as the one in pom.xml.
-		$ ./bootstrap
 		$ mkdir build && cd build
 		$ ../configure
 		$ make
