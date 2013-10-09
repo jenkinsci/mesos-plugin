@@ -37,5 +37,5 @@
         </f:entry>
     </f:advanced>
 
-    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master"/>
+    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>
 </j:jelly>

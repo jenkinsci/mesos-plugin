@@ -212,7 +212,9 @@ public class MesosCloud extends Cloud {
     /**
      * Test connection from configuration page.
      */
-    public FormValidation doTestConnection(@QueryParameter String master)
+    public FormValidation doTestConnection(
+        @QueryParameter("master") String master,
+        @QueryParameter("nativeLibraryPath") String nativeLibraryPath)
         throws IOException, ServletException {
       master = master.trim();
 
