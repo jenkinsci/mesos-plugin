@@ -64,7 +64,7 @@ This should build the Mesos native library in the `build/src/.libs` folder.
 
 Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
 you should see an option to 'Add a new cloud' at the bottom of the page. Add the
-'Mesos Cloud' and give the path to the Mesos native library (see the above section)
+'Mesos Cloud' and give the path to the Mesos native library libmesos.so (see the above section)
 and the address (HOST:PORT) of a running Mesos master. Click 'Save' for the plugin
 to connect to Mesos.
 
@@ -74,7 +74,7 @@ Login to the Mesos master's Web UI to verify that the plugin is registered as
 
 ### Configuring Jenkins jobs ###
 
-Finally, just add `mesos` label to the jobs that you want to be run on a
+Finally, just add `mesos` label to the jobs (configure -> Restrict where this project can run checkbox) that you want to be run on a
 Jenkins slave launched on Mesos.
 
 Thats it!
