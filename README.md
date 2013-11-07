@@ -71,6 +71,9 @@ to connect to Mesos.
 Login to the Mesos master's Web UI to verify that the plugin is registered as
 'Jenkins Framework'.
 
+### Slave setup ###
+
+Ensure slaves have a jenkins user or the user the Jenkins master is running on.
 
 ### Configuring Jenkins jobs ###
 
