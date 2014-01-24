@@ -127,7 +127,11 @@ public class MesosCloud extends Cloud {
             .submit(new Callable<Node>() {
               public Node call() throws Exception {
                 MesosSlave s = doProvision(numExecutors);
-                Hudson.getInstance().addNode(s);
+                // We do not need to explicitly add the Node here because that is handled by
+                // hudson.slaves.NodeProvisioner::update() that checks the result from the
+                // Future and adds the node. Though there is duplicate node addition check
+                // because of this early addition there is difference in job scheduling and
+                // best to avoid it.
                 return s;
               }
             }), numExecutors));
