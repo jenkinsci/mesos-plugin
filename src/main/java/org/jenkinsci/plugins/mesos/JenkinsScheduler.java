@@ -104,7 +104,7 @@ public class JenkinsScheduler implements Scheduler {
     return driver != null;
   }
 
-  public void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
+  public synchronized void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
     LOGGER.info("Enqueuing jenkins slave request");
     requests.add(new Request(request, result));
   }
@@ -133,13 +133,6 @@ public class JenkinsScheduler implements Scheduler {
       LOGGER.info("Killing mesos task " + taskId);
       driver.killTask(taskId);
     } else {
-        Request ref = null;
-        for (Request request : requests) {
-          if(request.request.slave.name.equals(name)){
-            ref = request;
-            break;
-          }
-        }
 	// This is handling the situation that a slave was provisioned but it never
         // got scheduled because of resource scarcity and jenkins later tries to remove
         // the offline slave but since it was not scheduled we have to remove it from
@@ -147,14 +140,17 @@ public class JenkinsScheduler implements Scheduler {
         // between this removal request from jenkins and a resource getting freed up in mesos
         // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
         // by Jenkins.
-        if(ref != null) {
-          requests.remove(ref);
-          ref = null;
-          LOGGER.info("Removing enqueued mesos task " + name);
+        for(Request request : requests){
+           if(request.request.slave.name.equals(name)){
+             LOGGER.info("Removing enqueued mesos task " + name);
+             requests.remove(request);
+             return;
+           }
         }
-        else
-          LOGGER.warning("Asked to kill unknown mesos task " + taskId);
+
+        LOGGER.warning("Asked to kill unknown mesos task " + taskId);
     }
+
   }
 
   @Override
