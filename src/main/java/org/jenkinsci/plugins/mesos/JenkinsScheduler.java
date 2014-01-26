@@ -134,22 +134,21 @@ public class JenkinsScheduler implements Scheduler {
       LOGGER.info("Killing mesos task " + taskId);
       driver.killTask(taskId);
     } else {
-	// This is handling the situation that a slave was provisioned but it never
+        // This is handling the situation that a slave was provisioned but it never
         // got scheduled because of resource scarcity and jenkins later tries to remove
         // the offline slave but since it was not scheduled we have to remove it from
         // the request queue. The method has been also synchronized because there is a race
         // between this removal request from jenkins and a resource getting freed up in mesos
         // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
         // by Jenkins.
-        for(Iterator<Request> li = requests.iterator(); li.hasNext();){
+        for(Iterator<Request> li = requests.iterator(); li.hasNext();) {
            Request request = li.next();
-           if(request.request.slave.name.equals(name)){
+           if(request.request.slave.name.equals(name)) {
              LOGGER.info("Removing enqueued mesos task " + name);
              li.remove();
              return;
            }
         }
-
         LOGGER.warning("Asked to kill unknown mesos task " + taskId);
     }
 
