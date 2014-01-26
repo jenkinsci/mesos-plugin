@@ -19,6 +19,7 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -140,10 +141,11 @@ public class JenkinsScheduler implements Scheduler {
         // between this removal request from jenkins and a resource getting freed up in mesos
         // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
         // by Jenkins.
-        for(Request request : requests){
+        for(Iterator<Request> li = requests.iterator(); li.hasNext();){
+           Request request = li.next();
            if(request.request.slave.name.equals(name)){
              LOGGER.info("Removing enqueued mesos task " + name);
-             requests.remove(request);
+             li.remove();
              return;
            }
         }
