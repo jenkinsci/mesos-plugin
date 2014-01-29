@@ -71,7 +71,7 @@ public class MesosCloud extends Cloud {
 
   private static final Logger LOGGER = Logger.getLogger(MesosCloud.class.getName());
 
-  private static volatile boolean mesosLibInitialized = false;
+  private static volatile boolean nativeLibraryLoaded = false;
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master, String description, int slaveCpus,
@@ -95,7 +95,7 @@ public class MesosCloud extends Cloud {
 
   private synchronized void handleMesosSetup() {
 
-    if(!mesosLibInitialized) {
+    if(!nativeLibraryLoaded) {
       // First, we attempt to load the library from the given path.
       // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
       try {
@@ -105,7 +105,7 @@ public class MesosCloud extends Cloud {
         	             "': " + error.getMessage());
       	MesosNativeLibrary.load();
       }	
-      mesosLibInitialized = true;
+      nativeLibraryLoaded = true;
     }
 
     // Restart the scheduler if the master has changed or a scheduler is not up.
