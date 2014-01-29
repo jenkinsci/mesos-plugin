@@ -71,6 +71,8 @@ public class MesosCloud extends Cloud {
 
   private static final Logger LOGGER = Logger.getLogger(MesosCloud.class.getName());
 
+  private static volatile boolean nativeLibraryLoaded = false;
+
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master, String description, int slaveCpus,
       int slaveMem, int maxExecutors, int executorCpus, int executorMem, int idleTerminationMinutes)
@@ -87,20 +89,30 @@ public class MesosCloud extends Cloud {
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
 
-    // First, we attempt to load the library from the given path.
-    // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
-    try {
-      MesosNativeLibrary.load(nativeLibraryPath);
-    } catch (UnsatisfiedLinkError error) {
-      LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
-                     "': " + error.getMessage());
-      MesosNativeLibrary.load();
+    handleMesosSetup();
+
+  }
+
+  private synchronized void handleMesosSetup() {
+
+    if(!nativeLibraryLoaded) {
+      // First, we attempt to load the library from the given path.
+      // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
+      try {
+      	MesosNativeLibrary.load(nativeLibraryPath);
+      } catch (UnsatisfiedLinkError error) {
+      	LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
+        	             "': " + error.getMessage());
+      	MesosNativeLibrary.load();
+      }	
+      nativeLibraryLoaded = true;
     }
 
     // Restart the scheduler if the master has changed or a scheduler is not up.
     if (!master.equals(staticMaster) || !Mesos.getInstance().isSchedulerRunning()) {
       if (!master.equals(staticMaster)) {
         LOGGER.info("Mesos master changed, restarting the scheduler");
+        staticMaster = master;
       } else {
         LOGGER.info("Scheduler was down, restarting the scheduler");
       }
@@ -111,12 +123,14 @@ public class MesosCloud extends Cloud {
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
 
-    staticMaster = master;
   }
 
   @Override
   public Collection<PlannedNode> provision(Label label, int excessWorkload) {
     List<PlannedNode> list = new ArrayList<PlannedNode>();
+    // After a jenkins restart, for any scheduling of pending builds or new builds
+    // the below call will start the scheduler if it was not running.
+    handleMesosSetup();
     try {
       while (excessWorkload > 0) {
         final int numExecutors = Math.min(excessWorkload, maxExecutors);
