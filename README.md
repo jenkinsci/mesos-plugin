@@ -60,6 +60,14 @@ Now, build it as follows:
 This should build the Mesos native library in the `build/src/.libs` folder.
 
 
+### Vagrant ###
+
+If you are just looking to play with Mesos and this plugin in a VM, you could do so with the included Vagrantfile.
+
+		$ vagrant up
+		$ vagrant ssh
+
+
 ### Configuring the plugin ###
 
 Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
