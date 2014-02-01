@@ -17,13 +17,10 @@ package org.jenkinsci.plugins.mesos;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
-import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
 import hudson.model.Label;
 import hudson.model.Node;
-import hudson.model.Node.Mode;
 import hudson.slaves.Cloud;
-import hudson.slaves.NodeProperty;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
 
@@ -44,17 +41,19 @@ import javax.servlet.ServletException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 public class MesosCloud extends Cloud {
-
+  private static final String DEFAULT_FRAMEWORK_NAME = "Jenkins Framework";
+  
   private String nativeLibraryPath;
   private String master;
   private String description;
+  private String frameworkName;
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -74,7 +73,7 @@ public class MesosCloud extends Cloud {
   private static volatile boolean nativeLibraryLoaded = false;
 
   @DataBoundConstructor
-  public MesosCloud(String nativeLibraryPath, String master, String description, int slaveCpus,
+  public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, int slaveCpus,
       int slaveMem, int maxExecutors, int executorCpus, int executorMem, int idleTerminationMinutes)
           throws NumberFormatException {
     super("MesosCloud");
@@ -82,6 +81,7 @@ public class MesosCloud extends Cloud {
     this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
     this.description = description;
+    this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
     this.slaveCpus = slaveCpus;
     this.slaveMem = slaveMem;
     this.maxExecutors = maxExecutors;
@@ -124,7 +124,7 @@ public class MesosCloud extends Cloud {
       }
 
       Mesos.getInstance().stopScheduler();
-      Mesos.getInstance().startScheduler(Jenkins.getInstance().getRootUrl(), master);
+      Mesos.getInstance().startScheduler(Jenkins.getInstance().getRootUrl(), master, this.frameworkName);
     } else {
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
@@ -205,6 +205,14 @@ public class MesosCloud extends Cloud {
     this.description = description;
   }
 
+  public String getFrameworkName() {
+    return frameworkName;
+  }
+
+  public void setFrameworkName(String frameworkName) {
+    this.frameworkName = frameworkName;
+  }
+
   @Override
   public DescriptorImpl getDescriptor() {
     return (DescriptorImpl) super.getDescriptor();
@@ -219,7 +227,8 @@ public class MesosCloud extends Cloud {
     private String nativeLibraryPath;
     private String master;
     private String description;
-
+    private String frameworkName;
+    
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
@@ -230,6 +239,7 @@ public class MesosCloud extends Cloud {
       nativeLibraryPath = object.getString("nativeLibraryPath");
       master = object.getString("master");
       description = object.getString("description");
+      frameworkName = object.getString("frameworkName");
       save();
       return super.configure(request, object);
     }

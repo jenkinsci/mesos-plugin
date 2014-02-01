@@ -45,7 +45,7 @@ public abstract class Mesos {
     void failed(JenkinsSlave slave);
   }
 
-  abstract public void startScheduler(String jenkinsMaster, String mesosMaster);
+  abstract public void startScheduler(String jenkinsMaster, String mesosMaster, String frameworkName);
   abstract public boolean isSchedulerRunning();
   abstract public void stopScheduler();
 
@@ -81,9 +81,9 @@ public abstract class Mesos {
 
   public static class MesosImpl extends Mesos {
     @Override
-    public synchronized void startScheduler(String jenkinsMaster, String mesosMaster) {
+    public synchronized void startScheduler(String jenkinsMaster, String mesosMaster, String frameworkName) {
       stopScheduler();
-      scheduler = new JenkinsScheduler(jenkinsMaster, mesosMaster);
+      scheduler = new JenkinsScheduler(jenkinsMaster, mesosMaster, frameworkName);
       scheduler.init();
     }
 

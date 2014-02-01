@@ -1,7 +1,9 @@
 # Eclude Eclipse files that can be generated with mvn eclipse:eclipse
 .classpath
 .project
+.settings/
 target/
+work/
 
 # Used as a local build/deploy dev-cycle script
 deploy.sh

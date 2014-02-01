@@ -62,15 +62,17 @@ public class JenkinsScheduler implements Scheduler {
   private volatile MesosSchedulerDriver driver;
   private final String jenkinsMaster;
   private final String mesosMaster;
-
+  private final String frameworkName;
+  
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
-  public JenkinsScheduler(String jenkinsMaster, String mesosMaster) {
+  public JenkinsScheduler(String jenkinsMaster, String mesosMaster, String frameworkName) {
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +
         " and mesos " + mesosMaster);
 
     this.jenkinsMaster = jenkinsMaster;
     this.mesosMaster = mesosMaster;
+    this.frameworkName = frameworkName;
 
     requests = new LinkedList<Request>();
     results = new HashMap<TaskID, Result>();
@@ -83,7 +85,7 @@ public class JenkinsScheduler implements Scheduler {
       public void run() {
         // Have Mesos fill in the current user.
         FrameworkInfo framework = FrameworkInfo.newBuilder().setUser("")
-            .setName("Jenkins Framework").build();
+            .setName(JenkinsScheduler.this.frameworkName).build();
 
         driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosMaster);
 
