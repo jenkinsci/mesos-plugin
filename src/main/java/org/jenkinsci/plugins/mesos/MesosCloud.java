@@ -15,8 +15,8 @@
 package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
-import hudson.init.Initializer;
 import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
@@ -59,9 +59,9 @@ public class MesosCloud extends Cloud {
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
-  private final int slaveCpus;
+  private final double slaveCpus;
   private final int slaveMem; // MB.
-  private final int executorCpus;
+  private final double executorCpus;
   private final int maxExecutors;
   private final int executorMem; // MB.
   private final int idleTerminationMinutes;
@@ -110,8 +110,8 @@ public class MesosCloud extends Cloud {
   } 
 
   @DataBoundConstructor
-  public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, int slaveCpus,
-      int slaveMem, int maxExecutors, int executorCpus, int executorMem, int idleTerminationMinutes)
+  public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
+      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes)
           throws NumberFormatException {
     super("MesosCloud");
 
@@ -119,10 +119,10 @@ public class MesosCloud extends Cloud {
     this.master = master;
     this.description = description;
     this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
-    this.slaveCpus = slaveCpus;
+    this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = slaveMem;
     this.maxExecutors = maxExecutors;
-    this.executorCpus = executorCpus;
+    this.executorCpus = Double.parseDouble(executorCpus);
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
 
@@ -315,6 +315,33 @@ public class MesosCloud extends Cloud {
         LOGGER.log(Level.WARNING, "Failed to connect to Mesos " + master, e);
         return FormValidation.error(e.getMessage());
       }
+    }
+    
+    public FormValidation doCheckSlaveCpus(@QueryParameter String value) {
+      return doCheckCpus(value);    
+    }
+
+    public FormValidation doCheckExecutorCpus(@QueryParameter String value) {
+      return doCheckCpus(value);
+    }
+    
+    private FormValidation doCheckCpus(@QueryParameter String value) {
+      boolean valid = true;
+      String errorMessage = "Invalid CPUs value, it should be a positive decimal.";
+      
+      if (StringUtils.isBlank(value)) {
+        valid = false;
+      } else {
+        try {
+          if (Double.parseDouble(value) < 0) {
+            valid = false;
+          }
+        } catch (NumberFormatException e) {
+          valid = false;
+        }
+      }
+      
+      return valid ? FormValidation.ok() : FormValidation.error(errorMessage); 
     }
   }
 

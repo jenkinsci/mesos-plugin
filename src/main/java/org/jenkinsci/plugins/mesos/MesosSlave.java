@@ -16,17 +16,14 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
 import hudson.model.Computer;
-import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.RetentionStrategy;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,7 +31,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlave extends Slave {
 
-  private final int cpus;
+  private final double cpus;
   private final int mem;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
@@ -42,7 +39,7 @@ public class MesosSlave extends Slave {
 
   @DataBoundConstructor
   public MesosSlave(String name, int numExecutors, String labelString,
-      int slaveCpus, int slaveMem, int executorCpus, int executorMem,
+      double slaveCpus, int slaveMem, double executorCpus, int executorMem,
       int idleTerminationMinutes) throws FormException, IOException
   {
     super(name,
@@ -61,7 +58,7 @@ public class MesosSlave extends Slave {
     LOGGER.info("Constructing Mesos slave");
   }
 
-  public int getCpus() {
+  public double getCpus() {
     return cpus;
   }
 
