@@ -69,7 +69,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
     }
 
     // Create the request.
-    int cpus = computer.getNode().getCpus();
+    double cpus = computer.getNode().getCpus();
     int mem = computer.getNode().getMem();
     Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name), cpus, mem);
 

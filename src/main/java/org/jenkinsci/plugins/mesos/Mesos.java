@@ -27,10 +27,10 @@ public abstract class Mesos {
 
   public static class SlaveRequest {
     JenkinsSlave slave;
-    final int cpus;
+    final double cpus;
     final int mem;
 
-    public SlaveRequest(JenkinsSlave slave, int cpus, int mem) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
