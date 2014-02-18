@@ -15,20 +15,18 @@
 
 package org.jenkinsci.plugins.mesos;
 
-import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
+import net.sf.json.JSONObject;
 import org.apache.mesos.MesosSchedulerDriver;
-import org.apache.mesos.MesosNativeLibrary;
+import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.Filters;
@@ -61,18 +59,15 @@ public class JenkinsScheduler implements Scheduler {
   private Map<TaskID, Result> results;
   private volatile MesosSchedulerDriver driver;
   private final String jenkinsMaster;
-  private final String mesosMaster;
-  private final String frameworkName;
-  
+  private volatile MesosCloud mesosCloud;
+
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
-  public JenkinsScheduler(String jenkinsMaster, String mesosMaster, String frameworkName) {
-    LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +
-        " and mesos " + mesosMaster);
+  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {  
+    LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
-    this.mesosMaster = mesosMaster;
-    this.frameworkName = frameworkName;
+    this.mesosCloud = mesosCloud;
 
     requests = new LinkedList<Request>();
     results = new HashMap<TaskID, Result>();
@@ -85,9 +80,9 @@ public class JenkinsScheduler implements Scheduler {
       public void run() {
         // Have Mesos fill in the current user.
         FrameworkInfo framework = FrameworkInfo.newBuilder().setUser("")
-            .setName(JenkinsScheduler.this.frameworkName).build();
+            .setName(JenkinsScheduler.this.getMesosCloud().getFrameworkName()).build();
 
-        driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosMaster);
+        driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
 
         if (driver.run() != Status.DRIVER_STOPPED) {
           LOGGER.severe("The mesos driver was aborted!");
@@ -222,18 +217,59 @@ public class JenkinsScheduler implements Scheduler {
     // Check for sufficient cpu and memory resources in the offer.
     double requestedCpus = request.request.cpus;
     double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
-
-    if (requestedCpus <= cpus && requestedMem <= mem) {
+    
+    if (requestedCpus <= cpus && requestedMem <= mem && slaveAttributesMatch(offer)) {
       return true;
     } else {
       LOGGER.info(
           "Offer not sufficient for slave request:\n" +
           offer.getResourcesList().toString() +
+          "\n" + offer.getAttributesList().toString() +
           "\nRequested for Jenkins slave:\n" +
           "  cpus: " + requestedCpus + "\n" +
-          "  mem:  " + requestedMem);
+          "  mem:  " + requestedMem + "\n" +
+          "  attributes:  " + getMesosCloud().getSlaveAttributes().toString());
       return false;
     }
+  }
+
+  /**
+  * Checks whether the cloud Mesos slave attributes match those from the Mesos offer.
+  *
+  * @param offer Mesos offer data object.
+  * @return true if all the offer attributes match and false if not.
+  */
+  private boolean slaveAttributesMatch(Offer offer) {
+
+    //Accept any and all Mesos slave offers by default.
+    boolean slaveTypeMatch = true;
+
+    //Get the attributes provided from the cloud config.
+    JSONObject slaveAttributes = getMesosCloud().getSlaveAttributes();
+
+    //Collect the list of attributes from the offer as key-value pairs
+    Map<String, String> attributesMap = new HashMap<String, String>();
+    for (Attribute attribute : offer.getAttributesList()) {
+      attributesMap.put(attribute.getName(), attribute.getText().getValue());
+    }
+
+    if (slaveAttributes != null && slaveAttributes.size() > 0) {
+
+      //Iterate over the cloud attributes to see if they exist in the offer attributes list.
+      Iterator iterator = slaveAttributes.keys();
+      while (iterator.hasNext()) {
+
+        String key = (String) iterator.next();
+
+        //If there is a single absent attribute then we should reject this offer.
+        if (!(attributesMap.containsKey(key) && attributesMap.get(key).toString().equals(slaveAttributes.getString(key)))) {
+          slaveTypeMatch = false;
+          break;
+        }
+      }
+    }
+
+    return slaveTypeMatch;
   }
 
   private void createMesosTask(Offer offer, Request request) {
@@ -341,6 +377,20 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void error(SchedulerDriver driver, String message) {
     LOGGER.severe(message);
+  }
+
+  /**
+  * @return the mesosCloud
+  */
+  private MesosCloud getMesosCloud() {
+    return mesosCloud;
+  }
+
+  /**
+  * @param mesosCloud the mesosCloud to set
+  */
+  protected void setMesosCloud(MesosCloud mesosCloud) {
+    this.mesosCloud = mesosCloud;
   }
 
   private class Result {

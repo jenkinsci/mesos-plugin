@@ -45,7 +45,8 @@ public abstract class Mesos {
     void failed(JenkinsSlave slave);
   }
 
-  abstract public void startScheduler(String jenkinsMaster, String mesosMaster, String frameworkName);
+  abstract public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud);
+  abstract public void updateScheduler(MesosCloud mesosCloud);
   abstract public boolean isSchedulerRunning();
   abstract public void stopScheduler();
 
@@ -81,9 +82,9 @@ public abstract class Mesos {
 
   public static class MesosImpl extends Mesos {
     @Override
-    public synchronized void startScheduler(String jenkinsMaster, String mesosMaster, String frameworkName) {
+    public synchronized void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
       stopScheduler();
-      scheduler = new JenkinsScheduler(jenkinsMaster, mesosMaster, frameworkName);
+      scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
       scheduler.init();
     }
 
@@ -112,6 +113,11 @@ public abstract class Mesos {
       if (scheduler != null) {
         scheduler.terminateJenkinsSlave(name);
       }
+    }
+
+    @Override
+    public synchronized void updateScheduler(MesosCloud mesosCloud) {
+      scheduler.setMesosCloud(mesosCloud);
     }
 
     private JenkinsScheduler scheduler;

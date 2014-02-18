@@ -39,6 +39,10 @@
         <f:entry title="${%Idle Termination Minutes}">
             <f:number field="idleTerminationMinutes" clazz="required positive-number" value="3"/>
         </f:entry>
+
+        <f:entry title="${%Mesos Offer Selection Attributes}">
+            <f:textbox field="slaveAttributes"/>
+        </f:entry>        
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>
