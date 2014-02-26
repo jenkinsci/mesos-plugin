@@ -83,6 +83,12 @@ Login to the Mesos master's Web UI to verify that the plugin is registered as
 
 Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is running as.
 
+### Mesos slave attributes ###
+
+Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
+Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
+
+
 ### Configuring Jenkins jobs ###
 
 Finally, just add `mesos` label to the jobs (configure -> Restrict where this project can run checkbox) that you want to be run on a

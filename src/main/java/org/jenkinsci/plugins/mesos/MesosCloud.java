@@ -41,7 +41,9 @@ import java.util.logging.Logger;
 import javax.servlet.ServletException;
 
 import jenkins.model.Jenkins;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
@@ -56,6 +58,7 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
+  private JSONObject slaveAttributes; // Slave attributes JSON representation.
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -111,7 +114,7 @@ public class MesosCloud extends Cloud {
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
-      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes)
+      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes)
           throws NumberFormatException {
     super("MesosCloud");
 
@@ -125,6 +128,13 @@ public class MesosCloud extends Cloud {
     this.executorCpus = Double.parseDouble(executorCpus);
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
+
+    //Parse the attributes provided from the cloud config
+    try {
+      this.slaveAttributes = (JSONObject) JSONSerializer.toJSON(slaveAttributes);        
+    } catch (JSONException e) {
+      LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
+    }
 
     restartMesos();
 
@@ -155,8 +165,9 @@ public class MesosCloud extends Cloud {
       }
 
       Mesos.getInstance().stopScheduler();
-      Mesos.getInstance().startScheduler(Jenkins.getInstance().getRootUrl(), master, this.frameworkName);
+      Mesos.getInstance().startScheduler(Jenkins.getInstance().getRootUrl(), this);
     } else {
+      Mesos.getInstance().updateScheduler(this);
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
 
@@ -250,13 +261,28 @@ public class MesosCloud extends Cloud {
     return Hudson.getInstance().clouds.get(MesosCloud.class);
   }
 
+  /**
+  * @return the slaveAttributes
+  */
+  public JSONObject getSlaveAttributes() {
+    return slaveAttributes;
+  }
+
+  /**
+  * @param slaveAttributes the slaveAttributes to set
+  */
+  public void setSlaveAttributes(JSONObject slaveAttributes) {
+    this.slaveAttributes = slaveAttributes;
+  }
+
   @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
     private String nativeLibraryPath;
     private String master;
     private String description;
     private String frameworkName;
-    
+    private String slaveAttributes;
+
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
@@ -268,6 +294,7 @@ public class MesosCloud extends Cloud {
       master = object.getString("master");
       description = object.getString("description");
       frameworkName = object.getString("frameworkName");
+      slaveAttributes = object.getString("slaveAttributes");
       save();
       return super.configure(request, object);
     }
