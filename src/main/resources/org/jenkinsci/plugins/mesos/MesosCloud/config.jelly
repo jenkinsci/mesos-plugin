@@ -10,9 +10,9 @@
     <f:entry title="${%Description}">
         <f:textbox field="description" />
     </f:entry>
-    
+
     <f:entry title="${%Framework Name}">
-        <f:textbox field="frameworkName" value="Jenkins Schedular" />
+        <f:textbox field="frameworkName" value="Jenkins Scheduler" />
     </f:entry>
 
     <f:advanced>
