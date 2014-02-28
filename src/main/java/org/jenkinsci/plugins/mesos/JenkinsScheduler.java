@@ -79,8 +79,16 @@ public class JenkinsScheduler implements Scheduler {
       @Override
       public void run() {
         // Have Mesos fill in the current user.
-        FrameworkInfo framework = FrameworkInfo.newBuilder().setUser("")
-            .setName(JenkinsScheduler.this.getMesosCloud().getFrameworkName()).build();
+        FrameworkInfo framework = FrameworkInfo.newBuilder()
+          .setUser("")
+          .setName(mesosCloud.getFrameworkName())
+          .setCheckpoint(mesosCloud.isCheckpoint()).build();
+
+        LOGGER.info("Initializing the Mesos driver with options"
+        + "\n" + "User: " + framework.getUser()
+        + "\n" + "Framework Name: " + framework.getName()
+        + "\n" + "Checkpointing: " + framework.getCheckpoint()
+        );
 
         driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
 

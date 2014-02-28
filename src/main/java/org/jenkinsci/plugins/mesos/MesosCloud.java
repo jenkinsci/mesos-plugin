@@ -58,7 +58,8 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
-  private JSONObject slaveAttributes; // Slave attributes JSON representation.
+  private final JSONObject slaveAttributes; // Slave attributes JSON representation.
+  private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -114,7 +115,7 @@ public class MesosCloud extends Cloud {
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
-      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes)
+      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes, boolean checkpoint)
           throws NumberFormatException {
     super("MesosCloud");
 
@@ -128,13 +129,16 @@ public class MesosCloud extends Cloud {
     this.executorCpus = Double.parseDouble(executorCpus);
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
+    this.checkpoint = checkpoint;
 
     //Parse the attributes provided from the cloud config
+    JSONObject jsonObject = null;
     try {
-      this.slaveAttributes = (JSONObject) JSONSerializer.toJSON(slaveAttributes);        
+      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);        
     } catch (JSONException e) {
       LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
     }
+    this.slaveAttributes = jsonObject;
 
     restartMesos();
 
@@ -179,7 +183,7 @@ public class MesosCloud extends Cloud {
 
     try {
       while (excessWorkload > 0) {
-        final int numExecutors = Math.min(excessWorkload, maxExecutors);
+        final int numExecutors = Math.min(excessWorkload, getMaxExecutors());
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
                     " executors. Remaining excess workload: " + excessWorkload + " executors)");
@@ -269,10 +273,52 @@ public class MesosCloud extends Cloud {
   }
 
   /**
-  * @param slaveAttributes the slaveAttributes to set
+  * @return the checkpoint
   */
-  public void setSlaveAttributes(JSONObject slaveAttributes) {
-    this.slaveAttributes = slaveAttributes;
+  public boolean isCheckpoint() {
+    return checkpoint;
+  }
+
+  /**
+  * @return the slaveCpus
+  */
+  public double getSlaveCpus() {
+    return slaveCpus;
+  }
+
+  /**
+  * @return the slaveMem
+  */
+  public int getSlaveMem() {
+    return slaveMem;
+  }
+
+  /**
+  * @return the executorCpus
+  */
+  public double getExecutorCpus() {
+    return executorCpus;
+  }
+
+  /**
+  * @return the maxExecutors
+  */
+  public int getMaxExecutors() {
+    return maxExecutors;
+  }
+
+  /**
+  * @return the executorMem
+  */
+  public int getExecutorMem() {
+    return executorMem;
+  }
+
+  /**
+  * @return the idleTerminationMinutes
+  */
+  public int getIdleTerminationMinutes() {
+    return idleTerminationMinutes;
   }
 
   @Extension
@@ -282,6 +328,13 @@ public class MesosCloud extends Cloud {
     private String description;
     private String frameworkName;
     private String slaveAttributes;
+    private boolean checkpoint;
+    private double slaveCpus;
+    private int slaveMem; // MB.
+    private double executorCpus;
+    private int maxExecutors;
+    private int executorMem; // MB.
+    private int idleTerminationMinutes;
 
     @Override
     public String getDisplayName() {
@@ -295,6 +348,13 @@ public class MesosCloud extends Cloud {
       description = object.getString("description");
       frameworkName = object.getString("frameworkName");
       slaveAttributes = object.getString("slaveAttributes");
+      checkpoint = object.getBoolean("checkpoint");
+      slaveCpus = object.getDouble("slaveCpus");
+      slaveMem = object.getInt("slaveMem");
+      executorCpus = object.getDouble("executorCpus");
+      maxExecutors = object.getInt("maxExecutors");
+      executorMem = object.getInt("executorMem");
+      idleTerminationMinutes = object.getInt("idleTerminationMinutes");
       save();
       return super.configure(request, object);
     }

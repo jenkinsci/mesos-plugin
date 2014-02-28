@@ -88,6 +88,10 @@ Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is runn
 Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
 Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
 
+### Mesos slave checkpointing ###
+
+Checkpointing can now be enabled by setting the "Slave Checkpointing" option to yes in the cloud config. This will allow the Jenkins
+master to finish running its slave jobs even if the Mesos slave process temporarily goes down.
 
 ### Configuring Jenkins jobs ###
 

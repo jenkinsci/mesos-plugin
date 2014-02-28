@@ -10,39 +10,46 @@
     <f:entry title="${%Description}">
         <f:textbox field="description" />
     </f:entry>
-
+    
     <f:entry title="${%Framework Name}">
-        <f:textbox field="frameworkName" value="Jenkins Scheduler" />
+        <f:textbox field="frameworkName" default="Jenkins Scheduler" />
     </f:entry>
 
     <f:advanced>
         <f:entry title="${%Jenkins Slave CPUs}">
-            <f:textbox field="slaveCpus" clazz="required" value="1"/>
+            <f:textbox field="slaveCpus" clazz="required" default="0.1"/>
         </f:entry>
 
         <f:entry title="${%Jenkins Slave Memory in MB}">
-            <f:number field="slaveMem" clazz="required positive-number" value="512"/>
+            <f:number field="slaveMem" clazz="required positive-number" default="512"/>
         </f:entry>
 
         <f:entry title="${% Maximum number of Executors per Slave}">
-            <f:number field="maxExecutors" clazz="required number" value="2"/>
+            <f:number field="maxExecutors" clazz="required number" default="2"/>
         </f:entry>
 
         <f:entry title="${%Jenkins Executor CPUs}">
-            <f:textbox field="executorCpus" clazz="required" value="1"/>
+            <f:textbox field="executorCpus" clazz="required" default="0.1"/>
         </f:entry>
 
         <f:entry title="${%Jenkins Executor Memory in MB}">
-            <f:number field="executorMem" clazz="required positive-number" value="128"/>
+            <f:number field="executorMem" clazz="required positive-number" default="128"/>
         </f:entry>
 
         <f:entry title="${%Idle Termination Minutes}">
-            <f:number field="idleTerminationMinutes" clazz="required positive-number" value="3"/>
+            <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3"/>
         </f:entry>
 
         <f:entry title="${%Mesos Offer Selection Attributes}">
             <f:textbox field="slaveAttributes"/>
-        </f:entry>        
+        </f:entry>
+
+        <f:entry title="${%Slave Checkpointing}" description="${%Enable Mesos slave checkpointing?}">
+            <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
+            <st:nbsp/>${%Yes}
+            <f:radio name="checkpoint" value="false" checked="${instance.checkpoint == false}" id="checkpoint.false"/>
+            <st:nbsp/>${%No}
+        </f:entry>
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>
