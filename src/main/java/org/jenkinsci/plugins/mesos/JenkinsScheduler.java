@@ -236,7 +236,7 @@ public class JenkinsScheduler implements Scheduler {
           "\nRequested for Jenkins slave:\n" +
           "  cpus: " + requestedCpus + "\n" +
           "  mem:  " + requestedMem + "\n" +
-          "  attributes:  " + getMesosCloud().getSlaveAttributes().toString());
+          "  attributes:  " + (getMesosCloud().getSlaveAttributes() == null ? ""  : getMesosCloud().getSlaveAttributes().toString()));
       return false;
     }
   }
