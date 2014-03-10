@@ -12,7 +12,7 @@ is automatically shut down.
 
 ### Prerequisite ###
 
-You need to have access to a running Mesos cluster. For instructions on setting up a Mesos cluster, please refer to the [Mesos website](www.mesos.apache.org).
+You need to have access to a running Mesos cluster. For instructions on setting up a Mesos cluster, please refer to the [Mesos website](http://mesos.apache.org).
 
 
 ### Building the plugin ###
