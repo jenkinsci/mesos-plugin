@@ -11,3 +11,4 @@ deploy.sh
 # Where Maven generates its output.
 */target/*
 */build/*
+/bin

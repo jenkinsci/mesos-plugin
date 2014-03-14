@@ -42,9 +42,7 @@ import javax.servlet.ServletException;
 
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
-import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
@@ -60,7 +58,8 @@ public class MesosCloud extends Cloud {
   private String description;
   private String frameworkName;
   private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
-
+  private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
+  
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
   private List<MesosSlaveInfo> slaveInfos;
@@ -100,17 +99,19 @@ public class MesosCloud extends Cloud {
 
     for (Cloud c : h.clouds) {
       if( c instanceof MesosCloud) {
-        ((MesosCloud)c).restartMesos();
+    	// Register mesos framework on init, if on demand registration is not enabled.
+    	if (!((MesosCloud) c).isOnDemandRegistration()) {
+          ((MesosCloud)c).restartMesos();
+    	}
       }
     }
-
   }
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master,
       String description, String frameworkName,
       List<MesosSlaveInfo> slaveInfos,
-      boolean checkpoint) throws NumberFormatException {
+      boolean checkpoint, boolean onDemandRegistration) throws NumberFormatException {
     super("MesosCloud");
 
     this.nativeLibraryPath = nativeLibraryPath;
@@ -119,9 +120,14 @@ public class MesosCloud extends Cloud {
     this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
-
-    restartMesos();
-
+    this.onDemandRegistration = onDemandRegistration;
+    
+    JenkinsScheduler.SUPERVISOR_LOCK.lock();
+    try {
+      restartMesos();
+    } finally {
+      JenkinsScheduler.SUPERVISOR_LOCK.unlock();
+    }
   }
 
   public void restartMesos() {
@@ -164,6 +170,18 @@ public class MesosCloud extends Cloud {
 
     try {
       while (excessWorkload > 0) {
+        // Start the scheduler if it's not already running.
+        if (onDemandRegistration) {
+          JenkinsScheduler.SUPERVISOR_LOCK.lock();
+          try {
+            LOGGER.fine("Checking if scheduler is running");
+            if (!Mesos.getInstance().isSchedulerRunning()) {
+              restartMesos();
+            }
+          } finally {
+            JenkinsScheduler.SUPERVISOR_LOCK.unlock();
+          }
+        }
         final int numExecutors = Math.min(excessWorkload, slaveInfo.getMaxExecutors());
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
@@ -257,6 +275,14 @@ public class MesosCloud extends Cloud {
 
   public void setFrameworkName(String frameworkName) {
     this.frameworkName = frameworkName;
+  }
+
+  public boolean isOnDemandRegistration() {
+    return onDemandRegistration;
+  }
+
+  public void setOnDemandRegistration(boolean onDemandRegistration) {
+    this.onDemandRegistration = onDemandRegistration;
   }
 
   @Override
@@ -418,9 +444,7 @@ public class MesosCloud extends Cloud {
           valid = false;
         }
       }
-
       return valid ? FormValidation.ok() : FormValidation.error(errorMessage);
     }
   }
-
 }
