@@ -10,12 +10,16 @@
     <f:entry title="${%Description}">
         <f:textbox field="description" />
     </f:entry>
-    
+
     <f:entry title="${%Framework Name}">
         <f:textbox field="frameworkName" default="Jenkins Scheduler" />
     </f:entry>
 
     <f:advanced>
+        <f:entry title="${%Labels}">
+          <f:textbox field="labelString"/>
+        </f:entry>
+
         <f:entry title="${%Jenkins Slave CPUs}">
             <f:textbox field="slaveCpus" clazz="required" default="0.1"/>
         </f:entry>
@@ -25,7 +29,7 @@
         </f:entry>
 
         <f:entry title="${% Maximum number of Executors per Slave}">
-            <f:number field="maxExecutors" clazz="required number" default="2"/>
+            <f:number field="maxExecutors" clazz="required positive-number" default="2"/>
         </f:entry>
 
         <f:entry title="${%Jenkins Executor CPUs}">
