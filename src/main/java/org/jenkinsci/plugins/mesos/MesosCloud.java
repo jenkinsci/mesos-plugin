@@ -69,8 +69,7 @@ public class MesosCloud extends Cloud {
   private final int maxExecutors;
   private final int executorMem; // MB.
   private final int idleTerminationMinutes;
-
-  private final String labelString = "mesos";
+  private final String labelString;
 
   private static String staticMaster;
 
@@ -115,7 +114,8 @@ public class MesosCloud extends Cloud {
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
-      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes, boolean checkpoint)
+      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes, boolean checkpoint,
+      String labelString)
           throws NumberFormatException {
     super("MesosCloud");
 
@@ -130,6 +130,7 @@ public class MesosCloud extends Cloud {
     this.executorMem = executorMem;
     this.idleTerminationMinutes = idleTerminationMinutes;
     this.checkpoint = checkpoint;
+    this.labelString = labelString;
 
     //Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
@@ -321,6 +322,13 @@ public class MesosCloud extends Cloud {
     return idleTerminationMinutes;
   }
 
+  /**
+  * @return the label string
+  */
+  public String getLabelString() {
+    return this.labelString;
+  }
+
   @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
     private String nativeLibraryPath;
@@ -335,6 +343,8 @@ public class MesosCloud extends Cloud {
     private int maxExecutors;
     private int executorMem; // MB.
     private int idleTerminationMinutes;
+    private String labelString;
+
 
     @Override
     public String getDisplayName() {
@@ -355,6 +365,8 @@ public class MesosCloud extends Cloud {
       maxExecutors = object.getInt("maxExecutors");
       executorMem = object.getInt("executorMem");
       idleTerminationMinutes = object.getInt("idleTerminationMinutes");
+      labelString = object.getString("labelString");
+
       save();
       return super.configure(request, object);
     }

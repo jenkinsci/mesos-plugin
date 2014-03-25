@@ -15,14 +15,10 @@
 package org.jenkinsci.plugins.mesos;
 
 import static hudson.util.TimeUnit2.MINUTES;
-
-import java.util.logging.Logger;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import hudson.model.Descriptor;
 import hudson.slaves.RetentionStrategy;
-import hudson.util.TimeUnit2;
+
+import java.util.logging.Logger;
 
 /**
  * This is inspired by {@link hudson.slaves.CloudRetentionStrategy}.
