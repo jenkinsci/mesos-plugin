@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 import javax.servlet.ServletException;
 
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -58,19 +59,11 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
-  private final JSONObject slaveAttributes; // Slave attributes JSON representation.
   private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
-  private final double slaveCpus;
-  private final int slaveMem; // MB.
-  private final double executorCpus;
-  private final int maxExecutors;
-  private final int executorMem; // MB.
-  private final int idleTerminationMinutes;
-
-  private final String labelString = "mesos";
+  private List<MesosSlaveInfo> slaveInfos;
 
   private static String staticMaster;
 
@@ -114,31 +107,18 @@ public class MesosCloud extends Cloud {
   } 
 
   @DataBoundConstructor
-  public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
-      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String slaveAttributes, boolean checkpoint)
-          throws NumberFormatException {
+  public MesosCloud(String nativeLibraryPath, String master,
+      String description, String frameworkName,
+      List<MesosSlaveInfo> slaveInfos,
+      boolean checkpoint) throws NumberFormatException {
     super("MesosCloud");
 
     this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
     this.description = description;
     this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
-    this.slaveCpus = Double.parseDouble(slaveCpus);
-    this.slaveMem = slaveMem;
-    this.maxExecutors = maxExecutors;
-    this.executorCpus = Double.parseDouble(executorCpus);
-    this.executorMem = executorMem;
-    this.idleTerminationMinutes = idleTerminationMinutes;
+    this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
-
-    //Parse the attributes provided from the cloud config
-    JSONObject jsonObject = null;
-    try {
-      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);        
-    } catch (JSONException e) {
-      LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
-    }
-    this.slaveAttributes = jsonObject;
 
     restartMesos();
 
@@ -180,17 +160,18 @@ public class MesosCloud extends Cloud {
   @Override
   public Collection<PlannedNode> provision(Label label, int excessWorkload) {
     List<PlannedNode> list = new ArrayList<PlannedNode>();
+    final MesosSlaveInfo slaveInfo = getSlaveInfo(slaveInfos, label);
 
     try {
       while (excessWorkload > 0) {
-        final int numExecutors = Math.min(excessWorkload, getMaxExecutors());
+        final int numExecutors = Math.min(excessWorkload, slaveInfo.getMaxExecutors());
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
                     " executors. Remaining excess workload: " + excessWorkload + " executors)");
         list.add(new PlannedNode(this.getDisplayName(), Computer.threadPoolForRemoting
             .submit(new Callable<Node>() {
               public Node call() throws Exception {
-                MesosSlave s = doProvision(numExecutors);
+                MesosSlave s = doProvision(numExecutors, slaveInfo);
                 // We do not need to explicitly add the Node here because that is handled by
                 // hudson.slaves.NodeProvisioner::update() that checks the result from the
                 // Future and adds the node. Though there is duplicate node addition check
@@ -208,20 +189,41 @@ public class MesosCloud extends Cloud {
     return list;
   }
 
-  private MesosSlave doProvision(int numExecutors) throws Descriptor.FormException, IOException {
+  private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
     String name = "mesos-jenkins-" + UUID.randomUUID().toString();
-    return new MesosSlave(name, numExecutors, labelString, slaveCpus, slaveMem,
-        executorCpus, executorMem, idleTerminationMinutes);
+    return new MesosSlave(name,
+        numExecutors,
+        slaveInfo.getLabelString(),
+        slaveInfo.getSlaveCpus(),
+        slaveInfo.getSlaveMem(),
+        slaveInfo.getExecutorCpus(),
+        slaveInfo.getExecutorMem(),
+        slaveInfo.getIdleTerminationMinutes());
+  }
+
+  public List<MesosSlaveInfo> getSlaveInfos() {
+    return slaveInfos;
+  }
+
+  public void setSlaveInfos(List<MesosSlaveInfo> slaveInfos) {
+    this.slaveInfos = slaveInfos;
   }
 
   @Override
   public boolean canProvision(Label label) {
     // Provisioning is simply creating a task for a jenkins slave.
-    // Therefore, we can always provision as long as the label
-    // matches "mesos".
+    // We can provision a Mesos slave as long as the job's label matches any
+    // item in the list of configured Mesos labels.
     // TODO(vinod): The framework may not have the resources necessary
     // to start a task when it comes time to launch the slave.
-    return label.matches(Label.parse(labelString));
+    if (label != null && slaveInfos != null) {
+      for (MesosSlaveInfo slaveInfo : slaveInfos) {
+        if (label.matches(Label.parse(slaveInfo.getLabelString()))) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   public String getNativeLibraryPath() {
@@ -266,59 +268,38 @@ public class MesosCloud extends Cloud {
   }
 
   /**
-  * @return the slaveAttributes
-  */
-  public JSONObject getSlaveAttributes() {
-    return slaveAttributes;
-  }
-
-  /**
   * @return the checkpoint
   */
   public boolean isCheckpoint() {
     return checkpoint;
   }
 
-  /**
-  * @return the slaveCpus
-  */
-  public double getSlaveCpus() {
-    return slaveCpus;
+  private MesosSlaveInfo getSlaveInfo(List<MesosSlaveInfo> slaveInfos,
+      Label label) {
+    for (MesosSlaveInfo slaveInfo : slaveInfos) {
+      if (label.matches(Label.parse(slaveInfo.getLabelString()))) {
+        return slaveInfo;
+      }
+    }
+    return null;
   }
 
   /**
-  * @return the slaveMem
+  * Retrieves the slaveattribute corresponding to label name.
+  *
+  * @param Jenkins label name.
+  * @return slaveattribute as a JSONObject.
   */
-  public int getSlaveMem() {
-    return slaveMem;
-  }
 
-  /**
-  * @return the executorCpus
-  */
-  public double getExecutorCpus() {
-    return executorCpus;
-  }
-
-  /**
-  * @return the maxExecutors
-  */
-  public int getMaxExecutors() {
-    return maxExecutors;
-  }
-
-  /**
-  * @return the executorMem
-  */
-  public int getExecutorMem() {
-    return executorMem;
-  }
-
-  /**
-  * @return the idleTerminationMinutes
-  */
-  public int getIdleTerminationMinutes() {
-    return idleTerminationMinutes;
+  public JSONObject getSlaveAttributeForLabel(String labelName) {
+    if(labelName!=null) {
+      for (MesosSlaveInfo slaveInfo : slaveInfos) {
+        if (labelName.equals(slaveInfo.getLabelString())) {
+          return slaveInfo.getSlaveAttributes();
+        }
+      }
+    }
+    return null;
   }
 
   @Extension
@@ -329,12 +310,7 @@ public class MesosCloud extends Cloud {
     private String frameworkName;
     private String slaveAttributes;
     private boolean checkpoint;
-    private double slaveCpus;
-    private int slaveMem; // MB.
-    private double executorCpus;
-    private int maxExecutors;
-    private int executorMem; // MB.
-    private int idleTerminationMinutes;
+    private List<MesosSlaveInfo> slaveInfos;
 
     @Override
     public String getDisplayName() {
@@ -349,12 +325,25 @@ public class MesosCloud extends Cloud {
       frameworkName = object.getString("frameworkName");
       slaveAttributes = object.getString("slaveAttributes");
       checkpoint = object.getBoolean("checkpoint");
-      slaveCpus = object.getDouble("slaveCpus");
-      slaveMem = object.getInt("slaveMem");
-      executorCpus = object.getDouble("executorCpus");
-      maxExecutors = object.getInt("maxExecutors");
-      executorMem = object.getInt("executorMem");
-      idleTerminationMinutes = object.getInt("idleTerminationMinutes");
+      slaveInfos = new ArrayList<MesosSlaveInfo>();
+      JSONArray labels = object.getJSONArray("slaveInfos");
+      if (labels != null) {
+        for (int i = 0; i < labels.size(); i++) {
+          JSONObject label = labels.getJSONObject(i);
+          if (label != null) {
+            MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
+                object.getString("labelString"),
+                object.getString("slaveCpus"),
+                object.getString("slaveMem"),
+                object.getString("maxExecutors"),
+                object.getString("executorCpus"),
+                object.getString("executorMem"),
+                object.getString("idleTerminationMinutes"),
+                object.getString("slaveAttributes"));
+            slaveInfos.add(slaveInfo);
+          }
+        }
+      }
       save();
       return super.configure(request, object);
     }

@@ -225,8 +225,10 @@ public class JenkinsScheduler implements Scheduler {
     // Check for sufficient cpu and memory resources in the offer.
     double requestedCpus = request.request.cpus;
     double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
+    // Get matching slave attribute for this label.
+    JSONObject slaveAttributes = getMesosCloud().getSlaveAttributeForLabel(request.request.label);
     
-    if (requestedCpus <= cpus && requestedMem <= mem && slaveAttributesMatch(offer)) {
+    if (requestedCpus <= cpus && requestedMem <= mem && slaveAttributesMatch(offer, slaveAttributes)) {
       return true;
     } else {
       LOGGER.info(
@@ -236,7 +238,7 @@ public class JenkinsScheduler implements Scheduler {
           "\nRequested for Jenkins slave:\n" +
           "  cpus: " + requestedCpus + "\n" +
           "  mem:  " + requestedMem + "\n" +
-          "  attributes:  " + (getMesosCloud().getSlaveAttributes() == null ? ""  : getMesosCloud().getSlaveAttributes().toString()));
+          "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
       return false;
     }
   }
@@ -247,13 +249,10 @@ public class JenkinsScheduler implements Scheduler {
   * @param offer Mesos offer data object.
   * @return true if all the offer attributes match and false if not.
   */
-  private boolean slaveAttributesMatch(Offer offer) {
+  private boolean slaveAttributesMatch(Offer offer, JSONObject slaveAttributes) {
 
     //Accept any and all Mesos slave offers by default.
     boolean slaveTypeMatch = true;
-
-    //Get the attributes provided from the cloud config.
-    JSONObject slaveAttributes = getMesosCloud().getSlaveAttributes();
 
     //Collect the list of attributes from the offer as key-value pairs
     Map<String, String> attributesMap = new HashMap<String, String>();

@@ -14,6 +14,8 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import hudson.model.Label;
+
 public abstract class Mesos {
   private static MesosImpl mesos;
 
@@ -29,11 +31,13 @@ public abstract class Mesos {
     JenkinsSlave slave;
     final double cpus;
     final int mem;
+    final String label;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
+      this.label = label;
     }
   }
 

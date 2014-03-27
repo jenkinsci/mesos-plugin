@@ -83,6 +83,15 @@ Login to the Mesos master's Web UI to verify that the plugin is registered as
 
 Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is running as.
 
+### Adding Slave Info ###
+
+By default one 'Slave Info' will be created with default values for each field.
+You can update the values/Add  more 'Slave Info'/Delete 'Slave Info' by clicking on 'Advanced'.
+'Slave Info' can hold required information(Executor CPU, Executor Mem etc) for slave that need to be matched against Mesos offers.
+Label name is the key between the job and the required slave to execute the job.
+Ex: Heavy jobs can be assigned  label 'powerful_slave'(which has 'Slave Info' 20 Executor CPU, 10240M Executor Mem etc)
+and light weight jobs can be assigned label 'light_weight_slave'(which has  'Slave Info' 1 Executor CPU, 128M Executor Mem etc).
+
 ### Mesos slave attributes ###
 
 Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
@@ -95,8 +104,8 @@ master to finish running its slave jobs even if the Mesos slave process temporar
 
 ### Configuring Jenkins jobs ###
 
-Finally, just add `mesos` label to the jobs (configure -> Restrict where this project can run checkbox) that you want to be run on a
-Jenkins slave launched on Mesos.
+Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`) 
+to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific slave type inside Mesos cluster.
 
 Thats it!
 
