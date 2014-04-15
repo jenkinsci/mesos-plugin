@@ -15,6 +15,7 @@
 package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
@@ -110,5 +111,23 @@ public class MesosSlave extends Slave {
   @Override
   public Computer createComputer() {
     return new MesosComputer(this);
+  }
+
+  @Override
+  public FilePath getRootPath() {
+    FilePath rootPath = createPath(remoteFS);
+    if (rootPath != null) {
+      try {
+        // Construct absolute path for slave's remote file system root.
+        rootPath = rootPath.absolutize();
+      } catch (IOException e) {
+        LOGGER.warning("IO exception while absolutizing slave root path: " +e);
+      } catch (InterruptedException e) {
+        LOGGER.warning("InterruptedException while absolutizing slave root path: " +e);
+      }
+    }
+    // Return root path even if we caught an exception,
+    // let the caller handle the error.
+    return rootPath;
   }
 }
