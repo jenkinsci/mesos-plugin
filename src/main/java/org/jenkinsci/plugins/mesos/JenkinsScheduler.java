@@ -102,7 +102,9 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   public synchronized void stop() {
-    driver.stop();
+    if (driver != null) {
+      driver.stop();
+    }
   }
 
   public synchronized boolean isRunning() {
