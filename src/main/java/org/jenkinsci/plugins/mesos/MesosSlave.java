@@ -34,6 +34,7 @@ public class MesosSlave extends Slave {
 
   private final double cpus;
   private final int mem;
+  private final String jvmArgs;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
@@ -41,7 +42,7 @@ public class MesosSlave extends Slave {
   @DataBoundConstructor
   public MesosSlave(String name, int numExecutors, String labelString,
       double slaveCpus, int slaveMem, double executorCpus, int executorMem,
-      int idleTerminationMinutes) throws FormException, IOException
+      int idleTerminationMinutes, String jvmArgs) throws FormException, IOException
   {
     super(name,
           labelString, // node description.
@@ -55,6 +56,7 @@ public class MesosSlave extends Slave {
 
     this.cpus = slaveCpus + (numExecutors * executorCpus);
     this.mem = slaveMem + (numExecutors * executorMem);
+    this.jvmArgs = jvmArgs;
 
     LOGGER.info("Constructing Mesos slave");
   }
@@ -65,6 +67,10 @@ public class MesosSlave extends Slave {
 
   public int getMem() {
     return mem;
+  }
+
+  public String getJvmArgs() {
+      return jvmArgs;
   }
 
   public void terminate() {

@@ -10,52 +10,55 @@
     <f:entry title="${%Description}">
         <f:textbox field="description" />
     </f:entry>
-    
+
     <f:entry title="${%Framework Name}">
         <f:textbox field="frameworkName" default="Jenkins Scheduler" />
     </f:entry>
 
     <f:advanced>
-		<f:entry>
-		    <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
-		        <table width="100%">
-		        <f:entry title="${%Label String}">
-					<f:textbox field="labelString" default="mesos" value="${slaveInfo.labelString}" />
-		    	</f:entry>
-		        <f:entry title="${%Jenkins Slave CPUs}">
-		            <f:textbox field="slaveCpus" clazz="required" default="0.1" value="${slaveInfo.slaveCpus}" />
-		        </f:entry>
-		
-		        <f:entry title="${%Jenkins Slave Memory in MB}">
-		            <f:number field="slaveMem" clazz="required positive-number" default="512" value="${slaveInfo.slaveMem}"/>
-		        </f:entry>
-		
-		        <f:entry title="${% Maximum number of Executors per Slave}">
-		            <f:number field="maxExecutors" clazz="required number" default="2" value="${slaveInfo.maxExecutors}"/>
-		        </f:entry>
-		
-		        <f:entry title="${%Jenkins Executor CPUs}">
-		            <f:textbox field="executorCpus" clazz="required" default="0.1" value="${slaveInfo.executorCpus}"/>
-		        </f:entry>
-		
-		        <f:entry title="${%Jenkins Executor Memory in MB}">
-		            <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
-		        </f:entry>
-		
-		        <f:entry title="${%Idle Termination Minutes}">
-		            <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
-		        </f:entry>
-				<f:entry title="${%Mesos Offer Selection Attributes}">
-					<f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>
-				</f:entry>
-		        <f:entry>
-			          <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
-			            <f:repeatableDeleteButton value="${%Delete Slave Info}" /><br/>
-			          </div>
-		        </f:entry>
-		        </table>
-		     </f:repeatable>
-	   </f:entry>
+        <f:entry>
+            <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
+                <table width="100%">
+                    <f:entry title="${%Label String}">
+                        <f:textbox field="labelString" default="mesos" value="${slaveInfo.labelString}" />
+                    </f:entry>
+                    <f:entry title="${%Jenkins Slave CPUs}">
+                        <f:textbox field="slaveCpus" clazz="required" default="0.1" value="${slaveInfo.slaveCpus}" />
+                    </f:entry>
+
+                    <f:entry title="${%Jenkins Slave Memory in MB}">
+                        <f:number field="slaveMem" clazz="required positive-number" default="512" value="${slaveInfo.slaveMem}"/>
+                    </f:entry>
+
+                    <f:entry title="${% Maximum number of Executors per Slave}">
+                        <f:number field="maxExecutors" clazz="required number" default="2" value="${slaveInfo.maxExecutors}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Jenkins Executor CPUs}">
+                        <f:textbox field="executorCpus" clazz="required" default="0.1" value="${slaveInfo.executorCpus}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Jenkins Executor Memory in MB}">
+                        <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Idle Termination Minutes}">
+                        <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
+                    </f:entry>
+                    <f:entry title="${%Mesos Offer Selection Attributes}">
+                        <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>
+                    </f:entry>
+                    <f:entry title="${%Additional Jekins Slave Agent JVM arguments}">
+                        <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
+                    </f:entry>
+                    <f:entry>
+                          <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                            <f:repeatableDeleteButton value="${%Delete Slave Info}" /><br/>
+                          </div>
+                    </f:entry>
+                </table>
+             </f:repeatable>
+       </f:entry>
 
         <f:entry title="${%Slave Checkpointing}" description="${%Enable Mesos slave checkpointing?}">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>

@@ -52,8 +52,7 @@ public class JenkinsScheduler implements Scheduler {
   private static final double JVM_MEM_OVERHEAD_FACTOR = 0.1;
 
   private static final String SLAVE_COMMAND_FORMAT =
-      "java -DHUDSON_HOME=jenkins -server -Xmx%dm -Xms16m -XX:+UseConcMarkSweepGC " +
-      "-Djava.net.preferIPv4Stack=true -jar slave.jar  -jnlpUrl %s";
+      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar slave.jar  -jnlpUrl %s";
 
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
@@ -63,7 +62,7 @@ public class JenkinsScheduler implements Scheduler {
 
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
-  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {  
+  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
@@ -229,7 +228,7 @@ public class JenkinsScheduler implements Scheduler {
     double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
     // Get matching slave attribute for this label.
     JSONObject slaveAttributes = getMesosCloud().getSlaveAttributeForLabel(request.request.label);
-    
+
     if (requestedCpus <= cpus && requestedMem <= mem && slaveAttributesMatch(offer, slaveAttributes)) {
       return true;
     } else {
@@ -314,7 +313,7 @@ public class JenkinsScheduler implements Scheduler {
             CommandInfo
                 .newBuilder()
                 .setValue(
-                    String.format(SLAVE_COMMAND_FORMAT, request.request.mem,
+                    String.format(SLAVE_COMMAND_FORMAT, request.request.mem, request.request.jvmArgs,
                         getJnlpUrl(request.request.slave.name)))
                 .addUris(
                     CommandInfo.URI.newBuilder().setValue(

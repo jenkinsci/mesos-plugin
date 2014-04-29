@@ -11,22 +11,24 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlaveInfo {
   private static final String DEFAULT_LABEL_NAME = "mesos";
+  private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
   private final int maxExecutors;
   private final int executorMem; // MB.
   private final int idleTerminationMinutes;
+  private final String jvmArgs;
   private final JSONObject slaveAttributes; // Slave attributes JSON representation.
 
   private String labelString = DEFAULT_LABEL_NAME;
-  
+
   private static final Logger LOGGER = Logger.getLogger(MesosSlaveInfo.class.getName());
 
   @DataBoundConstructor
   public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
       String maxExecutors, String executorCpus, String executorMem,
-      String idleTerminationMinutes, String slaveAttributes) throws NumberFormatException {
+      String idleTerminationMinutes, String slaveAttributes, String jvmArgs) throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
     this.maxExecutors = Integer.parseInt(maxExecutors);
@@ -35,11 +37,13 @@ public class MesosSlaveInfo {
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
     this.labelString = StringUtils.isNotBlank(labelString) ? labelString
         : DEFAULT_LABEL_NAME;
-    
+    this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? jvmArgs
+        : DEFAULT_JVM_ARGS;
+
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
     try {
-      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);        
+      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
     } catch (JSONException e) {
       LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
     }
@@ -80,5 +84,9 @@ public class MesosSlaveInfo {
 
   public JSONObject getSlaveAttributes() {
     return slaveAttributes;
+  }
+
+  public String getJvmArgs() {
+    return jvmArgs;
   }
 }
