@@ -312,7 +312,7 @@ public class JenkinsScheduler implements Scheduler {
             CommandInfo
                 .newBuilder()
                 .setValue(
-                    String.format(SLAVE_COMMAND_FORMAT, request.request.mem,
+                    String.format(SLAVE_COMMAND_FORMAT, request.request.slaveJarMem,
                         getJnlpUrl(request.request.slave.name)))
                 .addUris(
                     CommandInfo.URI.newBuilder().setValue(
