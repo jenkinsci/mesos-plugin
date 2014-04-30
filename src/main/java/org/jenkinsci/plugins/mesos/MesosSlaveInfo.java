@@ -12,6 +12,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class MesosSlaveInfo {
   private static final String DEFAULT_LABEL_NAME = "mesos";
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
+  private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
@@ -37,7 +38,7 @@ public class MesosSlaveInfo {
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
     this.labelString = StringUtils.isNotBlank(labelString) ? labelString
         : DEFAULT_LABEL_NAME;
-    this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? jvmArgs
+    this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
 
     // Parse the attributes provided from the cloud config
@@ -88,5 +89,18 @@ public class MesosSlaveInfo {
 
   public String getJvmArgs() {
     return jvmArgs;
+  }
+
+  /**
+   * Removes any additional {@code -Xmx} JVM args from the
+   * provided JVM arguments.  This is to ensure that the logic
+   * that sets the maximum heap sized based on the memory available
+   * to the slave is not overriden by a value provided via the configuration
+   * that may not work with the current slave's configuration.
+   * @param jvmArgs the string of JVM arguments.
+   * @returns The cleansed JVM argument string.
+   */
+  private String cleanseJvmArgs(final String jvmArgs) {
+    return jvmArgs.replaceAll(JVM_ARGS_PATTERN, "");
   }
 }

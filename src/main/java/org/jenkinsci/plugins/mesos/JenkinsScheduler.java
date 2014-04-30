@@ -104,7 +104,7 @@ public class JenkinsScheduler implements Scheduler {
     if (driver != null) {
       driver.stop();
     } else {
-	  LOGGER.warn("Unable to stop Mesos driver:  driver is null.");
+	  LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
     }
   }
 
