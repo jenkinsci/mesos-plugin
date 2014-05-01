@@ -54,7 +54,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_FRAMEWORK_NAME = "Jenkins Framework";
-  
+
   private String nativeLibraryPath;
   private String master;
   private String description;
@@ -85,15 +85,15 @@ public class MesosCloud extends Cloud {
     // Turning the AUTOMATIC_SLAVE_LAUNCH flag off because the below slave removals
     // causes computer launch in other slaves that have not been removed yet.
     // To study how a slave removal updates the entire list, one can refer to
-    // Hudson NodeProvisioner class and follow this method chain removeNode() -> 
-    // setNodes() -> updateComputerList() -> updateComputer(). 
+    // Hudson NodeProvisioner class and follow this method chain removeNode() ->
+    // setNodes() -> updateComputerList() -> updateComputer().
     h.AUTOMATIC_SLAVE_LAUNCH = false;
     for (Node n : slaves) {
       //Remove all slaves that were persisted when Jenkins shutdown.
       if (n instanceof MesosSlave) {
         ((MesosSlave)n).terminate();
       }
-    }        
+    }
 
     // Turn it back on for future real slaves.
     h.AUTOMATIC_SLAVE_LAUNCH = true;
@@ -104,7 +104,7 @@ public class MesosCloud extends Cloud {
       }
     }
 
-  } 
+  }
 
   @DataBoundConstructor
   public MesosCloud(String nativeLibraryPath, String master,
@@ -130,12 +130,12 @@ public class MesosCloud extends Cloud {
       // First, we attempt to load the library from the given path.
       // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
       try {
-      	MesosNativeLibrary.load(nativeLibraryPath);
+          MesosNativeLibrary.load(nativeLibraryPath);
       } catch (UnsatisfiedLinkError error) {
-      	LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
-        	             "': " + error.getMessage());
-      	MesosNativeLibrary.load();
-      }	
+          LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
+                         "': " + error.getMessage());
+          MesosNativeLibrary.load();
+      }
       nativeLibraryLoaded = true;
     }
 
@@ -198,7 +198,8 @@ public class MesosCloud extends Cloud {
         slaveInfo.getSlaveMem(),
         slaveInfo.getExecutorCpus(),
         slaveInfo.getExecutorMem(),
-        slaveInfo.getIdleTerminationMinutes());
+        slaveInfo.getIdleTerminationMinutes(),
+        slaveInfo.getJvmArgs());
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
@@ -339,7 +340,8 @@ public class MesosCloud extends Cloud {
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
                 object.getString("idleTerminationMinutes"),
-                object.getString("slaveAttributes"));
+                object.getString("slaveAttributes"),
+                object.getString("jvmArgs"));
             slaveInfos.add(slaveInfo);
           }
         }
@@ -392,19 +394,19 @@ public class MesosCloud extends Cloud {
         return FormValidation.error(e.getMessage());
       }
     }
-    
+
     public FormValidation doCheckSlaveCpus(@QueryParameter String value) {
-      return doCheckCpus(value);    
+      return doCheckCpus(value);
     }
 
     public FormValidation doCheckExecutorCpus(@QueryParameter String value) {
       return doCheckCpus(value);
     }
-    
+
     private FormValidation doCheckCpus(@QueryParameter String value) {
       boolean valid = true;
       String errorMessage = "Invalid CPUs value, it should be a positive decimal.";
-      
+
       if (StringUtils.isBlank(value)) {
         valid = false;
       } else {
@@ -416,8 +418,8 @@ public class MesosCloud extends Cloud {
           valid = false;
         }
       }
-      
-      return valid ? FormValidation.ok() : FormValidation.error(errorMessage); 
+
+      return valid ? FormValidation.ok() : FormValidation.error(errorMessage);
     }
   }
 
