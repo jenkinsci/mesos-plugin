@@ -32,12 +32,14 @@ public abstract class Mesos {
     final double cpus;
     final int mem;
     final String label;
+    final String jvmArgs;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label, String jvmArgs) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
       this.label = label;
+      this.jvmArgs = jvmArgs;
     }
   }
 
