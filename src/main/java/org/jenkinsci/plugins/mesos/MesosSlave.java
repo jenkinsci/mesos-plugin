@@ -35,6 +35,7 @@ public class MesosSlave extends Slave {
   private final double cpus;
   private final int mem;
   private final String jvmArgs;
+  private final int slaveMem;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
@@ -56,6 +57,9 @@ public class MesosSlave extends Slave {
 
     this.cpus = slaveCpus + (numExecutors * executorCpus);
     this.mem = slaveMem + (numExecutors * executorMem);
+
+    // jenkins slave memory size and args
+    this.slaveMem = slaveMem;
     this.jvmArgs = jvmArgs;
 
     LOGGER.info("Constructing Mesos slave");
@@ -67,6 +71,10 @@ public class MesosSlave extends Slave {
 
   public int getMem() {
     return mem;
+  }
+  
+  public int getSlaveMem() {
+    return slaveMem;
   }
 
   public String getJvmArgs() {
