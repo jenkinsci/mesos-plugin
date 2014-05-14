@@ -47,6 +47,10 @@
       <id>repo.jenkins-ci.org</id>
       <url>http://repo.jenkins-ci.org/public/</url>
     </repository>
+    <repository>
+      <id>repository.apache.org</id>
+      <url>https://repository.apache.org/content/repositories/releases/</url>
+    </repository>
   </repositories>
 
   <pluginRepositories>
