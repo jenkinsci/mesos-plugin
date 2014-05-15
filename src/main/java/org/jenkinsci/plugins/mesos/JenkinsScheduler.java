@@ -16,6 +16,8 @@
 package org.jenkinsci.plugins.mesos;
 
 
+import hudson.model.Node;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,8 +25,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
+
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
@@ -59,10 +66,12 @@ public class JenkinsScheduler implements Scheduler {
   private volatile MesosSchedulerDriver driver;
   private final String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
-
+  
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
-  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
+  public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
+  
+  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {  
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
@@ -345,7 +354,7 @@ public class JenkinsScheduler implements Scheduler {
     }
 
     Result result = results.get(taskId);
-
+    
     switch (status.getState()) {
     case TASK_STAGING:
     case TASK_STARTING:
@@ -363,6 +372,10 @@ public class JenkinsScheduler implements Scheduler {
       break;
     default:
       throw new IllegalStateException("Invalid State: " + status.getState());
+    }
+    
+    if (mesosCloud.isOnDemandRegistration()) {
+      supervise();
     }
   }
 
@@ -420,6 +433,59 @@ public class JenkinsScheduler implements Scheduler {
     public Request(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
       this.request = request;
       this.result = result;
+    }
+  }
+
+  public int getNumberOfPendingSlaves() {
+    return requests.size();
+  }
+
+  public int getNumberOfActiveTasks() {
+    return results.size();
+  }
+
+  public void clearResults() {
+    results.clear();
+  }
+  
+  /**
+   * Disconnect framework, if we don't have active mesos slaves. Also, make
+   * sure JenkinsScheduler's request queue is empty.
+   */
+  public static void supervise() {
+	SUPERVISOR_LOCK.lock();
+    try {
+      JenkinsScheduler scheduler = (JenkinsScheduler) Mesos.getInstance()
+          .getScheduler();
+      if (scheduler != null) {
+        boolean pendingSlaveRequests = (scheduler.getNumberOfPendingSlaves() > 0);
+        boolean activeSlaves = false;
+        boolean activeTasks = (scheduler.getNumberOfActiveTasks() > 0);
+        List<Node> slaveNodes = Jenkins.getInstance().getNodes();
+        for (Node node : slaveNodes) {
+          if (node instanceof MesosSlave) {
+            activeSlaves = true;
+            break;
+          }
+        }
+        // If there are no active slaves, we should clear up results.
+        if (!activeSlaves) {
+          scheduler.clearResults();
+          activeTasks = false;
+        }
+        LOGGER.info("Active slaves: " + activeSlaves
+            + " | Pending slaves: " + pendingSlaveRequests + " | Active tasks: " + activeTasks);
+        if (!activeTasks && !activeSlaves && !pendingSlaveRequests) {
+          LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
+          Mesos.getInstance().stopScheduler();
+        }
+      } else {
+        LOGGER.info("Schedular already stopped. NOOP.");
+      }
+    } catch (Exception e) {
+      LOGGER.info("Exception: " + e);
+    } finally {
+      SUPERVISOR_LOCK.unlock();
     }
   }
 }

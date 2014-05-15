@@ -14,7 +14,7 @@
  */
 package org.jenkinsci.plugins.mesos;
 
-import hudson.model.Label;
+import org.apache.mesos.Scheduler;
 
 public abstract class Mesos {
   private static MesosImpl mesos;
@@ -55,7 +55,7 @@ public abstract class Mesos {
   abstract public void updateScheduler(MesosCloud mesosCloud);
   abstract public boolean isSchedulerRunning();
   abstract public void stopScheduler();
-
+  abstract public Scheduler getScheduler();
   /**
    * Starts a jenkins slave asynchronously in the mesos cluster.
    *
@@ -127,5 +127,10 @@ public abstract class Mesos {
     }
 
     private JenkinsScheduler scheduler;
+
+    @Override
+    public Scheduler getScheduler() {
+      return scheduler;
+    }
   }
 }
