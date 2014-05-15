@@ -354,6 +354,7 @@ public class JenkinsScheduler implements Scheduler {
     }
 
     Result result = results.get(taskId);
+    boolean terminalState = false;
     
     switch (status.getState()) {
     case TASK_STAGING:
@@ -364,14 +365,20 @@ public class JenkinsScheduler implements Scheduler {
       break;
     case TASK_FINISHED:
       result.result.finished(result.slave);
+      terminalState = true;
       break;
     case TASK_FAILED:
     case TASK_KILLED:
     case TASK_LOST:
       result.result.failed(result.slave);
+      terminalState = true;
       break;
     default:
       throw new IllegalStateException("Invalid State: " + status.getState());
+    }
+    
+    if (terminalState) {
+      results.remove(taskId);
     }
     
     if (mesosCloud.isOnDemandRegistration()) {
