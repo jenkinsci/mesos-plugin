@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos;
 
 import java.util.logging.Logger;
 
+import hudson.model.StringParameterDefinition;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -18,6 +19,7 @@ public class MesosSlaveInfo {
   private final double executorCpus;
   private final int maxExecutors;
   private final int executorMem; // MB.
+  private final String customRemoteFSRoot;
   private final int idleTerminationMinutes;
   private final String jvmArgs;
   private final JSONObject slaveAttributes; // Slave attributes JSON representation.
@@ -28,13 +30,18 @@ public class MesosSlaveInfo {
 
   @DataBoundConstructor
   public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
-      String maxExecutors, String executorCpus, String executorMem,
+      String maxExecutors, String executorCpus, String executorMem, JSONObject hasCustomRemoteFSRoot,
       String idleTerminationMinutes, String slaveAttributes, String jvmArgs) throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
     this.maxExecutors = Integer.parseInt(maxExecutors);
     this.executorCpus = Double.parseDouble(executorCpus);
     this.executorMem = Integer.parseInt(executorMem);
+    this.customRemoteFSRoot =
+      (hasCustomRemoteFSRoot == null ||
+        hasCustomRemoteFSRoot.getString("customRemoteFSRoot") == null ||
+        hasCustomRemoteFSRoot.getString("customRemoteFSRoot").trim().isEmpty())
+        ? null : hasCustomRemoteFSRoot.getString("customRemoteFSRoot");
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
     this.labelString = StringUtils.isNotBlank(labelString) ? labelString
         : DEFAULT_LABEL_NAME;
@@ -78,6 +85,10 @@ public class MesosSlaveInfo {
   public int getExecutorMem() {
     return executorMem;
   }
+
+  public String getCustomRemoteFSRoot() {
+        return customRemoteFSRoot;
+    }
 
   public int getIdleTerminationMinutes() {
     return idleTerminationMinutes;

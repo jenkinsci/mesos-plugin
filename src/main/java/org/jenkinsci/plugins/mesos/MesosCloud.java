@@ -216,6 +216,7 @@ public class MesosCloud extends Cloud {
         slaveInfo.getSlaveMem(),
         slaveInfo.getExecutorCpus(),
         slaveInfo.getExecutorMem(),
+        slaveInfo.getCustomRemoteFSRoot(),
         slaveInfo.getIdleTerminationMinutes(),
         slaveInfo.getJvmArgs());
   }
@@ -365,6 +366,7 @@ public class MesosCloud extends Cloud {
                 object.getString("maxExecutors"),
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
+                object.getJSONObject("hasCustomRemoteFSRoot"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
                 object.getString("jvmArgs"));
