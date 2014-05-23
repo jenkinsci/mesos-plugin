@@ -41,7 +41,16 @@
                     <f:entry title="${%Jenkins Executor Memory in MB}">
                         <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
                     </f:entry>
-
+                    <!--
+                        Below option enables the user to specify the JENKINS_HOME directory of the slave.
+                        Not selecting it or leaving it blank defaults the slaves JENKINS_HOME to "jenkins" directory within mesos slave/run home.
+                    -->
+                    <f:optionalBlock name="hasCustomRemoteFSRoot" title="${%Customize Remote FS Root}" checked="${slaveInfo.customRemoteFSRoot!=null}"
+                        help="help-customRemoteFSRoot.html">
+                        <f:entry title="${%Custom Remote FS Root}">
+                            <f:textbox field="customRemoteFSRoot" value="${slaveInfo.customRemoteFSRoot}"/>
+                        </f:entry>
+		    </f:optionalBlock>
                     <f:entry title="${%Idle Termination Minutes}">
                         <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
                     </f:entry>
