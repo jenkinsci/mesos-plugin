@@ -41,8 +41,7 @@
                     <f:entry title="${%Jenkins Executor Memory in MB}">
                         <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
                     </f:entry>
-                    <f:optionalBlock name="hasCustomRemoteFSRoot" title="${%Customize Remote FS Root}" checked="${slaveInfo.customRemoteFSRoot!=null}"
-                        help="help-customRemoteFSRoot.html">
+                    <f:optionalBlock name="hasCustomRemoteFSRoot" title="${%Customize Remote FS Root}" checked="${slaveInfo.customRemoteFSRoot!=null}">
                         <f:entry title="${%Custom Remote FS Root}">
                             <f:textbox field="customRemoteFSRoot" value="${slaveInfo.customRemoteFSRoot}"/>
                         </f:entry>
