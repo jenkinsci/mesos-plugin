@@ -41,12 +41,12 @@ public class MesosSlave extends Slave {
 
   @DataBoundConstructor
   public MesosSlave(String name, int numExecutors, String labelString,
-      double slaveCpus, int slaveMem, double executorCpus, int executorMem,
+      double slaveCpus, int slaveMem, double executorCpus, int executorMem, String customRemoteFSRoot,
       int idleTerminationMinutes, String jvmArgs) throws FormException, IOException
   {
     super(name,
           labelString, // node description.
-          "jenkins",   // remoteFS.
+          (customRemoteFSRoot==null || customRemoteFSRoot.trim().isEmpty()) ? "jenkins" : customRemoteFSRoot.trim(),   // remoteFS.
           "" + numExecutors,
           Mode.NORMAL,
           labelString, // Label.
