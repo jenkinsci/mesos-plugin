@@ -66,12 +66,12 @@ public class JenkinsScheduler implements Scheduler {
   private volatile MesosSchedulerDriver driver;
   private final String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
-  
+
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
   public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
-  
-  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {  
+
+  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
@@ -328,7 +328,10 @@ public class JenkinsScheduler implements Scheduler {
                         getJnlpUrl(request.request.slave.name)))
                 .addUris(
                     CommandInfo.URI.newBuilder().setValue(
-                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false))).build();
+                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false))).build()
+                .setContainer(
+                    CommandInfo.ContainerInfo.newBuilder()
+                        .setImage(request.request.containerImage))).build();
 
     List<TaskInfo> tasks = new ArrayList<TaskInfo>();
     tasks.add(task);
@@ -355,7 +358,7 @@ public class JenkinsScheduler implements Scheduler {
 
     Result result = results.get(taskId);
     boolean terminalState = false;
-    
+
     switch (status.getState()) {
     case TASK_STAGING:
     case TASK_STARTING:
@@ -376,11 +379,11 @@ public class JenkinsScheduler implements Scheduler {
     default:
       throw new IllegalStateException("Invalid State: " + status.getState());
     }
-    
+
     if (terminalState) {
       results.remove(taskId);
     }
-    
+
     if (mesosCloud.isOnDemandRegistration()) {
       supervise();
     }
@@ -454,7 +457,7 @@ public class JenkinsScheduler implements Scheduler {
   public void clearResults() {
     results.clear();
   }
-  
+
   /**
    * Disconnect framework, if we don't have active mesos slaves. Also, make
    * sure JenkinsScheduler's request queue is empty.
