@@ -328,10 +328,11 @@ public class JenkinsScheduler implements Scheduler {
                         getJnlpUrl(request.request.slave.name)))
                 .addUris(
                     CommandInfo.URI.newBuilder().setValue(
-                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false))).build()
-                .setContainer(
-                    CommandInfo.ContainerInfo.newBuilder()
-                        .setImage(request.request.containerImage))).build();
+                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false))
+                // .setContainer(
+                //     CommandInfo.ContainerInfo.newBuilder()
+                //         .setImage(request.request.containerImage))
+                ).build();
 
     List<TaskInfo> tasks = new ArrayList<TaskInfo>();
     tasks.add(task);

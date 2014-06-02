@@ -59,22 +59,10 @@ public class MesosCloud extends Cloud {
   private String frameworkName;
   private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
-  
+
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
-<<<<<<< HEAD
   private List<MesosSlaveInfo> slaveInfos;
-=======
-  private final double slaveCpus;
-  private final int slaveMem; // MB.
-  private final double executorCpus;
-  private final int maxExecutors;
-  private final int executorMem; // MB.
-  private final int idleTerminationMinutes;
-  private final String containerImage;
-
-  private final String labelString = "mesos";
->>>>>>> 043ed3b... Implement a new "Container Image" option for use with Pluggable Containerizers
 
   private static String staticMaster;
 
@@ -120,45 +108,26 @@ public class MesosCloud extends Cloud {
   }
 
   @DataBoundConstructor
-<<<<<<< HEAD
   public MesosCloud(String nativeLibraryPath, String master,
       String description, String frameworkName,
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint, boolean onDemandRegistration) throws NumberFormatException {
-=======
-  public MesosCloud(String nativeLibraryPath, String master, String description, String frameworkName, String slaveCpus,
-      int slaveMem, int maxExecutors, String executorCpus, int executorMem, int idleTerminationMinutes, String containerImage)
-          throws NumberFormatException {
->>>>>>> 043ed3b... Implement a new "Container Image" option for use with Pluggable Containerizers
     super("MesosCloud");
 
     this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
     this.description = description;
     this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
-<<<<<<< HEAD
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
-    
+
     JenkinsScheduler.SUPERVISOR_LOCK.lock();
     try {
       restartMesos();
     } finally {
       JenkinsScheduler.SUPERVISOR_LOCK.unlock();
     }
-=======
-    this.slaveCpus = Double.parseDouble(slaveCpus);
-    this.slaveMem = slaveMem;
-    this.maxExecutors = maxExecutors;
-    this.executorCpus = Double.parseDouble(executorCpus);
-    this.executorMem = executorMem;
-    this.idleTerminationMinutes = idleTerminationMinutes;
-    this.containerImage = containerImage;
-
-    restartMesos();
-
->>>>>>> 043ed3b... Implement a new "Container Image" option for use with Pluggable Containerizers
   }
 
   public void restartMesos() {
@@ -240,7 +209,6 @@ public class MesosCloud extends Cloud {
 
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
     String name = "mesos-jenkins-" + UUID.randomUUID().toString();
-<<<<<<< HEAD
     return new MesosSlave(name,
         numExecutors,
         slaveInfo.getLabelString(),
@@ -249,7 +217,8 @@ public class MesosCloud extends Cloud {
         slaveInfo.getExecutorCpus(),
         slaveInfo.getExecutorMem(),
         slaveInfo.getIdleTerminationMinutes(),
-        slaveInfo.getJvmArgs());
+        slaveInfo.getJvmArgs(),
+        slaveInfo.getContainerImage());
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
@@ -258,10 +227,6 @@ public class MesosCloud extends Cloud {
 
   public void setSlaveInfos(List<MesosSlaveInfo> slaveInfos) {
     this.slaveInfos = slaveInfos;
-=======
-    return new MesosSlave(name, numExecutors, labelString, slaveCpus, slaveMem,
-        executorCpus, executorMem, idleTerminationMinutes, containerImage);
->>>>>>> 043ed3b... Implement a new "Container Image" option for use with Pluggable Containerizers
   }
 
   @Override
@@ -403,7 +368,8 @@ public class MesosCloud extends Cloud {
                 object.getString("executorMem"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
-                object.getString("jvmArgs"));
+                object.getString("jvmArgs"),
+                object.getString("containerImage"));
             slaveInfos.add(slaveInfo);
           }
         }
