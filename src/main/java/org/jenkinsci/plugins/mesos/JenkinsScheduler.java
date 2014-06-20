@@ -167,6 +167,10 @@ public class JenkinsScheduler implements Scheduler {
         LOGGER.warning("Asked to kill unknown mesos task " + taskId);
     }
 
+    if (mesosCloud.isOnDemandRegistration()) {
+      supervise();
+    }
+
   }
 
   @Override
@@ -443,7 +447,7 @@ public class JenkinsScheduler implements Scheduler {
     }
   }
 
-  public int getNumberOfPendingSlaves() {
+  public int getNumberofPendingTasks() {
     return requests.size();
   }
 
@@ -465,7 +469,7 @@ public class JenkinsScheduler implements Scheduler {
       JenkinsScheduler scheduler = (JenkinsScheduler) Mesos.getInstance()
           .getScheduler();
       if (scheduler != null) {
-        boolean pendingSlaveRequests = (scheduler.getNumberOfPendingSlaves() > 0);
+        boolean pendingTasks = (scheduler.getNumberofPendingTasks() > 0);
         boolean activeSlaves = false;
         boolean activeTasks = (scheduler.getNumberOfActiveTasks() > 0);
         List<Node> slaveNodes = Jenkins.getInstance().getNodes();
@@ -481,8 +485,8 @@ public class JenkinsScheduler implements Scheduler {
           activeTasks = false;
         }
         LOGGER.info("Active slaves: " + activeSlaves
-            + " | Pending slaves: " + pendingSlaveRequests + " | Active tasks: " + activeTasks);
-        if (!activeTasks && !activeSlaves && !pendingSlaveRequests) {
+            + " | Pending tasks: " + pendingTasks + " | Active tasks: " + activeTasks);
+        if (!activeTasks && !activeSlaves && !pendingTasks) {
           LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
           Mesos.getInstance().stopScheduler();
         }
