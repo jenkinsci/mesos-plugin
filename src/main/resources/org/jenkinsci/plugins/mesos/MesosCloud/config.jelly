@@ -73,6 +73,10 @@
             <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
             <st:nbsp/>${%No}
         </f:entry>
+
+        <f:entry title="${%Container image}">
+            <f:textbox field="containerImage" />
+        </f:entry>
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>
