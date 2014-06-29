@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -66,12 +67,12 @@ public class JenkinsScheduler implements Scheduler {
   private volatile MesosSchedulerDriver driver;
   private final String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
-  
+
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
   public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
-  
-  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {  
+
+  public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
@@ -100,8 +101,9 @@ public class JenkinsScheduler implements Scheduler {
 
         driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
 
-        if (driver.run() != Status.DRIVER_STOPPED) {
-          LOGGER.severe("The mesos driver was aborted!");
+        Status runStatus = driver.run();
+        if (runStatus != Status.DRIVER_STOPPED) {
+          LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
         }
 
         driver = null;
@@ -301,8 +303,30 @@ public class JenkinsScheduler implements Scheduler {
     LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
 
-    TaskInfo task = TaskInfo
-        .newBuilder()
+    CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
+    commandBuilder.setValue(
+        String.format(SLAVE_COMMAND_FORMAT, request.request.mem,
+            request.request.jvmArgs,
+            getJnlpUrl(request.request.slave.name)))
+        .addUris(
+            CommandInfo.URI.newBuilder().setValue(
+                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false)).build();
+
+    if (!request.request.containerImage.isEmpty()) {
+      LOGGER.info("Launching in Container Mode:" + request.request.containerImage);
+      CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
+      containerInfo.setImage(request.request.containerImage);
+
+      // add container option to builder
+      String[] containerOptions = request.request.getContainerOptions();
+      for (int i = 0; i < containerOptions.length; i++) {
+        LOGGER.info("with option: " + containerOptions[i]);
+        containerInfo.addOptions(containerOptions[i]);
+      }
+      commandBuilder.setContainer(containerInfo.build());
+    }
+
+    TaskInfo task = TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
         .setTaskId(taskId)
         .setSlaveId(offer.getSlaveId())
@@ -324,15 +348,8 @@ public class JenkinsScheduler implements Scheduler {
                         .newBuilder()
                         .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
                         .build()).build())
-        .setCommand(
-            CommandInfo
-                .newBuilder()
-                .setValue(
-                    String.format(SLAVE_COMMAND_FORMAT, request.request.mem, request.request.jvmArgs,
-                        getJnlpUrl(request.request.slave.name)))
-                .addUris(
-                    CommandInfo.URI.newBuilder().setValue(
-                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false))).build();
+        .setCommand(commandBuilder.build())
+        .build();
 
     List<TaskInfo> tasks = new ArrayList<TaskInfo>();
     tasks.add(task);
@@ -359,7 +376,7 @@ public class JenkinsScheduler implements Scheduler {
 
     Result result = results.get(taskId);
     boolean terminalState = false;
-    
+
     switch (status.getState()) {
     case TASK_STAGING:
     case TASK_STARTING:
@@ -380,11 +397,11 @@ public class JenkinsScheduler implements Scheduler {
     default:
       throw new IllegalStateException("Invalid State: " + status.getState());
     }
-    
+
     if (terminalState) {
       results.remove(taskId);
     }
-    
+
     if (mesosCloud.isOnDemandRegistration()) {
       supervise();
     }
@@ -458,7 +475,7 @@ public class JenkinsScheduler implements Scheduler {
   public void clearResults() {
     results.clear();
   }
-  
+
   /**
    * Disconnect framework, if we don't have active mesos slaves. Also, make
    * sure JenkinsScheduler's request queue is empty.

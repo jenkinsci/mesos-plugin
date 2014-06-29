@@ -21,6 +21,8 @@ public class MesosSlaveInfo {
   private final int idleTerminationMinutes;
   private final String jvmArgs;
   private final JSONObject slaveAttributes; // Slave attributes JSON representation.
+  private final String containerImage;
+  private final String containerOptions;
 
   private String labelString = DEFAULT_LABEL_NAME;
 
@@ -29,7 +31,8 @@ public class MesosSlaveInfo {
   @DataBoundConstructor
   public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
       String maxExecutors, String executorCpus, String executorMem,
-      String idleTerminationMinutes, String slaveAttributes, String jvmArgs) throws NumberFormatException {
+      String idleTerminationMinutes, String slaveAttributes, String jvmArgs,
+      String containerImage, String containerOptions) throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
     this.maxExecutors = Integer.parseInt(maxExecutors);
@@ -40,6 +43,8 @@ public class MesosSlaveInfo {
         : DEFAULT_LABEL_NAME;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
+    this.containerImage = containerImage;
+    this.containerOptions = containerOptions;
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
@@ -91,6 +96,13 @@ public class MesosSlaveInfo {
     return jvmArgs;
   }
 
+  public String getContainerImage() {
+    return containerImage;
+  }
+
+  public String getContainerOptions() {
+    return containerOptions;
+  }
   /**
    * Removes any additional {@code -Xmx} JVM args from the
    * provided JVM arguments.  This is to ensure that the logic
