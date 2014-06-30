@@ -81,7 +81,7 @@ Login to the Mesos master's Web UI to verify that the plugin is registered as
 
 ### Mesos slave setup ###
 
-Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is running as.
+Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is running as. `jenkins` user should have JAVA_HOME environment variable setup.
 
 ### Adding Slave Info ###
 
@@ -106,6 +106,10 @@ master to finish running its slave jobs even if the Mesos slave process temporar
 
 Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`) 
 to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific slave type inside Mesos cluster.
+
+### Optional container image
+
+Supported >= Mesos 0.19.0. Leave this field empty if you want Jenkins worker run normally without container (mesos-slave shouldn't be configured for Containerization either). When Mesos slave is configured with containerizer_path and isolation, this option will pull container images and launch Jenkins worker inside container. You will need protocol prefix; for Docker this would be `docker:///username/container-name`. Take a look at [jenkins-dind](https://github.com/ahunnargikar/jenkins-dind) for an example Docker image; you can decide which strategy, single or docker-in-docker, is suitable.   
 
 Thats it!
 

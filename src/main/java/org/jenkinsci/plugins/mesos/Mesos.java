@@ -33,15 +33,29 @@ public abstract class Mesos {
     final int mem;
     final String label;
     final String jvmArgs;
+    final String containerImage;
+    final String containerOptions;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label, String jvmArgs) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label,
+                        String jvmArgs, String containerImage, String containerOptions) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
       this.label = label;
       this.jvmArgs = jvmArgs;
+      this.containerImage = containerImage.trim();
+      this.containerOptions = containerOptions.trim();
+    }
+
+    public String[] getContainerOptions() {
+      if (this.containerOptions.trim().isEmpty()) {
+        return new String[0];
+      } else {
+        return this.containerOptions.trim().split(",");
+      }
     }
   }
+
 
   interface SlaveResult {
     void running(JenkinsSlave slave);
@@ -132,5 +146,6 @@ public abstract class Mesos {
     public Scheduler getScheduler() {
       return scheduler;
     }
+
   }
 }

@@ -51,10 +51,19 @@
                     <f:entry title="${%Additional Jenkins Slave Agent JVM arguments}" field="jvmArgs">
                         <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
                     </f:entry>
+
+                    <f:entry title="${%Container image}" field="containerImage" description="Leave this empty to execute without containerization. Docker image requires prefix docker:///">
+                        <f:textbox field="containerImage" value="${slaveInfo.containerImage}" default=""/>
+                    </f:entry>
+
+                    <f:entry title="${%Container options}" field="containerOptions" description="Comma separated list of options to pass to the containerizer">
+                        <f:textbox field="containerOptions" value="${slaveInfo.containerOptions}" default=""/>
+                    </f:entry>
+
                     <f:entry>
-                          <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
-                            <f:repeatableDeleteButton value="${%Delete Slave Info}" /><br/>
-                          </div>
+                        <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                          <f:repeatableDeleteButton value="${%Delete Slave Info}" /><br/>
+                        </div>
                     </f:entry>
                 </table>
              </f:repeatable>

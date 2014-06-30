@@ -59,7 +59,7 @@ public class MesosCloud extends Cloud {
   private String frameworkName;
   private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
-  
+
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
   private List<MesosSlaveInfo> slaveInfos;
@@ -121,7 +121,7 @@ public class MesosCloud extends Cloud {
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
-    
+
     JenkinsScheduler.SUPERVISOR_LOCK.lock();
     try {
       restartMesos();
@@ -217,7 +217,9 @@ public class MesosCloud extends Cloud {
         slaveInfo.getExecutorCpus(),
         slaveInfo.getExecutorMem(),
         slaveInfo.getIdleTerminationMinutes(),
-        slaveInfo.getJvmArgs());
+        slaveInfo.getJvmArgs(),
+        slaveInfo.getContainerImage(),
+        slaveInfo.getContainerOptions());
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
@@ -367,7 +369,9 @@ public class MesosCloud extends Cloud {
                 object.getString("executorMem"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
-                object.getString("jvmArgs"));
+                object.getString("jvmArgs"),
+                object.getString("containerImage"),
+                object.getString("containerOptions"));
             slaveInfos.add(slaveInfo);
           }
         }
