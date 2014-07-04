@@ -216,6 +216,7 @@ public class MesosCloud extends Cloud {
         slaveInfo.getSlaveMem(),
         slaveInfo.getExecutorCpus(),
         slaveInfo.getExecutorMem(),
+        slaveInfo.getRemoteFSRoot(),
         slaveInfo.getIdleTerminationMinutes(),
         slaveInfo.getJvmArgs(),
         slaveInfo.getContainerImage(),
@@ -367,6 +368,7 @@ public class MesosCloud extends Cloud {
                 object.getString("maxExecutors"),
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
+                object.getString("remoteFSRoot"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
                 object.getString("jvmArgs"),
@@ -449,6 +451,12 @@ public class MesosCloud extends Cloud {
         }
       }
       return valid ? FormValidation.ok() : FormValidation.error(errorMessage);
+    }
+
+    public FormValidation doCheckRemoteFSRoot(@QueryParameter String value) {
+      String errorMessage = "Invalid Remote FS Root - should be non-empty. It will be defaulted to \"jenkins\".";
+
+      return StringUtils.isNotBlank(value) ? FormValidation.ok() : FormValidation.error(errorMessage);
     }
   }
 }

@@ -42,6 +42,13 @@
                         <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
                     </f:entry>
 
+                    <!--
+                        Below option enables the user to specify the JENKINS_HOME directory of the slave. Defaults to "jenkins" if empty.
+                    -->
+                    <f:entry title="${%Remote FS Root}" field="remoteFSRoot">
+                        <f:textbox field="remoteFSRoot" clazz="required" default="jenkins" value="${slaveInfo.remoteFSRoot}"/>
+                    </f:entry>
+
                     <f:entry title="${%Idle Termination Minutes}">
                         <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
                     </f:entry>

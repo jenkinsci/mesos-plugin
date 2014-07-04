@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlave extends Slave {
@@ -43,12 +45,12 @@ public class MesosSlave extends Slave {
 
   @DataBoundConstructor
   public MesosSlave(String name, int numExecutors, String labelString,
-      double slaveCpus, int slaveMem, double executorCpus, int executorMem,
+      double slaveCpus, int slaveMem, double executorCpus, int executorMem, String remoteFSRoot,
       int idleTerminationMinutes, String jvmArgs, String containerImage, String containerOptions) throws FormException, IOException
   {
     super(name,
           labelString, // node description.
-          "jenkins",   // remoteFS.
+          StringUtils.isBlank(remoteFSRoot) ? "jenkins" : remoteFSRoot.trim(),   // remoteFS.
           "" + numExecutors,
           Mode.NORMAL,
           labelString, // Label.
