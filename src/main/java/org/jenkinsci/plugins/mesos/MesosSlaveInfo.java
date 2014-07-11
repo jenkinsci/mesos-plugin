@@ -18,6 +18,7 @@ public class MesosSlaveInfo {
   private final double executorCpus;
   private final int maxExecutors;
   private final int executorMem; // MB.
+  private final String remoteFSRoot;
   private final int idleTerminationMinutes;
   private final String jvmArgs;
   private final JSONObject slaveAttributes; // Slave attributes JSON representation.
@@ -30,7 +31,7 @@ public class MesosSlaveInfo {
 
   @DataBoundConstructor
   public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
-      String maxExecutors, String executorCpus, String executorMem,
+      String maxExecutors, String executorCpus, String executorMem, String remoteFSRoot,
       String idleTerminationMinutes, String slaveAttributes, String jvmArgs,
       String containerImage, String containerOptions) throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
@@ -38,6 +39,8 @@ public class MesosSlaveInfo {
     this.maxExecutors = Integer.parseInt(maxExecutors);
     this.executorCpus = Double.parseDouble(executorCpus);
     this.executorMem = Integer.parseInt(executorMem);
+    this.remoteFSRoot = StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot.trim()
+        : "jenkins";
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
     this.labelString = StringUtils.isNotBlank(labelString) ? labelString
         : DEFAULT_LABEL_NAME;
@@ -82,6 +85,10 @@ public class MesosSlaveInfo {
 
   public int getExecutorMem() {
     return executorMem;
+  }
+
+  public String getRemoteFSRoot() {
+    return remoteFSRoot;
   }
 
   public int getIdleTerminationMinutes() {
