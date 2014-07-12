@@ -97,10 +97,12 @@ and light weight jobs can be assigned label 'light_weight_slave'(which has  'Sla
 Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
 Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
 
-### Mesos slave checkpointing ###
+### Checkpointing ###
 
-Checkpointing can now be enabled by setting the "Slave Checkpointing" option to yes in the cloud config. This will allow the Jenkins
-master to finish running its slave jobs even if the Mesos slave process temporarily goes down.
+Checkpointing can now be enabled by setting the "Checkpointing" option to yes in the cloud config. This will allow the Jenkins
+master to finish running its slave jobs even if the Mesos slave process temporarily goes down. Note that Mesos slave(s) should
+have checkpointing enabled for this to work. See [slave-recovery](http://mesos.apache.org/documentation/latest/slave-recovery/)
+for more details.
 
 ### Configuring Jenkins jobs ###
 

@@ -76,7 +76,7 @@
              </f:repeatable>
        </f:entry>
 
-        <f:entry title="${%Slave Checkpointing}" description="${%Enable Mesos slave checkpointing?}">
+        <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
             <st:nbsp/>${%Yes}
             <f:radio name="checkpoint" value="false" checked="${instance.checkpoint == false}" id="checkpoint.false"/>

@@ -57,7 +57,7 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
-  private final boolean checkpoint; // Set true to enable Mesos slave checkpoints. False by default.
+  private final boolean checkpoint; // Set true to enable checkpointing. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
 
   // Find the default values for these variables in
