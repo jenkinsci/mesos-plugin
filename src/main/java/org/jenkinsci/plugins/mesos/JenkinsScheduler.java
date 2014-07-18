@@ -206,7 +206,7 @@ public class JenkinsScheduler implements Scheduler {
       }
 
       if (!matched) {
-        driver.declineOffer(offer.getId());
+        driver.declineOffer(offer.getId(), Filters.newBuilder().setRefuseSeconds(5d).build());
       }
     }
   }
