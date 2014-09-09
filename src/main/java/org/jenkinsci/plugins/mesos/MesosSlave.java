@@ -34,35 +34,27 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlave extends Slave {
 
+  private final MesosSlaveInfo slaveInfo;
   private final double cpus;
   private final int mem;
-  private final String jvmArgs;
-  private final String containerImage;
-  private final String containerOptions;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
 
-  @DataBoundConstructor
-  public MesosSlave(String name, int numExecutors, String labelString,
-      double slaveCpus, int slaveMem, double executorCpus, int executorMem, String remoteFSRoot,
-      int idleTerminationMinutes, String jvmArgs, String containerImage, String containerOptions) throws FormException, IOException
-  {
+  public MesosSlave(String name, int numExecutors, MesosSlaveInfo slaveInfo) throws IOException, FormException {
     super(name,
-          labelString, // node description.
-          StringUtils.isBlank(remoteFSRoot) ? "jenkins" : remoteFSRoot.trim(),   // remoteFS.
+          slaveInfo.getLabelString(), // node description.
+          StringUtils.isBlank(slaveInfo.getRemoteFSRoot()) ? "jenkins" : slaveInfo.getRemoteFSRoot().trim(),   // remoteFS.
           "" + numExecutors,
           Mode.NORMAL,
-          labelString, // Label.
+          slaveInfo.getLabelString(), // Label.
           new MesosComputerLauncher(name),
-          new MesosRetentionStrategy(idleTerminationMinutes),
+          new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),
           Collections.<NodeProperty<?>> emptyList());
 
-    this.cpus = slaveCpus + (numExecutors * executorCpus);
-    this.mem = slaveMem + (numExecutors * executorMem);
-    this.jvmArgs = jvmArgs;
-    this.containerImage = containerImage;
-    this.containerOptions = containerOptions;
+    this.slaveInfo = slaveInfo;
+    this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
+    this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
 
     LOGGER.info("Constructing Mesos slave");
   }
@@ -75,16 +67,8 @@ public class MesosSlave extends Slave {
     return mem;
   }
 
-  public String getJvmArgs() {
-    return jvmArgs;
-  }
-
-  public String getContainerImage() {
-    return containerImage;
-  }
-
-  public String getContainerOptions() {
-    return containerOptions;
+  public MesosSlaveInfo getSlaveInfo() {
+    return slaveInfo;
   }
 
   public void terminate() {
