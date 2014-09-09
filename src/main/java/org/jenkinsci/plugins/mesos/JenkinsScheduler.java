@@ -36,6 +36,8 @@ import net.sf.json.JSONObject;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.ContainerInfo;
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.Filters;
 import org.apache.mesos.Protos.FrameworkID;
@@ -50,8 +52,13 @@ import org.apache.mesos.Protos.TaskID;
 import org.apache.mesos.Protos.TaskInfo;
 import org.apache.mesos.Protos.TaskStatus;
 import org.apache.mesos.Protos.Value;
+import org.apache.mesos.Protos.Value.Type;
+import org.apache.mesos.Protos.Volume;
+import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
+
+import sun.font.LayoutPathImpl.EndType;
 
 public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
@@ -60,7 +67,7 @@ public class JenkinsScheduler implements Scheduler {
   private static final double JVM_MEM_OVERHEAD_FACTOR = 0.1;
 
   private static final String SLAVE_COMMAND_FORMAT =
-      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar slave.jar  -jnlpUrl %s";
+      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/slave.jar  -jnlpUrl %s";
 
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
@@ -244,7 +251,7 @@ public class JenkinsScheduler implements Scheduler {
     double requestedCpus = request.request.cpus;
     double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
     // Get matching slave attribute for this label.
-    JSONObject slaveAttributes = getMesosCloud().getSlaveAttributeForLabel(request.request.label);
+    JSONObject slaveAttributes = getMesosCloud().getSlaveAttributeForLabel(request.request.slaveInfo.getLabelString());
 
     if (requestedCpus <= cpus && requestedMem <= mem && slaveAttributesMatch(offer, slaveAttributes)) {
       return true;
@@ -306,19 +313,20 @@ public class JenkinsScheduler implements Scheduler {
     CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
     commandBuilder.setValue(
         String.format(SLAVE_COMMAND_FORMAT, request.request.mem,
-            request.request.jvmArgs,
+            request.request.slaveInfo.getJvmArgs(),
             getJnlpUrl(request.request.slave.name)))
         .addUris(
             CommandInfo.URI.newBuilder().setValue(
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false)).build();
 
-    if (!request.request.containerImage.isEmpty()) {
-      LOGGER.info("Launching in Container Mode:" + request.request.containerImage);
+    MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
+    if (externalContainerInfo != null) {
+      LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
       CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
-      containerInfo.setImage(request.request.containerImage);
+      containerInfo.setImage(externalContainerInfo.getImage());
 
       // add container option to builder
-      String[] containerOptions = request.request.getContainerOptions();
+      String[] containerOptions = request.request.getExternalContainerOptions();
       for (int i = 0; i < containerOptions.length; i++) {
         LOGGER.info("with option: " + containerOptions[i]);
         containerInfo.addOptions(containerOptions[i]);
@@ -326,7 +334,7 @@ public class JenkinsScheduler implements Scheduler {
       commandBuilder.setContainer(containerInfo.build());
     }
 
-    TaskInfo task = TaskInfo.newBuilder()
+    TaskInfo.Builder taskBuilder = TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
         .setTaskId(taskId)
         .setSlaveId(offer.getSlaveId())
@@ -348,11 +356,39 @@ public class JenkinsScheduler implements Scheduler {
                         .newBuilder()
                         .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
                         .build()).build())
-        .setCommand(commandBuilder.build())
-        .build();
+        .setCommand(commandBuilder.build());
+
+    MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
+    if (containerInfo != null) {
+      ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
+      ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder().setType(containerType);
+      switch(containerType) {
+        case DOCKER:
+          LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
+          containerInfoBuilder.setDocker(DockerInfo.newBuilder().setImage(containerInfo.getDockerImage()));
+          break;
+        default:
+          LOGGER.warning("Unknown container type:" + containerInfo.getType());
+      }
+
+      if (containerInfo.getVolumes() != null) {
+        for (MesosSlaveInfo.Volume volume : containerInfo.getVolumes()) {
+          LOGGER.info("Adding volume '" + volume.getContainerPath() + "'");
+          Volume.Builder volumeBuilder = Volume.newBuilder()
+              .setContainerPath(volume.getContainerPath())
+              .setMode(volume.isReadOnly() ? Mode.RO : Mode.RW);
+          if (!volume.getHostPath().isEmpty()) {
+            volumeBuilder.setHostPath(volume.getHostPath());
+          }
+          containerInfoBuilder.addVolumes(volumeBuilder.build());
+        }
+      }
+
+      taskBuilder.setContainer(containerInfoBuilder.build());
+    }
 
     List<TaskInfo> tasks = new ArrayList<TaskInfo>();
-    tasks.add(task);
+    tasks.add(taskBuilder.build());
     Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
     driver.launchTasks(offer.getId(), tasks, filters);
 

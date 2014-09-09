@@ -33,7 +33,7 @@ public class MesosComputer extends SlaveComputer {
   }
 
   public String getJvmArgs() {
-      return ((MesosSlave) super.getNode()).getJvmArgs();
+      return ((MesosSlave) super.getNode()).getSlaveInfo().getJvmArgs();
   }
 
   @Override
