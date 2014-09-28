@@ -60,17 +60,7 @@
                     </f:entry>
 
                     <f:advanced>
-                        <f:optionalBlock title="${%Use External Container}" name="externalContainerInfo" checked="${slaveInfo.externalContainerInfo != null}">
-                            <f:entry title="${%External Container image}" field="image" description="Docker image requires prefix docker:///">
-                                <f:textbox field="image" value="${externalContainerInfo.image}" default=""/>
-                            </f:entry>
-
-                            <f:entry title="${%External Container options}" field="options" description="Comma separated list of options to pass to the containerizer">
-                                <f:textbox field="options" value="${externalContainerInfo.options}" default=""/>
-                            </f:entry>
-                        </f:optionalBlock>
-
-                        <f:optionalBlock title="${%Use Container Info}" name="containerInfo" checked="${slaveInfo.containerInfo != null}">
+                        <f:optionalBlock title="${%Use Docker Containerizer}" name="containerInfo" checked="${slaveInfo.containerInfo != null}">
 
                             <f:entry title="${%Container Type}" field="type">
                                 <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="true">
@@ -105,6 +95,16 @@
                                         </table>
                                     </fieldset>
                                 </f:repeatable>
+                            </f:entry>
+                        </f:optionalBlock>
+
+                        <f:optionalBlock title="${%Use External Containerizer}" name="externalContainerInfo" checked="${slaveInfo.externalContainerInfo != null}">
+                            <f:entry title="${%External Container image}" field="image" description="Docker image requires prefix docker:///">
+                                <f:textbox field="image" value="${externalContainerInfo.image}" default=""/>
+                            </f:entry>
+
+                            <f:entry title="${%External Container options}" field="options" description="Comma separated list of options to pass to the containerizer">
+                                <f:textbox field="options" value="${externalContainerInfo.options}" default=""/>
                             </f:entry>
                         </f:optionalBlock>
                     </f:advanced>
