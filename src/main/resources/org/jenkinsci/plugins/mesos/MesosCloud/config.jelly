@@ -71,7 +71,7 @@
                             </f:entry>
 
                             <f:entry title="${%Volumes}">
-                                <f:repeatable add="${%Add Volume}" var="volume" name="volumes" items="${slaveInfo.volumes}" noAddButton="false" minimum="0">
+                                <f:repeatable add="${%Add Volume}" var="volume" name="volumes" items="${slaveInfo.containerInfo.volumes}" noAddButton="false" minimum="0">
                                     <fieldset>
                                         <table width="100%">
                                             <f:entry title="${%Container Path}">
