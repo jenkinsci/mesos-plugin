@@ -46,6 +46,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
+import org.jenkinsci.plugins.mesos.MesosSlaveInfo.URI;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -384,6 +385,17 @@ public class MesosCloud extends Cloud {
                   containerInfoJson.getString("dockerImage"), volumes);
             }
 
+            List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
+            if (label.has("additionalURIs")) {
+              JSONArray additionalURIsJson = label.getJSONArray("additionalURIs");
+              for (Object obj : additionalURIsJson) {
+                JSONObject URIJson = (JSONObject) obj;
+                additionalURIs.add(new MesosSlaveInfo.URI(
+                    URIJson.getString("value"),
+                    URIJson.getBoolean("executable"),
+                    URIJson.getBoolean("extract")));
+              }
+            }
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
                 object.getString("labelString"), object.getString("slaveCpus"),
                 object.getString("slaveMem"), object.getString("maxExecutors"),
@@ -393,7 +405,8 @@ public class MesosCloud extends Cloud {
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
                 object.getString("jvmArgs"), externalContainerInfo,
-                containerInfo);
+                containerInfo,
+                additionalURIs);
             slaveInfos.add(slaveInfo);
           }
         }
