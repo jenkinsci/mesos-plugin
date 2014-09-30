@@ -108,7 +108,7 @@
                             </f:entry>
                         </f:optionalBlock>
 
-                        <f:entry title="${%Additional URIs}">
+                        <f:entry title="${%Additional URIs}" field="additionalURIs">
                             <f:repeatable add="${%Add URI}" var="uri" name="additionalURIs" items="${slaveInfo.additionalURIs}" noAddButton="false" minimum="0">
                                 <fieldset>
                                     <table width="100%">
