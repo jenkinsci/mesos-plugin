@@ -317,7 +317,14 @@ public class JenkinsScheduler implements Scheduler {
             getJnlpUrl(request.request.slave.name)))
         .addUris(
             CommandInfo.URI.newBuilder().setValue(
-                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false)).build();
+                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
+    if (request.request.slaveInfo.getAdditionalURIs() != null) {
+      for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
+        commandBuilder.addUris(
+            CommandInfo.URI.newBuilder().setValue(
+                uri.getValue()).setExecutable(uri.isExecutable()).setExtract(uri.isExtract()));
+      }
+    }
 
     MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
     if (externalContainerInfo != null) {

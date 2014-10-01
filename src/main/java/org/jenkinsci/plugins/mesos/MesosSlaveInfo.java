@@ -29,6 +29,7 @@ public class MesosSlaveInfo {
   private final JSONObject slaveAttributes;
   private final ExternalContainerInfo externalContainerInfo;
   private final ContainerInfo containerInfo;
+  private final List<URI> additionalURIs;
 
   private String labelString = DEFAULT_LABEL_NAME;
 
@@ -40,7 +41,8 @@ public class MesosSlaveInfo {
       String maxExecutors, String executorCpus, String executorMem,
       String remoteFSRoot, String idleTerminationMinutes,
       String slaveAttributes, String jvmArgs,
-      ExternalContainerInfo externalContainerInfo, ContainerInfo containerInfo)
+      ExternalContainerInfo externalContainerInfo, ContainerInfo containerInfo,
+      List<URI> additionalURIs)
       throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
@@ -56,6 +58,7 @@ public class MesosSlaveInfo {
         : DEFAULT_JVM_ARGS;
     this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
+    this.additionalURIs = additionalURIs;
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
@@ -119,6 +122,10 @@ public class MesosSlaveInfo {
 
   public ContainerInfo getContainerInfo() {
     return containerInfo;
+  }
+
+  public List<URI> getAdditionalURIs() {
+    return additionalURIs;
   }
 
   /**
@@ -203,6 +210,31 @@ public class MesosSlaveInfo {
 
     public boolean isReadOnly() {
       return readOnly;
+    }
+  }
+
+  public static class URI {
+    private final String value;
+    private final boolean executable;
+    private final boolean extract;
+
+    @DataBoundConstructor
+    public URI(String value, boolean executable, boolean extract) {
+      this.value = value;
+      this.executable = executable;
+      this.extract = extract;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    public boolean isExecutable() {
+      return executable;
+    }
+
+    public boolean isExtract() {
+      return extract;
     }
   }
 }

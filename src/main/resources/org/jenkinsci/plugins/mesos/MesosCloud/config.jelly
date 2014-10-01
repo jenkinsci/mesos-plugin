@@ -107,6 +107,33 @@
                                 <f:textbox field="options" value="${externalContainerInfo.options}" default=""/>
                             </f:entry>
                         </f:optionalBlock>
+
+                        <f:entry title="${%Additional URIs}" field="additionalURIs">
+                            <f:repeatable add="${%Add URI}" var="uri" name="additionalURIs" items="${slaveInfo.additionalURIs}" noAddButton="false" minimum="0">
+                                <fieldset>
+                                    <table width="100%">
+                                        <f:entry title="${%URI}">
+                                            <f:textbox field="value" clazz="required" default="" value="${uri.value}" />
+                                        </f:entry>
+
+                                        <f:entry title="${%URI file should be executable}">
+                                            <f:checkbox field="executable" default="false" value="${uri.executable}" />
+                                        </f:entry>
+
+                                        <f:entry title="${%Extract the URI}">
+                                            <f:checkbox field="extract" default="true" value="${uri.extract}" />
+                                        </f:entry>
+
+                                        <f:entry>
+                                            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                                <f:repeatableDeleteButton value="${%Delete URI}" /><br/>
+                                            </div>
+                                        </f:entry>
+
+                                    </table>
+                                </fieldset>
+                            </f:repeatable>
+                        </f:entry>
                     </f:advanced>
 
                     <f:entry>
