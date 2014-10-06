@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Allows to access a workspace through jenkins master. Primary use case is
- * cloud based CI implementation where slaves won't be there online forever.
- * Note that control comes here only when nodes are not accessible or offline.
- * Make sure that workspace are created in mounts/filer which is accessible from
- * jenkins master.
+ * Allows access to the Jenkins slave's workspace when the Jenkins slave is offline.
+ * The assumption here is that the Jenkins slave's root path (configurable via "Remote FS Root"
+ * option) points to a shared storage location (e.g., NFS mount) accessible to the Jenkins master.
+ * Note that when the Jenkins slave is online, the workspace is directly provided 
+ * by the slave and the control doesn't reach here.
  */
 @Extension
 public class MesosWorkspaceBrowser extends WorkspaceBrowser {
