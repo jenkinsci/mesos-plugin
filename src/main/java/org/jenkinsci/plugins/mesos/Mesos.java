@@ -31,27 +31,20 @@ public abstract class Mesos {
     JenkinsSlave slave;
     final double cpus;
     final int mem;
-    final String label;
-    final String jvmArgs;
-    final String containerImage;
-    final String containerOptions;
+    final MesosSlaveInfo slaveInfo;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String label,
-                        String jvmArgs, String containerImage, String containerOptions) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, MesosSlaveInfo slaveInfo) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
-      this.label = label;
-      this.jvmArgs = jvmArgs;
-      this.containerImage = containerImage.trim();
-      this.containerOptions = containerOptions.trim();
+      this.slaveInfo = slaveInfo;
     }
 
-    public String[] getContainerOptions() {
-      if (this.containerOptions.trim().isEmpty()) {
+    public String[] getExternalContainerOptions() {
+      if (this.slaveInfo.getExternalContainerInfo().getOptions().trim().isEmpty()) {
         return new String[0];
       } else {
-        return this.containerOptions.trim().split(",");
+        return this.slaveInfo.getExternalContainerInfo().getOptions().trim().split(",");
       }
     }
   }

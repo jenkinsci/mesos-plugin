@@ -46,6 +46,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
+import org.jenkinsci.plugins.mesos.MesosSlaveInfo.URI;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -209,18 +210,7 @@ public class MesosCloud extends Cloud {
 
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
     String name = "mesos-jenkins-" + UUID.randomUUID().toString();
-    return new MesosSlave(name,
-        numExecutors,
-        slaveInfo.getLabelString(),
-        slaveInfo.getSlaveCpus(),
-        slaveInfo.getSlaveMem(),
-        slaveInfo.getExecutorCpus(),
-        slaveInfo.getExecutorMem(),
-        slaveInfo.getRemoteFSRoot(),
-        slaveInfo.getIdleTerminationMinutes(),
-        slaveInfo.getJvmArgs(),
-        slaveInfo.getContainerImage(),
-        slaveInfo.getContainerOptions());
+    return new MesosSlave(name, numExecutors, slaveInfo);
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
@@ -348,7 +338,9 @@ public class MesosCloud extends Cloud {
     }
 
     @Override
-    public boolean configure(StaplerRequest request, JSONObject object) throws FormException {
+    public boolean configure(StaplerRequest request, JSONObject object)
+        throws FormException {
+      LOGGER.info(object.toString());
       nativeLibraryPath = object.getString("nativeLibraryPath");
       master = object.getString("master");
       description = object.getString("description");
@@ -361,19 +353,60 @@ public class MesosCloud extends Cloud {
         for (int i = 0; i < labels.size(); i++) {
           JSONObject label = labels.getJSONObject(i);
           if (label != null) {
+            MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = null;
+            if (label.has("externalContainerInfo")) {
+              JSONObject externalContainerInfoJson = label
+                  .getJSONObject("externalContainerInfo");
+              externalContainerInfo = new MesosSlaveInfo.ExternalContainerInfo(
+                  externalContainerInfoJson.getString("image"),
+                  externalContainerInfoJson.getString("options"));
+            }
+
+            MesosSlaveInfo.ContainerInfo containerInfo = null;
+            if (label.has("containerInfo")) {
+              JSONObject containerInfoJson = label
+                  .getJSONObject("containerInfo");
+              List<MesosSlaveInfo.Volume> volumes = new ArrayList<MesosSlaveInfo.Volume>();
+              if (containerInfoJson.has("volumes")) {
+                JSONArray volumesJson = containerInfoJson
+                    .getJSONArray("volumes");
+                for (Object obj : volumesJson) {
+                  JSONObject volumeJson = (JSONObject) obj;
+                  volumes
+                      .add(new MesosSlaveInfo.Volume(volumeJson
+                          .getString("containerPath"), volumeJson
+                          .getString("hostPath"), volumeJson
+                          .getBoolean("readOnly")));
+                }
+              }
+
+              containerInfo = new MesosSlaveInfo.ContainerInfo(
+                  containerInfoJson.getString("type"),
+                  containerInfoJson.getString("dockerImage"), volumes);
+            }
+
+            List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
+            if (label.has("additionalURIs")) {
+              JSONArray additionalURIsJson = label.getJSONArray("additionalURIs");
+              for (Object obj : additionalURIsJson) {
+                JSONObject URIJson = (JSONObject) obj;
+                additionalURIs.add(new MesosSlaveInfo.URI(
+                    URIJson.getString("value"),
+                    URIJson.getBoolean("executable"),
+                    URIJson.getBoolean("extract")));
+              }
+            }
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
-                object.getString("labelString"),
-                object.getString("slaveCpus"),
-                object.getString("slaveMem"),
-                object.getString("maxExecutors"),
+                object.getString("labelString"), object.getString("slaveCpus"),
+                object.getString("slaveMem"), object.getString("maxExecutors"),
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
                 object.getString("remoteFSRoot"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
-                object.getString("jvmArgs"),
-                object.getString("containerImage"),
-                object.getString("containerOptions"));
+                object.getString("jvmArgs"), externalContainerInfo,
+                containerInfo,
+                additionalURIs);
             slaveInfos.add(slaveInfo);
           }
         }

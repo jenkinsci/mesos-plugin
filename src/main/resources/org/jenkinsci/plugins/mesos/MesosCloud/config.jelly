@@ -59,13 +59,82 @@
                         <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
                     </f:entry>
 
-                    <f:entry title="${%Container image}" field="containerImage" description="Leave this empty to execute without containerization. Docker image requires prefix docker:///">
-                        <f:textbox field="containerImage" value="${slaveInfo.containerImage}" default=""/>
-                    </f:entry>
+                    <f:advanced>
+                        <f:optionalBlock title="${%Use Docker Containerizer}" name="containerInfo" checked="${slaveInfo.containerInfo != null}">
 
-                    <f:entry title="${%Container options}" field="containerOptions" description="Comma separated list of options to pass to the containerizer">
-                        <f:textbox field="containerOptions" value="${slaveInfo.containerOptions}" default=""/>
-                    </f:entry>
+                            <f:entry title="${%Container Type}" field="type">
+                                <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="true">
+                                    <f:entry title="${%Docker Image}" field="dockerImage" description="If using Docker, specify the docker image.">
+                                        <f:textbox field="dockerImage" clazz="required" value="${slaveInfo.containerInfo.dockerImage}" default=""/>
+                                    </f:entry>
+                                </f:radioBlock>
+                            </f:entry>
+
+                            <f:entry title="${%Volumes}">
+                                <f:repeatable add="${%Add Volume}" var="volume" name="volumes" items="${slaveInfo.containerInfo.volumes}" noAddButton="false" minimum="0">
+                                    <fieldset>
+                                        <table width="100%">
+                                            <f:entry title="${%Container Path}">
+                                                <f:textbox field="containerPath" clazz="required" default="" value="${volume.containerPath}" />
+                                            </f:entry>
+
+                                            <f:entry title="${%Host Path}">
+                                                <f:textbox field="hostPath" default="" value="${volume.hostPath}" />
+                                            </f:entry>
+
+                                            <f:entry title="${%Read-Only}">
+                                                <f:checkbox field="readOnly" default="false" value="${volume.readOnly}" />
+                                            </f:entry>
+
+                                            <f:entry>
+                                                <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                                    <f:repeatableDeleteButton value="${%Delete Volume}" /><br/>
+                                                </div>
+                                            </f:entry>
+
+                                        </table>
+                                    </fieldset>
+                                </f:repeatable>
+                            </f:entry>
+                        </f:optionalBlock>
+
+                        <f:optionalBlock title="${%Use External Containerizer}" name="externalContainerInfo" checked="${slaveInfo.externalContainerInfo != null}">
+                            <f:entry title="${%External Container image}" field="image" description="Docker image requires prefix docker:///">
+                                <f:textbox field="image" value="${externalContainerInfo.image}" default=""/>
+                            </f:entry>
+
+                            <f:entry title="${%External Container options}" field="options" description="Comma separated list of options to pass to the containerizer">
+                                <f:textbox field="options" value="${externalContainerInfo.options}" default=""/>
+                            </f:entry>
+                        </f:optionalBlock>
+
+                        <f:entry title="${%Additional URIs}" field="additionalURIs">
+                            <f:repeatable add="${%Add URI}" var="uri" name="additionalURIs" items="${slaveInfo.additionalURIs}" noAddButton="false" minimum="0">
+                                <fieldset>
+                                    <table width="100%">
+                                        <f:entry title="${%URI}">
+                                            <f:textbox field="value" clazz="required" default="" value="${uri.value}" />
+                                        </f:entry>
+
+                                        <f:entry title="${%URI file should be executable}">
+                                            <f:checkbox field="executable" default="false" value="${uri.executable}" />
+                                        </f:entry>
+
+                                        <f:entry title="${%Extract the URI}">
+                                            <f:checkbox field="extract" default="true" value="${uri.extract}" />
+                                        </f:entry>
+
+                                        <f:entry>
+                                            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                                <f:repeatableDeleteButton value="${%Delete URI}" /><br/>
+                                            </div>
+                                        </f:entry>
+
+                                    </table>
+                                </fieldset>
+                            </f:repeatable>
+                        </f:entry>
+                    </f:advanced>
 
                     <f:entry>
                         <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
