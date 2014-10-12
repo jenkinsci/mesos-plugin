@@ -97,6 +97,15 @@ and light weight jobs can be assigned label 'light_weight_slave'(which has  'Sla
 Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
 Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
 
+### Mesos authentication ###
+
+By default the plugin (a Mesos framework) registers with Mesos master without authentication. To enable authentication:
+
+  1. Set the `Framework principal` and `Framework Secret` fieds in the plugin configuration page.
+
+  2. Ensure the same credentials (`principal` and `secret`) are setup on the Mesos master via `"--credentials"` command line flag (See `./mesos-master.sh --help` for details).
+
+
 ### Checkpointing ###
 
 Checkpointing can now be enabled by setting the "Checkpointing" option to yes in the cloud config. This will allow the Jenkins

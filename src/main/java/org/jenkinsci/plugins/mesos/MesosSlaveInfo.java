@@ -38,11 +38,20 @@ public class MesosSlaveInfo {
       .getName());
 
   @DataBoundConstructor
-  public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
-      String maxExecutors, String executorCpus, String executorMem,
-      String remoteFSRoot, String idleTerminationMinutes,
-      String slaveAttributes, String jvmArgs, String jnlpArgs,
-      ExternalContainerInfo externalContainerInfo, ContainerInfo containerInfo,
+  public MesosSlaveInfo(
+      String labelString,
+      String slaveCpus,
+      String slaveMem,
+      String maxExecutors,
+      String executorCpus,
+      String executorMem,
+      String remoteFSRoot,
+      String idleTerminationMinutes,
+      String slaveAttributes,
+      String jvmArgs,
+      String jnlpArgs,
+      ExternalContainerInfo externalContainerInfo,
+      ContainerInfo containerInfo,
       List<URI> additionalURIs)
       throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
@@ -64,12 +73,13 @@ public class MesosSlaveInfo {
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
-    try {
-      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
-    } catch (JSONException e) {
-      LOGGER
-          .warning("Ignoring Mesos slave attributes JSON due to parsing error : "
-              + slaveAttributes);
+    if (StringUtils.isNotBlank(slaveAttributes)) {
+        try {
+            jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
+        } catch (JSONException e) {
+            LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : "
+                           + slaveAttributes);
+        }
     }
     this.slaveAttributes = jsonObject;
   }

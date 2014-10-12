@@ -33,11 +33,16 @@ import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import com.google.protobuf.ByteString;
+
+import org.apache.commons.lang.StringUtils;
+
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ContainerInfo;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo;
+import org.apache.mesos.Protos.Credential;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.Filters;
 import org.apache.mesos.Protos.FrameworkID;
@@ -58,7 +63,6 @@ import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 
-import sun.font.LayoutPathImpl.EndType;
 
 public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
@@ -98,16 +102,28 @@ public class JenkinsScheduler implements Scheduler {
         FrameworkInfo framework = FrameworkInfo.newBuilder()
           .setUser("")
           .setName(mesosCloud.getFrameworkName())
-          .setCheckpoint(mesosCloud.isCheckpoint()).build();
+          .setPrincipal(mesosCloud.getPrincipal())
+          .setCheckpoint(mesosCloud.isCheckpoint())
+          .build();
 
         LOGGER.info("Initializing the Mesos driver with options"
         + "\n" + "User: " + framework.getUser()
         + "\n" + "Framework Name: " + framework.getName()
+        + "\n" + "Principal: " + framework.getPrincipal()
         + "\n" + "Checkpointing: " + framework.getCheckpoint()
         );
 
-        driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+        if (StringUtils.isNotBlank(mesosCloud.getSecret())) {
+            Credential credential = Credential.newBuilder()
+              .setPrincipal(mesosCloud.getPrincipal())
+              .setSecret(ByteString.copyFromUtf8(mesosCloud.getSecret()))
+              .build();
 
+            LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
+            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
+        } else {
+            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+        }
         Status runStatus = driver.run();
         if (runStatus != Status.DRIVER_STOPPED) {
           LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
@@ -312,14 +328,14 @@ public class JenkinsScheduler implements Scheduler {
 
     CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
     commandBuilder.setValue(
-        String.format(SLAVE_COMMAND_FORMAT,
-            request.request.mem,
-            request.request.slaveInfo.getJvmArgs(),
-            request.request.slaveInfo.getJnlpArgs(),
-            getJnlpUrl(request.request.slave.name)))
+            String.format(SLAVE_COMMAND_FORMAT,
+                    request.request.mem,
+                    request.request.slaveInfo.getJvmArgs(),
+                    request.request.slaveInfo.getJnlpArgs(),
+                    getJnlpUrl(request.request.slave.name)))
         .addUris(
-            CommandInfo.URI.newBuilder().setValue(
-                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
+                CommandInfo.URI.newBuilder().setValue(
+                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
     if (request.request.slaveInfo.getAdditionalURIs() != null) {
       for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
         commandBuilder.addUris(
