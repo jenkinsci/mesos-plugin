@@ -397,14 +397,18 @@ public class MesosCloud extends Cloud {
               }
             }
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
-                object.getString("labelString"), object.getString("slaveCpus"),
-                object.getString("slaveMem"), object.getString("maxExecutors"),
+                object.getString("labelString"),
+                object.getString("slaveCpus"),
+                object.getString("slaveMem"),
+                object.getString("maxExecutors"),
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
                 object.getString("remoteFSRoot"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
-                object.getString("jvmArgs"), externalContainerInfo,
+                object.getString("jvmArgs"),
+                object.getString("jnlpArgs"),
+                externalContainerInfo,
                 containerInfo,
                 additionalURIs);
             slaveInfos.add(slaveInfo);

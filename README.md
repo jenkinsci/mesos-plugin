@@ -120,7 +120,7 @@ By default, the Jenkins slaves are run in the default Mesos container. To run th
 ### Jenkins master authentication ###
 
 By default the Jenkins slaves launched by Mesos connect back to Jenkins master
-using anonymous access. If Jenkins master needs authentication to connect to it, the authentication credentials (e.g., "--jnlpCredentials") can be provided via the "Additional Jenkins Slave Agent JVM arguments" option.
+using anonymous access. If Jenkins master needs authentication for a JNLP slave agent to connect to it, the authentication credentials (e.g., "--jnlpCredentials") can be provided via the "Additional Jenkins Slave Agent JNLP arguments" option.
 
 Thats it!
 

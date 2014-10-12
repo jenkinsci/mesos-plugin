@@ -25,6 +25,7 @@ public class MesosSlaveInfo {
   private final String remoteFSRoot;
   private final int idleTerminationMinutes;
   private final String jvmArgs;
+  private final String jnlpArgs;
   // Slave attributes JSON representation.
   private final JSONObject slaveAttributes;
   private final ExternalContainerInfo externalContainerInfo;
@@ -40,7 +41,7 @@ public class MesosSlaveInfo {
   public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
       String maxExecutors, String executorCpus, String executorMem,
       String remoteFSRoot, String idleTerminationMinutes,
-      String slaveAttributes, String jvmArgs,
+      String slaveAttributes, String jvmArgs, String jnlpArgs,
       ExternalContainerInfo externalContainerInfo, ContainerInfo containerInfo,
       List<URI> additionalURIs)
       throws NumberFormatException {
@@ -56,6 +57,7 @@ public class MesosSlaveInfo {
         : DEFAULT_LABEL_NAME;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
+    this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
     this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
@@ -115,6 +117,8 @@ public class MesosSlaveInfo {
   public String getJvmArgs() {
     return jvmArgs;
   }
+
+  public String getJnlpArgs() {return jnlpArgs; }
 
   public ExternalContainerInfo getExternalContainerInfo() {
     return externalContainerInfo;

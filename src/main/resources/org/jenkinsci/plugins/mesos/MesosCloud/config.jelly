@@ -55,8 +55,12 @@
                     <f:entry title="${%Mesos Offer Selection Attributes}">
                         <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>
                     </f:entry>
-                    <f:entry title="${%Additional Jenkins Slave Agent JVM arguments}" field="jvmArgs">
+                    <f:entry title="${%Additional Jenkins Slave JVM arguments}" field="jvmArgs">
                         <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Additional Jenkins Slave Agent JNLP arguments}" field="jnlpArgs">
+                        <f:textbox field="jnlpArgs" default="" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
                     <f:advanced>
