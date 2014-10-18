@@ -1,7 +1,7 @@
 Jenkins on Mesos
 ----------------
 
-The `mesos-jenkins` plugin allows Jenkins to dynamically launch Jenkins slaves on a
+The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins slaves on a
 Mesos cluster depending on the workload!
 
 Put simply, whenever the Jenkins `Build Queue` starts getting bigger, this plugin
