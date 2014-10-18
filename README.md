@@ -134,4 +134,4 @@ using anonymous access. If Jenkins master needs authentication for a JNLP slave 
 Thats it!
 
 
-_Please email user@mesos.apache.org with questions!_
+_Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list for discussions/questions!_
