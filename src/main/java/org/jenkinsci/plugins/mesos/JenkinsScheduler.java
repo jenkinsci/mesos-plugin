@@ -372,7 +372,10 @@ public class JenkinsScheduler implements Scheduler {
       switch(containerType) {
         case DOCKER:
           LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
-          containerInfoBuilder.setDocker(DockerInfo.newBuilder().setImage(containerInfo.getDockerImage()));
+          containerInfoBuilder.setDocker(DockerInfo.newBuilder()
+                  .setImage(containerInfo.getDockerImage())
+                  .setPrivileged(containerInfo.getDockerPrivilegedMode())
+          );
           break;
         default:
           LOGGER.warning("Unknown container type:" + containerInfo.getType());

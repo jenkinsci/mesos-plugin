@@ -382,7 +382,8 @@ public class MesosCloud extends Cloud {
 
               containerInfo = new MesosSlaveInfo.ContainerInfo(
                   containerInfoJson.getString("type"),
-                  containerInfoJson.getString("dockerImage"), volumes);
+                  containerInfoJson.getString("dockerImage"), volumes,
+                  containerInfoJson.getBoolean("dockerPrivilegedMode"));
             }
 
             List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
