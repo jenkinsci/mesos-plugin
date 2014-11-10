@@ -52,12 +52,12 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
-  private static final String DEFAULT_FRAMEWORK_NAME = "Jenkins Framework";
-
   private String nativeLibraryPath;
   private String master;
   private String description;
   private String frameworkName;
+  private String principal;
+  private String secret;
   private final boolean checkpoint; // Set true to enable checkpointing. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
 
@@ -109,16 +109,24 @@ public class MesosCloud extends Cloud {
   }
 
   @DataBoundConstructor
-  public MesosCloud(String nativeLibraryPath, String master,
-      String description, String frameworkName,
+  public MesosCloud(
+      String nativeLibraryPath,
+      String master,
+      String description,
+      String frameworkName,
+      String principal,
+      String secret,
       List<MesosSlaveInfo> slaveInfos,
-      boolean checkpoint, boolean onDemandRegistration) throws NumberFormatException {
+      boolean checkpoint,
+      boolean onDemandRegistration) throws NumberFormatException {
     super("MesosCloud");
 
     this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
     this.description = description;
-    this.frameworkName = StringUtils.isNotBlank(frameworkName) ? frameworkName : DEFAULT_FRAMEWORK_NAME;
+    this.frameworkName = frameworkName;
+    this.principal = principal;
+    this.secret = secret;
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
@@ -270,6 +278,22 @@ public class MesosCloud extends Cloud {
     this.frameworkName = frameworkName;
   }
 
+  public String getPrincipal() {
+        return principal;
+    }
+
+  public void setPrincipal(String principal) {
+        this.principal = principal;
+    }
+
+  public String getSecret() {
+        return secret;
+    }
+
+  public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
   public boolean isOnDemandRegistration() {
     return onDemandRegistration;
   }
@@ -328,6 +352,8 @@ public class MesosCloud extends Cloud {
     private String master;
     private String description;
     private String frameworkName;
+    private String principal;
+    private String secret;
     private String slaveAttributes;
     private boolean checkpoint;
     private List<MesosSlaveInfo> slaveInfos;
@@ -345,6 +371,8 @@ public class MesosCloud extends Cloud {
       master = object.getString("master");
       description = object.getString("description");
       frameworkName = object.getString("frameworkName");
+      principal = object.getString("principal");
+      secret = object.getString("secret");
       slaveAttributes = object.getString("slaveAttributes");
       checkpoint = object.getBoolean("checkpoint");
       slaveInfos = new ArrayList<MesosSlaveInfo>();
@@ -398,14 +426,18 @@ public class MesosCloud extends Cloud {
               }
             }
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
-                object.getString("labelString"), object.getString("slaveCpus"),
-                object.getString("slaveMem"), object.getString("maxExecutors"),
+                object.getString("labelString"),
+                object.getString("slaveCpus"),
+                object.getString("slaveMem"),
+                object.getString("maxExecutors"),
                 object.getString("executorCpus"),
                 object.getString("executorMem"),
                 object.getString("remoteFSRoot"),
                 object.getString("idleTerminationMinutes"),
                 object.getString("slaveAttributes"),
-                object.getString("jvmArgs"), externalContainerInfo,
+                object.getString("jvmArgs"),
+                object.getString("jnlpArgs"),
+                externalContainerInfo,
                 containerInfo,
                 additionalURIs);
             slaveInfos.add(slaveInfo);

@@ -25,6 +25,7 @@ public class MesosSlaveInfo {
   private final String remoteFSRoot;
   private final int idleTerminationMinutes;
   private final String jvmArgs;
+  private final String jnlpArgs;
   // Slave attributes JSON representation.
   private final JSONObject slaveAttributes;
   private final ExternalContainerInfo externalContainerInfo;
@@ -37,11 +38,20 @@ public class MesosSlaveInfo {
       .getName());
 
   @DataBoundConstructor
-  public MesosSlaveInfo(String labelString, String slaveCpus, String slaveMem,
-      String maxExecutors, String executorCpus, String executorMem,
-      String remoteFSRoot, String idleTerminationMinutes,
-      String slaveAttributes, String jvmArgs,
-      ExternalContainerInfo externalContainerInfo, ContainerInfo containerInfo,
+  public MesosSlaveInfo(
+      String labelString,
+      String slaveCpus,
+      String slaveMem,
+      String maxExecutors,
+      String executorCpus,
+      String executorMem,
+      String remoteFSRoot,
+      String idleTerminationMinutes,
+      String slaveAttributes,
+      String jvmArgs,
+      String jnlpArgs,
+      ExternalContainerInfo externalContainerInfo,
+      ContainerInfo containerInfo,
       List<URI> additionalURIs)
       throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
@@ -56,18 +66,20 @@ public class MesosSlaveInfo {
         : DEFAULT_LABEL_NAME;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
+    this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
     this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
-    try {
-      jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
-    } catch (JSONException e) {
-      LOGGER
-          .warning("Ignoring Mesos slave attributes JSON due to parsing error : "
-              + slaveAttributes);
+    if (StringUtils.isNotBlank(slaveAttributes)) {
+        try {
+            jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
+        } catch (JSONException e) {
+            LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : "
+                           + slaveAttributes);
+        }
     }
     this.slaveAttributes = jsonObject;
   }
@@ -115,6 +127,8 @@ public class MesosSlaveInfo {
   public String getJvmArgs() {
     return jvmArgs;
   }
+
+  public String getJnlpArgs() {return jnlpArgs; }
 
   public ExternalContainerInfo getExternalContainerInfo() {
     return externalContainerInfo;

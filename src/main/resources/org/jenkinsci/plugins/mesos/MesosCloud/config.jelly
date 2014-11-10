@@ -12,10 +12,31 @@
     </f:entry>
 
     <f:entry title="${%Framework Name}">
-        <f:textbox field="frameworkName" default="Jenkins Scheduler" />
+        <f:textbox field="frameworkName" default="Jenkins Scheduler" clazz="required"/>
+    </f:entry>
+
+    <f:entry title="${%Framework Principal}" field="principal">
+      <f:textbox field="principal" default="jenkins" />
+    </f:entry>
+
+    <f:entry title="${%Framework Secret}" field="secret" description="${%Specify secret to enable framework authentication}">
+      <f:textbox field="secret"/>
     </f:entry>
 
     <f:advanced>
+        <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}">
+            <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
+            <st:nbsp/>${%Yes}
+            <f:radio name="checkpoint" value="false" checked="${instance.checkpoint == false}" id="checkpoint.false"/>
+            <st:nbsp/>${%No}
+        </f:entry>
+
+        <f:entry title="${%On-demand framework registration}" description="${%Enable to make this cloud register as a framework when builds need to be performed. And, disconnect otherwise.}">
+            <f:radio name="onDemandRegistration" value="true" checked="${instance.onDemandRegistration == true}" id="onDemandRegistration.true"/>
+                <st:nbsp/>${%Yes}
+                    <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
+                <st:nbsp/>${%No}
+        </f:entry>
         <f:entry>
             <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
                 <table width="100%">
@@ -55,8 +76,12 @@
                     <f:entry title="${%Mesos Offer Selection Attributes}">
                         <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>
                     </f:entry>
-                    <f:entry title="${%Additional Jenkins Slave Agent JVM arguments}" field="jvmArgs">
+                    <f:entry title="${%Additional Jenkins Slave JVM arguments}" field="jvmArgs">
                         <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Additional Jenkins Slave Agent JNLP arguments}" field="jnlpArgs">
+                        <f:textbox field="jnlpArgs" default="" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
                     <f:advanced>
@@ -147,20 +172,6 @@
                 </table>
              </f:repeatable>
        </f:entry>
-
-        <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}">
-            <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
-            <st:nbsp/>${%Yes}
-            <f:radio name="checkpoint" value="false" checked="${instance.checkpoint == false}" id="checkpoint.false"/>
-            <st:nbsp/>${%No}
-        </f:entry>
-        
-        <f:entry title="${%On-demand framework registration}" description="${%Enable to make this cloud register as a framework when builds need to be performed. And, disconnect otherwise.}">
-            <f:radio name="onDemandRegistration" value="true" checked="${instance.onDemandRegistration == true}" id="onDemandRegistration.true"/>
-            <st:nbsp/>${%Yes}
-            <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
-            <st:nbsp/>${%No}
-        </f:entry>
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>

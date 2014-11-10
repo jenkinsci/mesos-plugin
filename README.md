@@ -1,7 +1,7 @@
 Jenkins on Mesos
 ----------------
 
-The `mesos-jenkins` plugin allows Jenkins to dynamically launch Jenkins slaves on a
+The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins slaves on a
 Mesos cluster depending on the workload!
 
 Put simply, whenever the Jenkins `Build Queue` starts getting bigger, this plugin
@@ -97,6 +97,15 @@ and light weight jobs can be assigned label 'light_weight_slave'(which has  'Sla
 Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
 Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
 
+### Mesos authentication ###
+
+By default the plugin (a Mesos framework) registers with Mesos master without authentication. To enable authentication:
+
+  1. Set the `Framework principal` and `Framework Secret` fieds in the plugin configuration page.
+
+  2. Ensure the same credentials (`principal` and `secret`) are setup on the Mesos master via `"--credentials"` command line flag (See `./mesos-master.sh --help` for details).
+
+
 ### Checkpointing ###
 
 Checkpointing can now be enabled by setting the "Checkpointing" option to yes in the cloud config. This will allow the Jenkins
@@ -120,9 +129,9 @@ By default, the Jenkins slaves are run in the default Mesos container. To run th
 ### Jenkins master authentication ###
 
 By default the Jenkins slaves launched by Mesos connect back to Jenkins master
-using anonymous access. If Jenkins master needs authentication to connect to it, the authentication credentials (e.g., "--jnlpCredentials") can be provided via the "Additional Jenkins Slave Agent JVM arguments" option.
+using anonymous access. If Jenkins master needs authentication for a JNLP slave agent to connect to it, the authentication credentials (e.g., "--jnlpCredentials") can be provided via the "Additional Jenkins Slave Agent JNLP arguments" option.
 
 Thats it!
 
 
-_Please email user@mesos.apache.org with questions!_
+_Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list for discussions/questions!_
