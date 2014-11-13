@@ -428,7 +428,8 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState());
+    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState() +
+                (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
       // The task might not be present in the 'results' map if this is a duplicate terminal
