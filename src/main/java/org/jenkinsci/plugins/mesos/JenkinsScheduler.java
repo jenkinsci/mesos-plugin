@@ -107,7 +107,6 @@ public class JenkinsScheduler implements Scheduler {
           .build();
 
         LOGGER.info("Initializing the Mesos driver with options"
-        + "\n" + "User: " + framework.getUser()
         + "\n" + "Framework Name: " + framework.getName()
         + "\n" + "Principal: " + framework.getPrincipal()
         + "\n" + "Checkpointing: " + framework.getCheckpoint()
@@ -432,7 +431,10 @@ public class JenkinsScheduler implements Scheduler {
     LOGGER.info("Status update: task " + taskId + " is in state " + status.getState());
 
     if (!results.containsKey(taskId)) {
-      throw new IllegalStateException("Unknown taskId: " + taskId);
+      // The task might not be present in the 'results' map if this is a duplicate terminal
+      // update.
+      LOGGER.info("Ignoring status update " + status.getState() + " for unknown task " + taskId);
+      return;
     }
 
     Result result = results.get(taskId);

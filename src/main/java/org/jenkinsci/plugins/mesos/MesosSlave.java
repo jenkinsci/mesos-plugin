@@ -56,7 +56,7 @@ public class MesosSlave extends Slave {
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
 
-    LOGGER.info("Constructing Mesos slave");
+    LOGGER.info("Constructing Mesos slave " + name);
   }
 
   public double getCpus() {
