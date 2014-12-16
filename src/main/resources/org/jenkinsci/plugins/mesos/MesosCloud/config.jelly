@@ -107,8 +107,8 @@
                                                 <f:textbox field="hostPath" default="" value="${volume.hostPath}" />
                                             </f:entry>
 
-                                            <f:entry title="${%Read-Only}">
-                                                <f:checkbox field="readOnly" default="false" value="${volume.readOnly}" />
+                                            <f:entry title="${%Read-Only}" field="volume.readOnly">
+                                                <f:checkbox default="false" checked="${volume.readOnly}" />
                                             </f:entry>
 
                                             <f:entry>
@@ -141,12 +141,12 @@
                                             <f:textbox field="value" clazz="required" default="" value="${uri.value}" />
                                         </f:entry>
 
-                                        <f:entry title="${%URI file should be executable}">
-                                            <f:checkbox field="executable" default="false" value="${uri.executable}" />
+                                        <f:entry title="${%URI file should be executable}" field="uri.executable">
+                                            <f:checkbox default="false" checked="${uri.executable}" />
                                         </f:entry>
 
-                                        <f:entry title="${%Extract the URI}">
-                                            <f:checkbox field="extract" default="true" value="${uri.extract}" />
+                                        <f:entry title="${%Extract the URI}" field="uri.extract">
+                                            <f:checkbox default="true" checked="${uri.extract}" />
                                         </f:entry>
 
                                         <f:entry>
