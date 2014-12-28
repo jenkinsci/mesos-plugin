@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -36,7 +35,6 @@ import net.sf.json.JSONObject;
 import com.google.protobuf.ByteString;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
@@ -50,6 +48,7 @@ import org.apache.mesos.Protos.FrameworkInfo;
 import org.apache.mesos.Protos.MasterInfo;
 import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.OfferID;
+import org.apache.mesos.Protos.Parameter;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.SlaveID;
 import org.apache.mesos.Protos.Status;
@@ -395,7 +394,14 @@ public class JenkinsScheduler implements Scheduler {
       switch(containerType) {
         case DOCKER:
           LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
-          containerInfoBuilder.setDocker(DockerInfo.newBuilder().setImage(containerInfo.getDockerImage()));
+          DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder();
+          if (containerInfo.getParameters() != null) {
+            for (MesosSlaveInfo.Parameter parameter : containerInfo.getParameters()) {
+              LOGGER.info("Adding Docker parameter '" + parameter.getKey() + ":" + parameter.getValue() + "'");
+              dockerInfoBuilder.addParameters(Parameter.newBuilder().setKey(parameter.getKey()).setValue(parameter.getValue()).build());
+            }
+          }
+          containerInfoBuilder.setDocker(dockerInfoBuilder.setImage(containerInfo.getDockerImage()));
           break;
         default:
           LOGGER.warning("Unknown container type:" + containerInfo.getType());

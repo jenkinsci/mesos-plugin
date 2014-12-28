@@ -10,7 +10,6 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.Protos.ContainerInfo;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlaveInfo {
@@ -180,13 +179,15 @@ public class MesosSlaveInfo {
     private final String type;
     private final String dockerImage;
     private final List<Volume> volumes;
+    private final List<Parameter> parameters;
 
     @DataBoundConstructor
-    public ContainerInfo(String type, String dockerImage, List<Volume> volumes)
+    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, List<Parameter> parameters)
       throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
       this.volumes = volumes;
+      this.parameters = parameters;
     }
 
     public String getType() {
@@ -199,6 +200,29 @@ public class MesosSlaveInfo {
 
     public List<Volume> getVolumes() {
       return volumes;
+    }
+    
+    public List<Parameter> getParameters() {
+      return parameters;
+    }
+  }
+  
+  public static class Parameter {
+    private final String key;
+    private final String value;
+      
+    @DataBoundConstructor
+    public Parameter(String key, String value) {
+      this.key = key;
+      this.value = value;
+    }
+    
+    public String getKey() {
+      return key;
+    }
+    
+    public String getValue() {
+      return value;
     }
   }
 
