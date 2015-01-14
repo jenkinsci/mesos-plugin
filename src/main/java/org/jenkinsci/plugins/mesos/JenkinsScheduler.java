@@ -102,9 +102,10 @@ public class JenkinsScheduler implements Scheduler {
     new Thread(new Runnable() {
       @Override
       public void run() {
+        String targetUser = mesosCloud.getSlavesUser();
         // Have Mesos fill in the current user.
         FrameworkInfo framework = FrameworkInfo.newBuilder()
-          .setUser("")
+          .setUser(targetUser == null ? "" : targetUser)
           .setName(mesosCloud.getFrameworkName())
           .setPrincipal(mesosCloud.getPrincipal())
           .setCheckpoint(mesosCloud.isCheckpoint())
