@@ -15,6 +15,10 @@
         <f:textbox field="frameworkName" default="Jenkins Scheduler" clazz="required"/>
     </f:entry>
 
+    <f:entry title="${%Slave username}">
+        <f:textbox field="slavesUser" default=""/>
+    </f:entry>
+
     <f:entry title="${%Framework Principal}" field="principal">
       <f:textbox field="principal" default="jenkins" />
     </f:entry>

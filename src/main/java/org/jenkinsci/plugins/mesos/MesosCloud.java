@@ -56,6 +56,7 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
+  private String slavesUser;
   private String principal;
   private String secret;
   private final boolean checkpoint; // Set true to enable checkpointing. False by default.
@@ -278,6 +279,14 @@ public class MesosCloud extends Cloud {
     this.frameworkName = frameworkName;
   }
 
+  public String getSlavesUser() {
+    return slavesUser;
+  }
+
+  public void setSlavesUser(String slavesUser) {
+    this.slavesUser = slavesUser;
+  }
+
   public String getPrincipal() {
         return principal;
     }
@@ -352,6 +361,7 @@ public class MesosCloud extends Cloud {
     private String master;
     private String description;
     private String frameworkName;
+    private String slavesUser;
     private String principal;
     private String secret;
     private String slaveAttributes;
@@ -375,6 +385,7 @@ public class MesosCloud extends Cloud {
       secret = object.getString("secret");
       slaveAttributes = object.getString("slaveAttributes");
       checkpoint = object.getBoolean("checkpoint");
+      slavesUser = object.getString("slavesUser");
       slaveInfos = new ArrayList<MesosSlaveInfo>();
       JSONArray labels = object.getJSONArray("slaveInfos");
       if (labels != null) {
