@@ -123,7 +123,7 @@
                             </f:entry>
                             
                             <f:entry title="${%Parameters}" field="parameters">
-                                <f:repeatable add="${%Parameter}" var="parameter" name="parameters" items="${slaveInfo.containerInfo.parameters}" noAddButton="false" minimum="0">
+                                <f:repeatable add="${%Add Parameter}" var="parameter" name="parameters" items="${slaveInfo.containerInfo.parameters}" noAddButton="false" minimum="0">
                                     <fieldset>
                                         <table width="100%">
                                             <f:entry title="${%Parameter Key}">
