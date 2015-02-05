@@ -178,7 +178,7 @@ public class MesosCloud extends Cloud {
     final MesosSlaveInfo slaveInfo = getSlaveInfo(slaveInfos, label);
 
     try {
-      while (excessWorkload > 0) {
+      while (excessWorkload > 0 && !Jenkins.getInstance().isQuietingDown()) {
         // Start the scheduler if it's not already running.
         if (onDemandRegistration) {
           JenkinsScheduler.SUPERVISOR_LOCK.lock();
