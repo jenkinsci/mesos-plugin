@@ -220,7 +220,7 @@ public class JenkinsScheduler implements Scheduler {
 
   @Override
   public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
-    LOGGER.info("Received offers " + offers.size());
+    LOGGER.fine("Received offers " + offers.size());
     for (Offer offer : offers) {
       boolean matched = false;
       for (Request request : requests) {
@@ -257,16 +257,16 @@ public class JenkinsScheduler implements Scheduler {
           LOGGER.severe("Mem resource was not a scalar: " + resource.getType().toString());
         }
       } else if (resource.getName().equals("disk")) {
-        LOGGER.warning("Ignoring disk resources from offer");
+        LOGGER.fine("Ignoring disk resources from offer");
       } else if (resource.getName().equals("ports")) {
-        LOGGER.info("Ignoring ports resources from offer");
+        LOGGER.fine("Ignoring ports resources from offer");
       } else {
         LOGGER.warning("Ignoring unknown resource type: " + resource.getName());
       }
     }
 
-    if (cpus < 0) LOGGER.severe("No cpus resource present");
-    if (mem < 0)  LOGGER.severe("No mem resource present");
+    if (cpus < 0) LOGGER.fine("No cpus resource present");
+    if (mem < 0)  LOGGER.fine("No mem resource present");
 
     // Check for sufficient cpu and memory resources in the offer.
     double requestedCpus = request.request.cpus;
