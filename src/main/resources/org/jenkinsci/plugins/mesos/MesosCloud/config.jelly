@@ -96,6 +96,9 @@
                                     <f:entry title="${%Docker Image}" field="dockerImage" description="If using Docker, specify the docker image.">
                                         <f:textbox field="dockerImage" clazz="required" value="${slaveInfo.containerInfo.dockerImage}" default=""/>
                                     </f:entry>
+                                    <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
+                                        <f:checkbox field="dockerPrivilegedMode" value="${slaveInfo.containerInfo.dockerPrivilegedMode}" checked="false" />
+                                    </f:entry>
                                 </f:radioBlock>
                             </f:entry>
 

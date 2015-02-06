@@ -180,13 +180,15 @@ public class MesosSlaveInfo {
     private final String type;
     private final String dockerImage;
     private final List<Volume> volumes;
+    private final Boolean dockerPrivilegedMode;
 
     @DataBoundConstructor
-    public ContainerInfo(String type, String dockerImage, List<Volume> volumes)
+    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, Boolean dockerPrivilegedMode)
       throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
       this.volumes = volumes;
+      this.dockerPrivilegedMode = dockerPrivilegedMode;
     }
 
     public String getType() {
@@ -200,6 +202,8 @@ public class MesosSlaveInfo {
     public List<Volume> getVolumes() {
       return volumes;
     }
+
+    public Boolean getDockerPrivilegedMode() { return dockerPrivilegedMode; }
   }
 
   public static class Volume {
