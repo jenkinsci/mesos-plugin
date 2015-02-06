@@ -41,6 +41,13 @@
       <email>vinodkone@gmail.com</email>
     </developer>
   </developers>
+  
+  <contributors>
+    <contributor>
+      <name>Daniel Barker</name>
+      <email>barkerd@dbdevs.com</email>
+    </contributor>
+  </contributors>
 
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
   <repositories>
@@ -73,7 +80,7 @@
       <dependency>
           <groupId>org.apache.mesos</groupId>
           <artifactId>mesos</artifactId>
-          <version>0.20.0</version>
+          <version>0.21.0</version>
       </dependency>
       <dependency>
           <groupId>com.google.protobuf</groupId>

@@ -125,6 +125,16 @@ By default, the Jenkins slaves are run in the default Mesos container. To run th
 	1) "Use Native Docker Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=docker" (recommended).
 
 	2) "Use External Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=external".
+	
+### Docker Configuration ###
+
+#### Volumes ####
+
+At a minimum, a container path must be entered to mount the volume. A host path can also be specified to bind mount the container path to the host path. This will allow persistence of data between slaves on the same node. The default setting is read-write, but an option is provided for read-only use.
+
+#### Parameters ####
+
+Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos slaves is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos slave where the Jenkins slave will run. This shouldn't cause problems in a homogenous environment where Jenkins slaves only run on particular Mesos slaves.
 
 ### Jenkins master authentication ###
 

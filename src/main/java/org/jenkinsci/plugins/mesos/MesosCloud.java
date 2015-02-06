@@ -46,6 +46,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
+import org.apache.mesos.Protos.Parameter;
 import org.jenkinsci.plugins.mesos.MesosSlaveInfo.URI;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -420,10 +421,20 @@ public class MesosCloud extends Cloud {
                           .getBoolean("readOnly")));
                 }
               }
+              
+              List<MesosSlaveInfo.Parameter> parameters = new ArrayList<MesosSlaveInfo.Parameter>();
+              
+              if (containerInfoJson.has("parameters")) {
+                JSONArray parametersJson = containerInfoJson.getJSONArray("parameters");
+                for (Object obj : parametersJson) {
+                  JSONObject parameterJson = (JSONObject) obj;
+                  parameters.add(new MesosSlaveInfo.Parameter(parameterJson.getString("key"), parameterJson.getString("value")));
+                }
+              }
 
               containerInfo = new MesosSlaveInfo.ContainerInfo(
                   containerInfoJson.getString("type"),
-                  containerInfoJson.getString("dockerImage"), volumes);
+                  containerInfoJson.getString("dockerImage"), volumes, parameters);
             }
 
             List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
