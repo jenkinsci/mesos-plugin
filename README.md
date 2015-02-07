@@ -62,7 +62,7 @@ This should build the Mesos native library in the `build/src/.libs` folder.
 
 ### Vagrant ###
 
-If you are just looking to play with Mesos and this plugin in a VM, you could do so with the included Vagrantfile.
+If you are just looking to play with Mesos and this plugin in a single self contained VM, you could do so with the included Vagrantfile.
 
 		$ vagrant up
 		$ vagrant ssh
@@ -101,7 +101,7 @@ Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"j
 
 By default the plugin (a Mesos framework) registers with Mesos master without authentication. To enable authentication:
 
-  1. Set the `Framework principal` and `Framework Secret` fieds in the plugin configuration page.
+  1. Set the `Framework principal` and `Framework Secret` fields in the plugin configuration page.
 
   2. Ensure the same credentials (`principal` and `secret`) are setup on the Mesos master via `"--credentials"` command line flag (See `./mesos-master.sh --help` for details).
 

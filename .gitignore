@@ -5,6 +5,14 @@
 target/
 work/
 
+# Exclude IntelliJ files
+.idea/
+*.iml
+*.ipr
+
+# Exclude Vagrant generated files
+.vagrant/
+
 # Used as a local build/deploy dev-cycle script
 deploy.sh
 

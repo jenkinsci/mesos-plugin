@@ -8,18 +8,21 @@ $script = <<SCRIPT
 
  # Install prerequisites for mesos.
  echo "Installing prerequisite packages for mesos..."
+
  apt-get -y update
  apt-get -y install openjdk-6-jdk
  apt-get -y install libcurl3
  apt-get -y install zookeeperd
+ apt-get -y install libapr1-dev
+ apt-get -y install libsvn-dev
 
  # Download mesos.
- MESOS_VERSION="0.15.0"
+ MESOS_VERSION="0.21.1-1.0"
  echo "Downloading mesos ${MESOS_VERSION}..."
- wget http://downloads.mesosphere.io/master/ubuntu/12.10/mesos_${MESOS_VERSION}_amd64.deb
+ wget http://downloads.mesosphere.io/master/ubuntu/12.04/mesos_${MESOS_VERSION}.ubuntu1204_amd64.deb
 
  echo "Installing mesos..."
- dpkg --install mesos_${MESOS_VERSION}_amd64.deb
+ dpkg --install mesos_${MESOS_VERSION}.ubuntu1204_amd64.deb
  echo "Done"
 
  # Symlink /usr/lib/libjvm.so for mesos.
@@ -34,19 +37,28 @@ $script = <<SCRIPT
  echo "Installing prerequisite packages for mesos-jenkins plugin..."
  apt-get -y install maven
 
- # Download mesos-jenkins plugin.
- MESOS_PLUGIN_VERSION="0.1.1"
- echo "Downloading mesos-jenkins ${MESOS_JENKINS_VERSION}..."
- wget https://github.com/jenkinsci/mesos-plugin/archive/mesos-${MESOS_PLUGIN_VERSION}.tar.gz
- tar -zxf mesos-${MESOS_PLUGIN_VERSION}.tar.gz && rm -f mesos-${MESOS_PLUGIN_VERSION}.tar.gz
+ # Acquire latest code (either from local source on host, or latest release download) of mesos-jenkins plugin.
+ MESOS_PLUGIN_VERSION="local"
+ # MESOS_PLUGIN_VERSION="0.5.0" (0.5.0 is latest but not compatible with 0.6.0-SNAPSHOT changes, once
+ # release has been performed this should be updated to 0.6.0 and then all should work well again)
+
+ if [ $MESOS_PLUGIN_VERSION = "local" ]; then
+    mkdir -p mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
+    cp -r /vagrant/src mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}/src
+    cp -r /vagrant/pom.xml mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}/pom.xml
+    chown -R vagrant:vagrant mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
+ else
+   echo "Downloading mesos-jenkins ${MESOS_JENKINS_VERSION}..."
+   wget https://github.com/jenkinsci/mesos-plugin/archive/mesos-${MESOS_PLUGIN_VERSION}.tar.gz
+   tar -zxf mesos-${MESOS_PLUGIN_VERSION}.tar.gz && rm -f mesos-${MESOS_PLUGIN_VERSION}.tar.gz
+   chown -R vagrant:vagrant mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
+ fi
 
  # Build mesos-jenkins plugin.
- pushd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
  echo "Building mesos-jenkins plugin"
  # TODO(vinod): Update the mesos version in pom.xml.
- mvn package
+ su - vagrant -c "cd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION} && mvn package"
  echo "Done"
- popd
 
  echo "****************************************************************"
  echo "Successfully provisioned the machine."

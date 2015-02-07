@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.509.1</version><!-- which version of Jenkins is this plugin built against? -->
+    <version>1.565.3</version><!-- which version of Jenkins is this plugin built against? -->
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
@@ -41,7 +41,6 @@
       <email>vinodkone@gmail.com</email>
     </developer>
   </developers>
-  
   <contributors>
     <contributor>
       <name>Daniel Barker</name>
@@ -74,18 +73,20 @@
       tends to lag behind a bit
     -->
     <maven-hpi-plugin.version>1.95</maven-hpi-plugin.version>
+    <mesos.version>0.21.1</mesos.version>
+    <protobuf.version>2.5.0</protobuf.version>
   </properties>
 
   <dependencies>
       <dependency>
           <groupId>org.apache.mesos</groupId>
           <artifactId>mesos</artifactId>
-          <version>0.21.0</version>
+          <version>${mesos.version}</version>
       </dependency>
       <dependency>
           <groupId>com.google.protobuf</groupId>
           <artifactId>protobuf-java</artifactId>
-          <version>2.5.0</version>
+          <version>${protobuf.version}</version>
       </dependency>
   </dependencies>
 
