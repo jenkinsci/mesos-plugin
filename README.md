@@ -136,11 +136,6 @@ At a minimum, a container path must be entered to mount the volume. A host path 
 
 Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos slaves is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos slave where the Jenkins slave will run. This shouldn't cause problems in a homogenous environment where Jenkins slaves only run on particular Mesos slaves.
 
-### Jenkins master authentication ###
-
-By default the Jenkins slaves launched by Mesos connect back to Jenkins master
-using anonymous access. If Jenkins master needs authentication for a JNLP slave agent to connect to it, the authentication credentials (e.g., "--jnlpCredentials") can be provided via the "Additional Jenkins Slave Agent JNLP arguments" option.
-
 Thats it!
 
 
