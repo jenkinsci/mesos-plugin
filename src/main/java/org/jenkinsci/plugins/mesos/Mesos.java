@@ -59,7 +59,7 @@ public abstract class Mesos {
   }
 
   abstract public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud);
-  abstract public void updateScheduler(MesosCloud mesosCloud);
+  abstract public void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud);
   abstract public boolean isSchedulerRunning();
   abstract public void stopScheduler();
   abstract public Scheduler getScheduler();
@@ -129,8 +129,9 @@ public abstract class Mesos {
     }
 
     @Override
-    public synchronized void updateScheduler(MesosCloud mesosCloud) {
+    public synchronized void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
       scheduler.setMesosCloud(mesosCloud);
+      scheduler.setJenkinsMaster(jenkinsMaster);
     }
 
     private JenkinsScheduler scheduler;

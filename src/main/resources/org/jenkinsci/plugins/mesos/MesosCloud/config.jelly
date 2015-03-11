@@ -27,6 +27,10 @@
       <f:textbox field="secret"/>
     </f:entry>
 
+    <f:entry title="${%Jenkins URL }" field="jenkinsURL">
+      <f:textbox field="jenkinsURL"/>
+    </f:entry>
+
     <f:advanced>
         <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>

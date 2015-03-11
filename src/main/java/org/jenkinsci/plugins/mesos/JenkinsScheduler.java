@@ -76,7 +76,7 @@ public class JenkinsScheduler implements Scheduler {
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
   private volatile MesosSchedulerDriver driver;
-  private final String jenkinsMaster;
+  private String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
   private volatile boolean running;
 
@@ -609,5 +609,13 @@ public class JenkinsScheduler implements Scheduler {
     } finally {
       SUPERVISOR_LOCK.unlock();
     }
+  }
+
+  public String getJenkinsMaster() {
+    return jenkinsMaster;
+  }
+
+  public void setJenkinsMaster(String jenkinsMaster) {
+    this.jenkinsMaster = jenkinsMaster;
   }
 }
