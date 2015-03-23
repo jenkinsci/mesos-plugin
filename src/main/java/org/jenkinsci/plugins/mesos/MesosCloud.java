@@ -62,6 +62,7 @@ public class MesosCloud extends Cloud {
   private String secret;
   private final boolean checkpoint; // Set true to enable checkpointing. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
+  private String jenkinsURL;
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -121,7 +122,8 @@ public class MesosCloud extends Cloud {
       String secret,
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
-      boolean onDemandRegistration) throws NumberFormatException {
+      boolean onDemandRegistration,
+      String jenkinsURL) throws NumberFormatException {
     super("MesosCloud");
 
     this.nativeLibraryPath = nativeLibraryPath;
@@ -134,12 +136,14 @@ public class MesosCloud extends Cloud {
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
-
-    JenkinsScheduler.SUPERVISOR_LOCK.lock();
-    try {
-      restartMesos();
-    } finally {
-      JenkinsScheduler.SUPERVISOR_LOCK.unlock();
+    this.setJenkinsURL(jenkinsURL);
+    if(!onDemandRegistration) {
+	    JenkinsScheduler.SUPERVISOR_LOCK.lock();
+	    try {
+	      restartMesos();
+	    } finally {
+	      JenkinsScheduler.SUPERVISOR_LOCK.unlock();
+	    }
     }
   }
 
@@ -158,6 +162,14 @@ public class MesosCloud extends Cloud {
       nativeLibraryLoaded = true;
     }
 
+    // Default to root URL in Jenkins global configuration.
+    String jenkinsRootURL = Jenkins.getInstance().getRootUrl();
+
+    // If 'jenkinsURL' parameter is provided in mesos plugin configuration, then that should take precedence.
+    if(StringUtils.isNotBlank(jenkinsURL)) {
+      jenkinsRootURL = jenkinsURL;
+    }
+
     // Restart the scheduler if the master has changed or a scheduler is not up.
     if (!master.equals(staticMaster) || !Mesos.getInstance().isSchedulerRunning()) {
       if (!master.equals(staticMaster)) {
@@ -168,9 +180,9 @@ public class MesosCloud extends Cloud {
       }
 
       Mesos.getInstance().stopScheduler();
-      Mesos.getInstance().startScheduler(Jenkins.getInstance().getRootUrl(), this);
+      Mesos.getInstance().startScheduler(jenkinsRootURL, this);
     } else {
-      Mesos.getInstance().updateScheduler(this);
+      Mesos.getInstance().updateScheduler(jenkinsRootURL, this);
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
 
@@ -358,7 +370,15 @@ public class MesosCloud extends Cloud {
     return null;
   }
 
-  @Extension
+  public String getJenkinsURL() {
+	return jenkinsURL;
+}
+
+public void setJenkinsURL(String jenkinsURL) {
+	this.jenkinsURL = jenkinsURL;
+}
+
+@Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
     private String nativeLibraryPath;
     private String master;
@@ -369,6 +389,7 @@ public class MesosCloud extends Cloud {
     private String secret;
     private String slaveAttributes;
     private boolean checkpoint;
+    private String jenkinsURL;
     private List<MesosSlaveInfo> slaveInfos;
 
     @Override
@@ -388,6 +409,7 @@ public class MesosCloud extends Cloud {
       secret = object.getString("secret");
       slaveAttributes = object.getString("slaveAttributes");
       checkpoint = object.getBoolean("checkpoint");
+      jenkinsURL = object.getString("jenkinsURL");
       slavesUser = object.getString("slavesUser");
       slaveInfos = new ArrayList<MesosSlaveInfo>();
       JSONArray labels = object.getJSONArray("slaveInfos");

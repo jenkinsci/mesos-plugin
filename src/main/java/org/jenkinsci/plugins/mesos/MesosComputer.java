@@ -19,8 +19,15 @@ import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
+
+import jenkins.slaves.EncryptedSlaveAgentJnlpFile;
+
 import org.kohsuke.stapler.HttpRedirect;
 import org.kohsuke.stapler.HttpResponse;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.WebMethod;
 
 public class MesosComputer extends SlaveComputer {
   public MesosComputer(Slave slave) {
@@ -42,5 +49,11 @@ public class MesosComputer extends SlaveComputer {
     if (getNode() != null)
       getNode().terminate();
     return new HttpRedirect("..");
+  }
+
+  @Override
+  @WebMethod(name="slave-agent.jnlp")
+  public HttpResponse doSlaveAgentJnlp(StaplerRequest req, StaplerResponse res) throws IOException, ServletException {
+	  return new EncryptedSlaveAgentJnlpFile(this, "mesos-slave-agent.jnlp.jelly", getName(), CONNECT);
   }
 }
