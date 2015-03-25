@@ -46,8 +46,6 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
-import org.apache.mesos.Protos.Parameter;
-import org.jenkinsci.plugins.mesos.MesosSlaveInfo.URI;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -82,15 +80,15 @@ public class MesosCloud extends Cloud {
 
   @Initializer(after=InitMilestone.JOB_LOADED)
   public static void init() {
-    Hudson h = Hudson.getInstance();
-    List<Node> slaves = h.getNodes();
+    Jenkins jenkins = Jenkins.getInstance();
+    List<Node> slaves = jenkins.getNodes();
 
     // Turning the AUTOMATIC_SLAVE_LAUNCH flag off because the below slave removals
     // causes computer launch in other slaves that have not been removed yet.
     // To study how a slave removal updates the entire list, one can refer to
     // Hudson NodeProvisioner class and follow this method chain removeNode() ->
     // setNodes() -> updateComputerList() -> updateComputer().
-    h.AUTOMATIC_SLAVE_LAUNCH = false;
+    Jenkins.AUTOMATIC_SLAVE_LAUNCH = false;
     for (Node n : slaves) {
       //Remove all slaves that were persisted when Jenkins shutdown.
       if (n instanceof MesosSlave) {
@@ -99,9 +97,9 @@ public class MesosCloud extends Cloud {
     }
 
     // Turn it back on for future real slaves.
-    h.AUTOMATIC_SLAVE_LAUNCH = true;
+    Jenkins.AUTOMATIC_SLAVE_LAUNCH = true;
 
-    for (Cloud c : h.clouds) {
+    for (Cloud c : jenkins.clouds) {
       if( c instanceof MesosCloud) {
     	// Register mesos framework on init, if on demand registration is not enabled.
     	if (!((MesosCloud) c).isOnDemandRegistration()) {
@@ -171,7 +169,7 @@ public class MesosCloud extends Cloud {
     }
 
     // Restart the scheduler if the master has changed or a scheduler is not up.
-    if (!master.equals(staticMaster) || !Mesos.getInstance().isSchedulerRunning()) {
+    if (!master.equals(staticMaster) || !Mesos.getInstance(this).isSchedulerRunning()) {
       if (!master.equals(staticMaster)) {
         LOGGER.info("Mesos master changed, restarting the scheduler");
         staticMaster = master;
@@ -179,10 +177,10 @@ public class MesosCloud extends Cloud {
         LOGGER.info("Scheduler was down, restarting the scheduler");
       }
 
-      Mesos.getInstance().stopScheduler();
-      Mesos.getInstance().startScheduler(jenkinsRootURL, this);
+      Mesos.getInstance(this).stopScheduler();
+      Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
     } else {
-      Mesos.getInstance().updateScheduler(jenkinsRootURL, this);
+      Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
 
@@ -200,7 +198,7 @@ public class MesosCloud extends Cloud {
           JenkinsScheduler.SUPERVISOR_LOCK.lock();
           try {
             LOGGER.fine("Checking if scheduler is running");
-            if (!Mesos.getInstance().isSchedulerRunning()) {
+            if (!Mesos.getInstance(this).isSchedulerRunning()) {
               restartMesos();
             }
           } finally {
@@ -234,7 +232,7 @@ public class MesosCloud extends Cloud {
 
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
     String name = "mesos-jenkins-" + UUID.randomUUID().toString();
-    return new MesosSlave(name, numExecutors, slaveInfo);
+    return new MesosSlave(this, name, numExecutors, slaveInfo);
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
@@ -355,7 +353,7 @@ public class MesosCloud extends Cloud {
   /**
   * Retrieves the slaveattribute corresponding to label name.
   *
-  * @param Jenkins label name.
+  * @param labelName The Jenkins label name.
   * @return slaveattribute as a JSONObject.
   */
 

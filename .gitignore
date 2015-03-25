@@ -9,6 +9,7 @@ work/
 .idea/
 *.iml
 *.ipr
+*.iws
 
 # Exclude Vagrant generated files
 .vagrant/

@@ -87,10 +87,6 @@ public class MesosSlaveInfo {
     return labelString;
   }
 
-  public void setLabelString(String labelString) {
-    this.labelString = labelString;
-  }
-
   public double getExecutorCpus() {
     return executorCpus;
   }
@@ -150,7 +146,7 @@ public class MesosSlaveInfo {
    *
    * @param jvmArgs
    *          the string of JVM arguments.
-   * @returns The cleansed JVM argument string.
+   * @return The cleansed JVM argument string.
    */
   private String cleanseJvmArgs(final String jvmArgs) {
     return jvmArgs.replaceAll(JVM_ARGS_PATTERN, "");

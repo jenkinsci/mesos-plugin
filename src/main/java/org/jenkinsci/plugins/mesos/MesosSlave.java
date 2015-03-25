@@ -30,10 +30,9 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
-import org.kohsuke.stapler.DataBoundConstructor;
-
 public class MesosSlave extends Slave {
 
+  private final MesosCloud cloud;
   private final MesosSlaveInfo slaveInfo;
   private final double cpus;
   private final int mem;
@@ -41,22 +40,26 @@ public class MesosSlave extends Slave {
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
 
-  public MesosSlave(String name, int numExecutors, MesosSlaveInfo slaveInfo) throws IOException, FormException {
+  public MesosSlave(MesosCloud cloud, String name, int numExecutors, MesosSlaveInfo slaveInfo) throws IOException, FormException {
     super(name,
           slaveInfo.getLabelString(), // node description.
           StringUtils.isBlank(slaveInfo.getRemoteFSRoot()) ? "jenkins" : slaveInfo.getRemoteFSRoot().trim(),   // remoteFS.
           "" + numExecutors,
           Mode.NORMAL,
           slaveInfo.getLabelString(), // Label.
-          new MesosComputerLauncher(name),
+          new MesosComputerLauncher(cloud, name),
           new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),
           Collections.<NodeProperty<?>> emptyList());
-
+    this.cloud = cloud;
     this.slaveInfo = slaveInfo;
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
 
-    LOGGER.info("Constructing Mesos slave " + name);
+    LOGGER.info("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
+  }
+
+  public MesosCloud getCloud() {
+    return this.cloud;
   }
 
   public double getCpus() {
