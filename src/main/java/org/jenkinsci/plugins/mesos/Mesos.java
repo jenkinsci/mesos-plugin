@@ -16,8 +16,12 @@ package org.jenkinsci.plugins.mesos;
 
 import org.apache.mesos.Scheduler;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class Mesos {
-  private static MesosImpl mesos;
+  private static Map<MesosCloud, Mesos> clouds = new HashMap<MesosCloud, Mesos>();
 
   public static class JenkinsSlave {
     String name;
@@ -84,62 +88,17 @@ public abstract class Mesos {
   abstract public void stopJenkinsSlave(String name);
 
   /**
-   * @return the mesos implementation instance
+   * @return the mesos implementation instance for the cloud instances (since there might be more than one
    */
-  public static synchronized Mesos getInstance() {
-    if (mesos == null) {
-      mesos = new MesosImpl();
+  public static synchronized Mesos getInstance(MesosCloud key) {
+    if (!clouds.containsKey(key)) {
+      clouds.put(key, new MesosImpl());
     }
-    return mesos;
+    return clouds.get(key);
   }
 
-  public static class MesosImpl extends Mesos {
-    @Override
-    public synchronized void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
-      stopScheduler();
-      scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
-      scheduler.init();
-    }
-
-    @Override
-    public synchronized boolean isSchedulerRunning() {
-      return scheduler != null && scheduler.isRunning();
-    }
-
-    @Override
-    public synchronized void stopScheduler() {
-      if (scheduler != null) {
-        scheduler.stop();
-        scheduler = null;
-      }
-    }
-
-    @Override
-    public synchronized void startJenkinsSlave(SlaveRequest request, SlaveResult result) {
-      if (scheduler != null) {
-        scheduler.requestJenkinsSlave(request, result);
-      }
-    }
-
-    @Override
-    public synchronized void stopJenkinsSlave(String name) {
-      if (scheduler != null) {
-        scheduler.terminateJenkinsSlave(name);
-      }
-    }
-
-    @Override
-    public synchronized void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
-      scheduler.setMesosCloud(mesosCloud);
-      scheduler.setJenkinsMaster(jenkinsMaster);
-    }
-
-    private JenkinsScheduler scheduler;
-
-    @Override
-    public Scheduler getScheduler() {
-      return scheduler;
-    }
-
+  public static Collection<Mesos> getAllClouds() {
+    return clouds.values();
   }
+
 }

@@ -20,21 +20,22 @@ import hudson.slaves.SlaveComputer;
 
 import java.io.PrintStream;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
 public class MesosComputerLauncher extends ComputerLauncher {
 
+  private final MesosCloud cloud;
+
   enum State { INIT, RUNNING, FAILURE }
 
   private static final Logger LOGGER = Logger.getLogger(MesosComputerLauncher.class.getName());
 
-  public MesosComputerLauncher(String _name) {
+  public MesosComputerLauncher(MesosCloud cloud, String _name) {
     super();
     LOGGER.info("Constructing MesosComputerLauncher");
+    this.cloud = cloud;
     this.state = State.INIT;
     this.name = _name;
   }
@@ -55,7 +56,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
     PrintStream logger = listener.getLogger();
 
     // Get a handle to mesos.
-    Mesos mesos = Mesos.getInstance();
+    Mesos mesos = Mesos.getInstance(cloud);
 
     // If Jenkins scheduler is not running, terminate the node.
     // This might happen if the computer was offline when Jenkins was shutdown.
@@ -76,25 +77,21 @@ public class MesosComputerLauncher extends ComputerLauncher {
         cpus, mem, computer.getNode().getSlaveInfo());
 
     // Launch the jenkins slave.
-    final Lock lock = new ReentrantLock();
     final CountDownLatch latch = new CountDownLatch(1);
 
     logger.println("Starting mesos slave " + name);
     LOGGER.info("Sending a request to start jenkins slave " + name);
     mesos.startJenkinsSlave(request, new Mesos.SlaveResult() {
-      @Override
       public void running(JenkinsSlave slave) {
         state = State.RUNNING;
         latch.countDown();
       }
 
-      @Override
       public void finished(JenkinsSlave slave) {
         state = State.FAILURE;
         latch.countDown();
       }
 
-      @Override
       public void failed(JenkinsSlave slave) {
         state = State.FAILURE;
         latch.countDown();
@@ -117,7 +114,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
    */
   public void terminate() {
     // Get a handle to mesos.
-    Mesos mesos = Mesos.getInstance();
+    Mesos mesos = Mesos.getInstance(cloud);
 
     mesos.stopJenkinsSlave(name);
   }
