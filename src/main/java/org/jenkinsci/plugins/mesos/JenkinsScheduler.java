@@ -103,12 +103,15 @@ public class JenkinsScheduler implements Scheduler {
       @Override
       public void run() {
         String targetUser = mesosCloud.getSlavesUser();
+        String webUrl = Jenkins.getInstance().getRootUrl();
+        if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
         // Have Mesos fill in the current user.
         FrameworkInfo framework = FrameworkInfo.newBuilder()
           .setUser(targetUser == null ? "" : targetUser)
           .setName(mesosCloud.getFrameworkName())
           .setPrincipal(mesosCloud.getPrincipal())
           .setCheckpoint(mesosCloud.isCheckpoint())
+          .setWebuiUrl(webUrl != null ? webUrl :  "")
           .build();
 
         LOGGER.info("Initializing the Mesos driver with options"
