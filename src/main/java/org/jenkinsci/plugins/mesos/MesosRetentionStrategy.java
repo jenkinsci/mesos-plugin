@@ -16,6 +16,7 @@ package org.jenkinsci.plugins.mesos;
 
 import static hudson.util.TimeUnit2.MINUTES;
 
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -35,6 +36,7 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
    * terminated.
    */
   public final int idleTerminationMinutes;
+  private ReentrantLock checkLock = new ReentrantLock(false);
 
   private static final Logger LOGGER = Logger
       .getLogger(MesosRetentionStrategy.class.getName());
@@ -43,8 +45,21 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
     this.idleTerminationMinutes = idleTerminationMinutes;
   }
 
+
   @Override
-  public synchronized long check(MesosComputer c) {
+  public long check(MesosComputer c) {
+    if (!checkLock.tryLock()) {
+      return 1;
+    } else {
+      try {
+        return checkInternal(c);
+      } finally {
+        checkLock.unlock();
+      }
+    }
+  }
+
+  private long checkInternal(MesosComputer c) {
     if (c.getNode() == null) {
       return 1;
     }

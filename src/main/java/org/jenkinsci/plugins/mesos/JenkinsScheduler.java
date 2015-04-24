@@ -211,6 +211,9 @@ public class JenkinsScheduler implements Scheduler {
            if(request.request.slave.name.equals(name)) {
              LOGGER.info("Removing enqueued mesos task " + name);
              requests.remove(request);
+             // Also signal the Thread of the MesosComputerLauncher.launch() to exit from latch.await()
+             // Otherwise the Thread will stay in WAIT forever -> Leak!
+             request.result.failed(request.request.slave);
              return;
            }
         }
