@@ -46,6 +46,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -101,10 +102,10 @@ public class MesosCloud extends Cloud {
 
     for (Cloud c : jenkins.clouds) {
       if( c instanceof MesosCloud) {
-    	// Register mesos framework on init, if on demand registration is not enabled.
-    	if (!((MesosCloud) c).isOnDemandRegistration()) {
+        // Register mesos framework on init, if on demand registration is not enabled.
+        if (!((MesosCloud) c).isOnDemandRegistration()) {
           ((MesosCloud)c).restartMesos();
-    	}
+        }
       }
     }
   }
@@ -441,9 +442,9 @@ public void setJenkinsURL(String jenkinsURL) {
                           .getBoolean("readOnly")));
                 }
               }
-              
+
               List<MesosSlaveInfo.Parameter> parameters = new ArrayList<MesosSlaveInfo.Parameter>();
-              
+
               if (containerInfoJson.has("parameters")) {
                 JSONArray parametersJson = containerInfoJson.getJSONArray("parameters");
                 for (Object obj : parametersJson) {
@@ -452,9 +453,24 @@ public void setJenkinsURL(String jenkinsURL) {
                 }
               }
 
+              List<MesosSlaveInfo.PortMapping> portMappings = new ArrayList<MesosSlaveInfo.PortMapping>();
+
+              final String networking = containerInfoJson.getString("networking");
+              if (Network.BRIDGE.equals(Network.valueOf(networking)) && containerInfoJson.has("portMappings")) {
+                JSONArray portMappingsJson = containerInfoJson
+                    .getJSONArray("portMappings");
+                for (Object obj : portMappingsJson) {
+                  JSONObject portMappingJson = (JSONObject) obj;
+                  portMappings.add(new MesosSlaveInfo.PortMapping(
+                          portMappingJson.getInt("containerPort"),
+                          portMappingJson.getInt("hostPort"),
+                          portMappingJson.getString("protocol")));
+                }
+              }
+
               containerInfo = new MesosSlaveInfo.ContainerInfo(
                   containerInfoJson.getString("type"),
-                  containerInfoJson.getString("dockerImage"), volumes, parameters);
+                  containerInfoJson.getString("dockerImage"), volumes, parameters, networking, portMappings);
             }
 
             List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
