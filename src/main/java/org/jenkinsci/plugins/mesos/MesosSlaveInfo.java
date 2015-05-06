@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.model.Descriptor.FormException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -10,6 +11,7 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlaveInfo {
@@ -123,7 +125,9 @@ public class MesosSlaveInfo {
     return jvmArgs;
   }
 
-  public String getJnlpArgs() {return jnlpArgs; }
+  public String getJnlpArgs() {
+    return jnlpArgs;
+  }
 
   public ExternalContainerInfo getExternalContainerInfo() {
     return externalContainerInfo;
@@ -176,14 +180,28 @@ public class MesosSlaveInfo {
     private final String dockerImage;
     private final List<Volume> volumes;
     private final List<Parameter> parameters;
+    private final String networking;
+    private final List<PortMapping> portMappings;
 
     @DataBoundConstructor
-    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, List<Parameter> parameters)
+    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, List<Parameter> parameters, String networking, List<PortMapping> portMappings)
       throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
       this.volumes = volumes;
       this.parameters = parameters;
+
+      if (networking == null) {
+          this.networking = Network.BRIDGE.toString();
+      } else {
+          this.networking = networking;
+      }
+
+      if (Network.HOST.equals(Network.valueOf(networking))) {
+          this.portMappings = Collections.emptyList();
+      } else {
+          this.portMappings = portMappings;
+      }
     }
 
     public String getType() {
@@ -197,29 +215,74 @@ public class MesosSlaveInfo {
     public List<Volume> getVolumes() {
       return volumes;
     }
-    
+
     public List<Parameter> getParameters() {
       return parameters;
     }
+
+    public String getNetworking() {
+      return networking;
+    }
+
+    public List<PortMapping> getPortMappings() {
+      return portMappings;
+    }
+
+    public boolean hasPortMappings() {
+      return portMappings != null && !portMappings.isEmpty();
+    }
   }
-  
+
   public static class Parameter {
     private final String key;
     private final String value;
-      
+
     @DataBoundConstructor
     public Parameter(String key, String value) {
       this.key = key;
       this.value = value;
     }
-    
+
     public String getKey() {
       return key;
     }
-    
+
     public String getValue() {
       return value;
     }
+  }
+
+  public static class PortMapping {
+
+    // TODO validate 1 to 65535
+    private final Integer containerPort;
+    private final Integer hostPort;
+    private final String protocol;
+
+    @DataBoundConstructor
+    public PortMapping(Integer containerPort, Integer hostPort, String protocol) {
+        this.containerPort = containerPort;
+        this.hostPort = hostPort;
+        this.protocol = protocol;
+    }
+
+    public Integer getContainerPort() {
+        return containerPort;
+    }
+
+    public Integer getHostPort() {
+        return hostPort;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    @Override
+    public String toString() {
+        return (hostPort == null ? 0 : hostPort) + ":" + containerPort;
+    }
+
   }
 
   public static class Volume {

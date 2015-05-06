@@ -103,6 +103,37 @@
                                 </f:radioBlock>
                             </f:entry>
 
+                            <f:entry title="${%Networking}" description="${%Specify the networking mode to use for this container}" field="networking" >
+                                <f:radioBlock id="networking.HOST" name="networking" title="${%Host}" value="HOST" inline="true" checked="${slaveInfo.containerInfo.networking == 'HOST'}" />
+                                <f:radioBlock id="networking.BRIDGE" name="networking" title="${%Bridge}" value="BRIDGE" inline="true" checked="${slaveInfo.containerInfo.networking == null || slaveInfo.containerInfo.networking == 'BRIDGE'}">
+                                    <f:entry title="${%Port Mappings}">
+                                        <f:repeatable add="${%Add Port Mapping}" var="portMapping" name="portMappings" items="${slaveInfo.containerInfo.portMappings}" noAddButton="false" minimum="0">
+                                            <fieldset>
+                                                <table width="100%">
+                                                    <f:entry title="${%Container Port}" field="containerPort">
+                                                        <f:textbox clazz="required positive-number" default="" value="${portMapping.containerPort}" />
+                                                    </f:entry>
+                                                    <f:entry title="${%Host Port}" field="hostPort">
+                                                        <f:textbox clazz="positive-number" default="" value="${portMapping.hostPort}" />
+                                                    </f:entry>
+                                                    <f:entry title="${%Protocol}" field="protocol">
+                                                        <select name="protocol" value="${portMapping.protocol}" class="setting-input select">
+                                                            <f:option value="tcp" selected="${portMapping.protocol == 'tcp'}">tcp</f:option>
+                                                            <f:option value="udp" selected="${portMapping.protocol == 'udp'}">udp</f:option>
+                                                        </select>
+                                                    </f:entry>
+                                                    <f:entry>
+                                                        <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                                            <f:repeatableDeleteButton value="${%Delete Port Mapping}" /><br/>
+                                                        </div>
+                                                    </f:entry>
+                                                </table>
+                                            </fieldset>
+                                        </f:repeatable>
+                                    </f:entry>
+                                </f:radioBlock>
+                            </f:entry>
+
                             <f:entry title="${%Volumes}">
                                 <f:repeatable add="${%Add Volume}" var="volume" name="volumes" items="${slaveInfo.containerInfo.volumes}" noAddButton="false" minimum="0">
                                     <fieldset>
