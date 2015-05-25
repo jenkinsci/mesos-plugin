@@ -470,8 +470,7 @@ public class JenkinsScheduler implements Scheduler {
       ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
 
       ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder() //
-              .setType(containerType) //
-              .setHostname(slaveName);
+              .setType(containerType); //
 
       switch(containerType) {
         case DOCKER:
@@ -488,6 +487,11 @@ public class JenkinsScheduler implements Scheduler {
 
           String networking = request.request.slaveInfo.getContainerInfo().getNetworking();
           dockerInfoBuilder.setNetwork(Network.valueOf(networking));
+
+          //  https://github.com/jenkinsci/mesos-plugin/issues/109
+          if (dockerInfoBuilder.getNetwork() != Network.HOST) {
+              containerInfoBuilder.setHostname(slaveName);
+          }
 
           if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
               List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
