@@ -136,6 +136,25 @@ At a minimum, a container path must be entered to mount the volume. A host path 
 
 Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos slaves is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos slave where the Jenkins slave will run. This shouldn't cause problems in a homogenous environment where Jenkins slaves only run on particular Mesos slaves.
 
+#### Custom shell command
+
+By default, the approach used to run a docker based jenkins slave is by passing the jenkins slave commands as arguments to 
+the standard shell e.g. ```/bin/sh -c java -jar ... ```. There may be cases (for example when wanting to run a docker-in-docker aka
+dind image) where a custom shell command is desired instead.
+
+To use a custom command shell:
+
+* Check the ```Use custom docker command shell``` box.
+* Enter an appropriate value (e.g. ```/wrapdocker```) into the ```Custom docker command shell``` text box.
+
+Under the covers, the above configuration will result in the docker container being started as follows:
+
+		docker run your-image-name /wrapdocker java -jar ....
+		
+instead of
+
+		docker run your-image-name /bin/sh -c java -jar ....
+
 Thats it!
 
 
