@@ -251,7 +251,7 @@ public class JenkinsScheduler implements Scheduler {
       for (Request request : requests) {
         if (matches(offer, request)) {
           matched = true;
-          LOGGER.info("Offer matched! Creating mesos task");
+          LOGGER.fine("Offer matched! Creating mesos task");
 
           try {
               createMesosTask(offer, request);
@@ -324,7 +324,7 @@ public class JenkinsScheduler implements Scheduler {
     } else {
       String requestedPorts = StringUtils.join(request.request.slaveInfo.getContainerInfo().getPortMappings().toArray(), "/");
 
-      LOGGER.info(
+      LOGGER.fine(
           "Offer not sufficient for slave request:\n" +
           offer.getResourcesList().toString() +
           "\n" + offer.getAttributesList().toString() +
@@ -566,13 +566,13 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState() +
+    LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
                 (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
       // The task might not be present in the 'results' map if this is a duplicate terminal
       // update.
-      LOGGER.info("Ignoring status update " + status.getState() + " for unknown task " + taskId);
+      LOGGER.fine("Ignoring status update " + status.getState() + " for unknown task " + taskId);
       return;
     }
 
