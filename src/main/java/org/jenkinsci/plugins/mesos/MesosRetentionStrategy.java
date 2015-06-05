@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTimeUtils;
+import hudson.slaves.OfflineCause;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.model.Descriptor;
@@ -60,6 +61,12 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
     }
   }
 
+  /**
+   * Checks if the computer has expired and marks it for deletion.
+   * {@link org.jenkinsci.plugins.mesos.MesosCleanupThread} will then come around and terminate those tasks
+   * @param c The Mesos Computer
+   * @return The number of minutes to check again afterwards
+   */
   private long checkInternal(MesosComputer c) {
     if (c.getNode() == null) {
       return 1;
@@ -72,13 +79,6 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
       return 1;
     }
 
-    // If the computer is offline, terminate it.
-    if (c.isOffline()) {
-      LOGGER.info("Disconnecting offline computer " + c.getName());
-      c.getNode().terminate();
-      return 1;
-    }
-
     // Terminate the computer if it is idle for longer than
     // 'idleTerminationMinutes'.
     if (isTerminable() && c.isIdle()) {
@@ -87,7 +87,11 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
 
       if (idleMilliseconds > MINUTES.toMillis(idleTerminationMinutes)) {
         LOGGER.info("Disconnecting idle computer " + c.getName());
-        c.getNode().terminate();
+        c.getNode().setPendingDelete(true);
+
+        if (!c.isOffline()) {
+          c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
+        }
       }
     }
     return 1;

@@ -72,7 +72,6 @@ public class MesosRetentionStrategyTest {
     mesosRetentionStrategy.check(mesosComputer);
 
     // Then
-    verify(mesosComputer).isOffline();
     verify(mesosSlave, never()).terminate();
   }
 

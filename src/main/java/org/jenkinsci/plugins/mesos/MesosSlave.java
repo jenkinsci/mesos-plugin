@@ -36,6 +36,7 @@ public class MesosSlave extends Slave {
   private final MesosSlaveInfo slaveInfo;
   private final double cpus;
   private final int mem;
+  private boolean pendingDelete;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
@@ -111,6 +112,14 @@ public class MesosSlave extends Slave {
 
   private String getInstanceId() {
     return getNodeName();
+  }
+
+  public boolean isPendingDelete() {
+      return pendingDelete;
+  }
+
+  public void setPendingDelete(boolean pendingDelete) {
+      this.pendingDelete = pendingDelete;
   }
 
   public void idleTimeout() {

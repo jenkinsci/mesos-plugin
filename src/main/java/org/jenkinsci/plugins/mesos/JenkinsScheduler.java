@@ -17,6 +17,7 @@ package org.jenkinsci.plugins.mesos;
 
 
 import com.google.common.annotations.VisibleForTesting;
+import hudson.model.Computer;
 import hudson.model.Node;
 
 import java.util.ArrayList;
@@ -435,7 +436,28 @@ public class JenkinsScheduler implements Scheduler {
         refuseOffer(offer);
         return;
     }
-      
+
+    for (final Computer computer : Jenkins.getInstance().getComputers()) {
+        if (!MesosComputer.class.isInstance(computer)) {
+            LOGGER.finer("Not a mesos computer, skipping");
+            continue;
+        }
+
+        MesosComputer mesosComputer = (MesosComputer) computer;
+
+        if (mesosComputer == null) {
+            LOGGER.fine("The mesos computer is null, skipping");
+            continue;
+        }
+
+        MesosSlave mesosSlave = mesosComputer.getNode();
+
+        if (taskId.getValue().equals(computer.getName()) && mesosSlave.isPendingDelete()) {
+            LOGGER.info("This mesos task " + taskId.getValue() + " is pending deletion. Not launching another task");
+            driver.declineOffer(offer.getId());
+        }
+    }
+
     CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
     TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
 
@@ -454,6 +476,7 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   private void detectAndAddAdditionalURIs(Request request, CommandInfo.Builder commandBuilder) {
+
     if (request.request.slaveInfo.getAdditionalURIs() != null) {
       for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
         commandBuilder.addUris(
@@ -678,8 +701,7 @@ public class JenkinsScheduler implements Scheduler {
    */
   @VisibleForTesting
   void refuseOffer(Offer offer) {
-      Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
-      driver.launchTasks(offer.getId(), new ArrayList<TaskInfo>(), filters);
+      driver.declineOffer(offer.getId());
   }
 
   @Override

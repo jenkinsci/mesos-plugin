@@ -83,6 +83,7 @@
     <mockito.version>1.10.19</mockito.version>
     <powermock.version>1.6.2</powermock.version>
     <assertj.version>2.1.0</assertj.version>
+    <guava.version>18.0</guava.version>
   </properties>
 
   <dependencies>
@@ -124,6 +125,11 @@
           <artifactId>assertj-core</artifactId>
           <version>${assertj.version}</version>
           <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>${guava.version}</version>
       </dependency>
   </dependencies>
 
