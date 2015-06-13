@@ -21,6 +21,7 @@ import hudson.model.Node;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -82,6 +84,7 @@ public class JenkinsScheduler implements Scheduler {
 
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
+  private Set<TaskID> finishedTasks;
   private volatile MesosSchedulerDriver driver;
   private String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
@@ -92,13 +95,14 @@ public class JenkinsScheduler implements Scheduler {
   public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
 
   public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
-    LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster +" and mesos " + mesosCloud.getMaster());
+    LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster + " and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
     this.mesosCloud = mesosCloud;
 
     requests = new LinkedList<Request>();
     results = new HashMap<TaskID, Result>();
+    finishedTasks = Collections.newSetFromMap(new ConcurrentHashMap<TaskID, Boolean>());
   }
 
   public synchronized void init() {
@@ -213,6 +217,7 @@ public class JenkinsScheduler implements Scheduler {
         // between this removal request from jenkins and a resource getting freed up in mesos
         // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
         // by Jenkins.
+
         for(Request request : requests) {
            if(request.request.slave.name.equals(name)) {
              LOGGER.info("Removing enqueued mesos task " + name);
@@ -223,8 +228,12 @@ public class JenkinsScheduler implements Scheduler {
              return;
            }
         }
+
         LOGGER.warning("Asked to kill unknown mesos task " + taskId);
     }
+
+    // Since this task is now running, we should not start this task up again at a later point in time
+    finishedTasks.add(taskId);
 
     if (mesosCloud.isOnDemandRegistration()) {
       supervise();
@@ -422,6 +431,11 @@ public class JenkinsScheduler implements Scheduler {
     LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
 
+    if (isExistingTask(taskId)) {
+        refuseOffer(offer);
+        return;
+    }
+
     CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
     commandBuilder.setValue(
             String.format(SLAVE_COMMAND_FORMAT,
@@ -575,6 +589,39 @@ public class JenkinsScheduler implements Scheduler {
 
     results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
         .getValue())));
+    finishedTasks.add(taskId);
+  }
+
+  /**
+   * Checks if the given taskId already exists or just finished running. If it has, then refuse the offer.
+   * @param taskId The task id
+   * @return True if the task already exists, false otherwise
+   */
+  @VisibleForTesting
+  boolean isExistingTask(TaskID taskId) {
+      // If the task has already been queued, don't launch it again
+      if (results.containsKey(taskId)) {
+          LOGGER.info("Task " + taskId.getValue() + " has already been launched, ignoring and refusing offer");
+          return true;
+      }
+
+      // If the task has already finished, then do not start it up again even if we are offered it
+      if (finishedTasks.contains(taskId)) {
+          LOGGER.info("Task " + taskId.getValue() + " has already finished. Ignoring and refusing offer");
+          return true;
+      }
+
+      return false;
+  }
+
+  /**
+   * Refuses the offer provided by launching no tasks.
+   * @param offer The offer to refuse
+   */
+  @VisibleForTesting
+  void refuseOffer(Offer offer) {
+      Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
+      driver.launchTasks(offer.getId(), new ArrayList<TaskInfo>(), filters);
   }
 
   @Override
