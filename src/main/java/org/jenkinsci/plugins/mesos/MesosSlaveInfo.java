@@ -182,9 +182,12 @@ public class MesosSlaveInfo {
     private final List<Parameter> parameters;
     private final String networking;
     private final List<PortMapping> portMappings;
+    private final Boolean dockerPrivilegedMode;
 
     @DataBoundConstructor
-    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, List<Parameter> parameters, String networking, List<PortMapping> portMappings)
+    public ContainerInfo(String type, String dockerImage, List<Volume> volumes,
+                         List<Parameter> parameters, String networking, List<PortMapping> portMappings,
+                         Boolean dockerPrivilegedMode)
       throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
@@ -202,6 +205,8 @@ public class MesosSlaveInfo {
       } else {
           this.portMappings = portMappings;
       }
+
+        this.dockerPrivilegedMode = dockerPrivilegedMode;
     }
 
     public String getType() {
@@ -230,6 +235,10 @@ public class MesosSlaveInfo {
 
     public boolean hasPortMappings() {
       return portMappings != null && !portMappings.isEmpty();
+    }
+
+    public Boolean getDockerPrivilegedMode() {
+      return dockerPrivilegedMode != null ? dockerPrivilegedMode : false;
     }
   }
 
