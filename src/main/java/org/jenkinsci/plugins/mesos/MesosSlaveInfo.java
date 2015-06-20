@@ -181,6 +181,7 @@ public class MesosSlaveInfo {
     private final List<Volume> volumes;
     private final List<Parameter> parameters;
     private final String networking;
+    private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
     private final List<PortMapping> portMappings;
 
     @DataBoundConstructor
@@ -192,7 +193,7 @@ public class MesosSlaveInfo {
       this.parameters = parameters;
 
       if (networking == null) {
-          this.networking = Network.BRIDGE.toString();
+          this.networking = DEFAULT_NETWORKING;
       } else {
           this.networking = networking;
       }
@@ -221,11 +222,19 @@ public class MesosSlaveInfo {
     }
 
     public String getNetworking() {
-      return networking;
+      if (networking != null) {
+        return networking;
+      } else {
+        return DEFAULT_NETWORKING;
+      }
     }
 
     public List<PortMapping> getPortMappings() {
-      return portMappings;
+      if (portMappings != null) {
+        return portMappings;
+      } else {
+        return Collections.emptyList();
+      }
     }
 
     public boolean hasPortMappings() {
