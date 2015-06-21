@@ -16,16 +16,19 @@
 package org.jenkinsci.plugins.mesos;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import hudson.model.Node;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -75,6 +78,7 @@ public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_COMMAND_FORMAT =
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/slave.jar %s %s -jnlpUrl %s";
   private static final String JNLP_SECRET_FORMAT = "-secret %s";
+  public static final String PORT_RESOURCE_NAME = "ports";
 
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
@@ -373,31 +377,42 @@ public class JenkinsScheduler implements Scheduler {
     return slaveTypeMatch;
   }
 
-  private List<Integer> findPortsToUse(Offer offer, Request request, int maxCount) {
-      List<Integer> portsToUse = new ArrayList<Integer>();
+  @VisibleForTesting
+  List<Integer> findPortsToUse(Offer offer, int maxCount) {
+      Set<Integer> portsToUse = new HashSet<Integer>();
       List<Value.Range> portRangesList = null;
 
+      // Locate the port resource in the offer
       for (Resource resource : offer.getResourcesList()) {
-        if (resource.getName().equals("ports")) {
-            portRangesList = resource.getRanges().getRangeList();
+        if (resource.getName().equals(PORT_RESOURCE_NAME)) {
+          portRangesList = resource.getRanges().getRangeList();
           break;
         }
       }
 
       LOGGER.fine("portRangesList=" + portRangesList);
 
-      int portRangeIndex = 0;
-      while (portsToUse.size() < maxCount && portRangeIndex < portRangesList.size()) {
-          Value.Range currentPortRange = portRangesList.get(portRangeIndex);
-          long nextPort = currentPortRange.getBegin();
+      /**
+       * We need to find maxCount ports to use.
+       * We are provided a list of port ranges to use
+       * We are assured by the offer check that we have enough ports to use
+       */
+      // Check this port range for ports that we can use
+      for (Value.Range currentPortRange : portRangesList) {
+          int candidatePort = (int) currentPortRange.getBegin();
 
-          while (portsToUse.size() < maxCount && nextPort < currentPortRange.getEnd()) {
-              portsToUse.add((int)nextPort);
-              nextPort++;
+          // Check each port until we reach the end.
+          // If the port is already in the list of ports to use, ignore it and check the next one
+          while (candidatePort <= currentPortRange.getEnd() && portsToUse.size() < maxCount) {
+              if (!portsToUse.contains(candidatePort)) {
+                  portsToUse.add(candidatePort);
+              } else {
+                  candidatePort++;
+              }
           }
       }
 
-      return portsToUse;
+      return new ArrayList(portsToUse);
   }
 
   private void createMesosTask(Offer offer, Request request) {
@@ -496,7 +511,7 @@ public class JenkinsScheduler implements Scheduler {
           if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
               List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
               int portToUseIndex = 0;
-              List<Integer> portsToUse = findPortsToUse(offer, request, portMappings.size());
+              List<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
 
               Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
 
@@ -660,7 +675,8 @@ public class JenkinsScheduler implements Scheduler {
     }
   }
 
-  private class Request {
+  @VisibleForTesting
+  class Request {
     private final Mesos.SlaveRequest request;
     private final Mesos.SlaveResult result;
 
