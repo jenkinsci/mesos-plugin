@@ -146,6 +146,26 @@ public class MesosCloud extends Cloud {
     }
   }
 
+  // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
+  // or lookups won't work if any fields are changed.  Use master string as the key since
+  // the rest of this code assumes it is unique among the Cloud objects.
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    MesosCloud that = (MesosCloud) o;
+
+    if (master != null ? !master.equals(that.master) : that.master != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return master != null ? master.hashCode() : 0;
+  }
+
   public void restartMesos() {
 
     if(!nativeLibraryLoaded) {
