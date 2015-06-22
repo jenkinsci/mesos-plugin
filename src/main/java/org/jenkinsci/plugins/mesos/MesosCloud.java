@@ -470,7 +470,12 @@ public void setJenkinsURL(String jenkinsURL) {
 
               containerInfo = new MesosSlaveInfo.ContainerInfo(
                   containerInfoJson.getString("type"),
-                  containerInfoJson.getString("dockerImage"), volumes, parameters, networking, portMappings, containerInfoJson.getBoolean("dockerPrivilegedMode"));
+                  containerInfoJson.getString("dockerImage"),
+                  containerInfoJson.getBoolean("dockerPrivilegedMode"),
+                  volumes,
+                  parameters,
+                  networking,
+                  portMappings);
             }
 
             List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
