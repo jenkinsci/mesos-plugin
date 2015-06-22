@@ -705,39 +705,41 @@ public class JenkinsScheduler implements Scheduler {
   public static void supervise() {
 	SUPERVISOR_LOCK.lock();
     Collection<Mesos> clouds = Mesos.getAllClouds();
-    for (Mesos cloud : clouds) {
-      try {
-        JenkinsScheduler scheduler = (JenkinsScheduler) cloud.getScheduler();
-        if (scheduler != null) {
-          boolean pendingTasks = (scheduler.getNumberofPendingTasks() > 0);
-          boolean activeSlaves = false;
-          boolean activeTasks = (scheduler.getNumberOfActiveTasks() > 0);
-          List<Node> slaveNodes = Jenkins.getInstance().getNodes();
-          for (Node node : slaveNodes) {
-            if (node instanceof MesosSlave) {
-              activeSlaves = true;
-              break;
+    try {
+      for (Mesos cloud : clouds) {
+        try {
+          JenkinsScheduler scheduler = (JenkinsScheduler) cloud.getScheduler();
+          if (scheduler != null) {
+            boolean pendingTasks = (scheduler.getNumberofPendingTasks() > 0);
+            boolean activeSlaves = false;
+            boolean activeTasks = (scheduler.getNumberOfActiveTasks() > 0);
+            List<Node> slaveNodes = Jenkins.getInstance().getNodes();
+            for (Node node : slaveNodes) {
+              if (node instanceof MesosSlave) {
+                activeSlaves = true;
+                break;
+              }
             }
+            // If there are no active slaves, we should clear up results.
+            if (!activeSlaves) {
+              scheduler.clearResults();
+              activeTasks = false;
+            }
+            LOGGER.info("Active slaves: " + activeSlaves
+                + " | Pending tasks: " + pendingTasks + " | Active tasks: " + activeTasks);
+            if (!activeTasks && !activeSlaves && !pendingTasks) {
+              LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
+              cloud.stopScheduler();
+            }
+          } else {
+            LOGGER.info("Scheduler already stopped. NOOP.");
           }
-          // If there are no active slaves, we should clear up results.
-          if (!activeSlaves) {
-            scheduler.clearResults();
-            activeTasks = false;
-          }
-          LOGGER.info("Active slaves: " + activeSlaves
-              + " | Pending tasks: " + pendingTasks + " | Active tasks: " + activeTasks);
-          if (!activeTasks && !activeSlaves && !pendingTasks) {
-            LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
-            cloud.stopScheduler();
-          }
-        } else {
-          LOGGER.info("Scheduler already stopped. NOOP.");
+        } catch (Exception e) {
+          LOGGER.info("Exception: " + e);
         }
-      } catch (Exception e) {
-        LOGGER.info("Exception: " + e);
-      } finally {
-        SUPERVISOR_LOCK.unlock();
       }
+    } finally {
+      SUPERVISOR_LOCK.unlock();
     }
   }
 
