@@ -183,12 +183,19 @@ public class MesosSlaveInfo {
     private final String networking;
     private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
     private final List<PortMapping> portMappings;
+    private final Boolean dockerPrivilegedMode;
 
     @DataBoundConstructor
-    public ContainerInfo(String type, String dockerImage, List<Volume> volumes, List<Parameter> parameters, String networking, List<PortMapping> portMappings)
-      throws FormException {
+    public ContainerInfo(String type,
+                         String dockerImage,
+                         Boolean dockerPrivilegedMode,
+                         List<Volume> volumes,
+                         List<Parameter> parameters,
+                         String networking,
+                         List<PortMapping> portMappings) throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
+      this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.volumes = volumes;
       this.parameters = parameters;
 
@@ -239,6 +246,10 @@ public class MesosSlaveInfo {
 
     public boolean hasPortMappings() {
       return portMappings != null && !portMappings.isEmpty();
+    }
+
+    public Boolean getDockerPrivilegedMode() {
+      return dockerPrivilegedMode;
     }
   }
 
