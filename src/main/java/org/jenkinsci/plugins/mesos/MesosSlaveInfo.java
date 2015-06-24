@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
+import hudson.model.Node;
+import hudson.model.Node.Mode;
+
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -32,6 +35,7 @@ public class MesosSlaveInfo {
   private final ExternalContainerInfo externalContainerInfo;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
+  private final Mode mode;
 
   private String labelString = DEFAULT_LABEL_NAME;
 
@@ -41,6 +45,7 @@ public class MesosSlaveInfo {
   @DataBoundConstructor
   public MesosSlaveInfo(
       String labelString,
+      Mode mode,
       String slaveCpus,
       String slaveMem,
       String maxExecutors,
@@ -65,6 +70,7 @@ public class MesosSlaveInfo {
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
     this.labelString = StringUtils.isNotBlank(labelString) ? labelString
         : DEFAULT_LABEL_NAME;
+    this.mode = mode != null ? mode : Mode.NORMAL;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
@@ -87,6 +93,10 @@ public class MesosSlaveInfo {
 
   public String getLabelString() {
     return labelString;
+  }
+
+  public Mode getMode() {
+    return mode;
   }
 
   public double getExecutorCpus() {

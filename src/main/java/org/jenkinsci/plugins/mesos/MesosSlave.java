@@ -45,7 +45,7 @@ public class MesosSlave extends Slave {
           slaveInfo.getLabelString(), // node description.
           StringUtils.isBlank(slaveInfo.getRemoteFSRoot()) ? "jenkins" : slaveInfo.getRemoteFSRoot().trim(),   // remoteFS.
           "" + numExecutors,
-          Mode.NORMAL,
+          slaveInfo.getMode(),
           slaveInfo.getLabelString(), // Label.
           new MesosComputerLauncher(cloud, name),
           new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),

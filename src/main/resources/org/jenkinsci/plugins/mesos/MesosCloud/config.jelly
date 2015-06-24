@@ -51,6 +51,9 @@
                     <f:entry title="${%Label String}">
                         <f:textbox field="labelString" default="mesos" value="${slaveInfo.labelString}" />
                     </f:entry>
+
+                    <f:slave-mode name="mode" node="${slaveInfo}" />
+
                     <f:entry title="${%Jenkins Slave CPUs}">
                         <f:textbox field="slaveCpus" clazz="required" default="0.1" value="${slaveInfo.slaveCpus}" />
                     </f:entry>
