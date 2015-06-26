@@ -74,6 +74,10 @@ public class MesosSlave extends Slave {
     return slaveInfo;
   }
 
+  public int getIdleTerminationMinutes() {
+    return slaveInfo.getIdleTerminationMinutes();
+  }
+
   public void terminate() {
     LOGGER.info("Terminating slave " + getNodeName());
     try {
