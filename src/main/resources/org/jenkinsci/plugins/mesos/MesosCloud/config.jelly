@@ -81,8 +81,8 @@
                         <f:textbox field="remoteFSRoot" clazz="required" default="jenkins" value="${slaveInfo.remoteFSRoot}"/>
                     </f:entry>
 
-                    <f:entry title="${%Idle Termination Minutes}">
-                        <f:number field="idleTerminationMinutes" clazz="required positive-number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
+                    <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
+                        <f:number field="idleTerminationMinutes" clazz="required number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
                     </f:entry>
                     <f:entry title="${%Mesos Offer Selection Attributes}">
                         <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>

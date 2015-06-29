@@ -8,8 +8,8 @@
           <f:readOnlyTextbox field="labelString"/>
         </f:entry>
 
-        <f:entry title="${%Idle Termination Minutes}">
-          <f:readOnlyTextbox field="idleTerminationMinutes" clazz="positive-number"/>
+        <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
+          <f:readOnlyTextbox field="idleTerminationMinutes" clazz="number"/>
         </f:entry>
 
 </j:jelly>
