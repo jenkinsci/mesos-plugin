@@ -657,6 +657,7 @@ public class JenkinsScheduler implements Scheduler {
       result.result.finished(result.slave);
       terminalState = true;
       break;
+    case TASK_ERROR:
     case TASK_FAILED:
     case TASK_KILLED:
     case TASK_LOST:
