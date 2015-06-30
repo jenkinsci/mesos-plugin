@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.mesos;
 
 import hudson.model.Descriptor;
+import hudson.model.Node;
 import jenkins.model.Jenkins;
 import org.apache.mesos.Protos;
 import org.junit.Before;
@@ -233,6 +234,7 @@ public class JenkinsSchedulerTest {
 
         MesosSlaveInfo mesosSlaveInfo = new MesosSlaveInfo(
                 "testLabelString",  // labelString,
+                Node.Mode.NORMAL,
                 "0.2",              // slaveCpus,
                 "512",              //slaveMem,
                 "2",                // maxExecutors,

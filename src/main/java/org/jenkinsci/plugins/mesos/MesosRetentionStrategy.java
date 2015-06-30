@@ -19,6 +19,7 @@ import static hudson.util.TimeUnit2.MINUTES;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
+import org.joda.time.DateTimeUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.model.Descriptor;
@@ -66,8 +67,8 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
 
     // If we just launched this computer, check back after 1 min.
     // NOTE: 'c.getConnectTime()' refers to when the Jenkins slave was launched.
-    if ((System.currentTimeMillis() - c.getConnectTime()) <
-        MINUTES.toMillis(idleTerminationMinutes)) {
+    if ((DateTimeUtils.currentTimeMillis() - c.getConnectTime()) <
+        MINUTES.toMillis(idleTerminationMinutes < 1 ? 1 : idleTerminationMinutes)) {
       return 1;
     }
 
@@ -80,9 +81,9 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
 
     // Terminate the computer if it is idle for longer than
     // 'idleTerminationMinutes'.
-    if (c.isIdle()) {
+    if (isTerminable() && c.isIdle()) {
       final long idleMilliseconds =
-          System.currentTimeMillis() - c.getIdleStartMilliseconds();
+          DateTimeUtils.currentTimeMillis() - c.getIdleStartMilliseconds();
 
       if (idleMilliseconds > MINUTES.toMillis(idleTerminationMinutes)) {
         LOGGER.info("Disconnecting idle computer " + c.getName());
@@ -109,5 +110,9 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
     public String getDisplayName() {
       return "MESOS";
     }
+  }
+
+  boolean isTerminable() {
+    return idleTerminationMinutes != 0;
   }
 }

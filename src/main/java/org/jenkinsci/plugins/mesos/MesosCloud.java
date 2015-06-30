@@ -22,6 +22,7 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.model.Node.Mode;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
@@ -513,6 +514,7 @@ public void setJenkinsURL(String jenkinsURL) {
             }
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
                 object.getString("labelString"),
+                (Mode) object.get("mode"),
                 object.getString("slaveCpus"),
                 object.getString("slaveMem"),
                 object.getString("maxExecutors"),
