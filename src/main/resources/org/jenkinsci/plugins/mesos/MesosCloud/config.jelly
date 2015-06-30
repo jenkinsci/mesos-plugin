@@ -109,6 +109,14 @@
                                 </f:radioBlock>
                             </f:entry>
 
+                            <f:entry title="${%Use custom docker command shell}" name="useCustomDockerCommandShell" field="useCustomDockerCommandShell" >
+                              <f:checkbox default="false" checked="${slaveInfo.containerInfo.useCustomDockerCommandShell}" />
+                            </f:entry>
+
+                            <f:entry title="${%Custom docker command shell}" name="customDockerCommandShell" field="customDockerCommandShell" >
+                                <f:textbox field="customDockerCommandShell" default="" value="${slaveInfo.containerInfo.customDockerCommandShell}"/>
+                            </f:entry>
+
                             <f:entry title="${%Networking}" description="${%Specify the networking mode to use for this container}" field="networking" >
                                 <f:radioBlock id="networking.HOST" name="networking" title="${%Host}" value="HOST" inline="true" checked="${slaveInfo.containerInfo.networking == 'HOST'}" />
                                 <f:radioBlock id="networking.BRIDGE" name="networking" title="${%Bridge}" value="BRIDGE" inline="true" checked="${slaveInfo.containerInfo.networking == null || slaveInfo.containerInfo.networking == 'BRIDGE'}">

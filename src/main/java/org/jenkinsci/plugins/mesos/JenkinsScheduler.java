@@ -435,18 +435,25 @@ public class JenkinsScheduler implements Scheduler {
         refuseOffer(offer);
         return;
     }
+      
+    CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
+    TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
 
-    CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
-    commandBuilder.setValue(
-            String.format(SLAVE_COMMAND_FORMAT,
-                    request.request.mem,
-                    request.request.slaveInfo.getJvmArgs(),
-                    request.request.slaveInfo.getJnlpArgs(),
-                    getJnlpSecret(request.request.slave.name),
-                    getJnlpUrl(request.request.slave.name)))
-        .addUris(
-                CommandInfo.URI.newBuilder().setValue(
-                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
+    if (request.request.slaveInfo.getContainerInfo() != null) {
+        getContainerInfoBuilder(offer, request, slaveName, taskBuilder);
+    }
+
+    List<TaskInfo> tasks = new ArrayList<TaskInfo>();
+    tasks.add(taskBuilder.build());
+    Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
+    driver.launchTasks(offer.getId(), tasks, filters);
+
+    results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
+        .getValue())));
+    finishedTasks.add(taskId);
+  }
+
+  private void detectAndAddAdditionalURIs(Request request, CommandInfo.Builder commandBuilder) {
     if (request.request.slaveInfo.getAdditionalURIs() != null) {
       for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
         commandBuilder.addUris(
@@ -454,7 +461,9 @@ public class JenkinsScheduler implements Scheduler {
                 uri.getValue()).setExecutable(uri.isExecutable()).setExtract(uri.isExtract()));
       }
     }
+  }
 
+  private void detectAndAddExternalContainerInfo(Request request, CommandInfo.Builder commandBuilder) {
     MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
     if (externalContainerInfo != null) {
       LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
@@ -469,8 +478,10 @@ public class JenkinsScheduler implements Scheduler {
       }
       commandBuilder.setContainer(containerInfo.build());
     }
+  }
 
-    TaskInfo.Builder taskBuilder = TaskInfo.newBuilder()
+  private TaskInfo.Builder getTaskInfoBuilder(Offer offer, Request request, TaskID taskId, CommandInfo.Builder commandBuilder) {
+      return TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
         .setTaskId(taskId)
         .setSlaveId(offer.getSlaveId())
@@ -493,9 +504,10 @@ public class JenkinsScheduler implements Scheduler {
                         .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
                         .build()).build())
         .setCommand(commandBuilder.build());
+  }
 
-    MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
-    if (containerInfo != null) {
+  private void getContainerInfoBuilder(Offer offer, Request request, String slaveName, TaskInfo.Builder taskBuilder) {
+      MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
       ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
 
       ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder() //
@@ -507,7 +519,7 @@ public class JenkinsScheduler implements Scheduler {
           DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder() //
               .setImage(containerInfo.getDockerImage())
               .setPrivileged(containerInfo.getDockerPrivilegedMode() != null ? containerInfo.getDockerPrivilegedMode() : false);
-          
+
           if (containerInfo.getParameters() != null) {
             for (MesosSlaveInfo.Parameter parameter : containerInfo.getParameters()) {
               LOGGER.info("Adding Docker parameter '" + parameter.getKey() + ":" + parameter.getValue() + "'");
@@ -583,14 +595,59 @@ public class JenkinsScheduler implements Scheduler {
       taskBuilder.setContainer(containerInfoBuilder.build());
     }
 
-    List<TaskInfo> tasks = new ArrayList<TaskInfo>();
-    tasks.add(taskBuilder.build());
-    Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
-    driver.launchTasks(offer.getId(), tasks, filters);
+  @VisibleForTesting
+  CommandInfo.Builder getCommandInfoBuilder(Request request) {
+        CommandInfo.Builder commandBuilder = getBaseCommandBuilder(request);
+        detectAndAddAdditionalURIs(request, commandBuilder);
+        detectAndAddExternalContainerInfo(request, commandBuilder);
+        return commandBuilder;
+  }
 
-    results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
-        .getValue())));
-    finishedTasks.add(taskId);
+  String generateJenkinsCommand2Run(int jvmMem,String jvmArgString,String jnlpArgString,String slaveName) {
+
+      return String.format(SLAVE_COMMAND_FORMAT,
+              jvmMem,
+              jvmArgString,
+              jnlpArgString,
+              getJnlpSecret(slaveName),
+              getJnlpUrl(slaveName));
+  }
+
+  private CommandInfo.Builder getBaseCommandBuilder(Request request) {
+
+        CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
+        String jenkinsCommand2Run = generateJenkinsCommand2Run(
+            request.request.mem,
+            request.request.slaveInfo.getJvmArgs(),
+            request.request.slaveInfo.getJnlpArgs(),
+            request.request.slave.name);
+
+        if (request.request.slaveInfo.getContainerInfo() != null &&
+            request.request.slaveInfo.getContainerInfo().getUseCustomDockerCommandShell()) {
+            // Ref http://mesos.apache.org/documentation/latest/upgrades
+            // regarding setting the shell value, and the impact on the command to be
+            // launched
+            String customShell = request.request.slaveInfo.getContainerInfo().getCustomDockerCommandShell();
+            if (StringUtils.stripToNull(customShell)==null) {
+                throw new IllegalArgumentException("Invalid custom shell argument supplied  ");
+            }
+
+            LOGGER.info( String.format( "About to use custom shell: %s " , customShell));
+            commandBuilder.setShell(false);
+            commandBuilder.setValue(customShell);
+            List args = new ArrayList();
+            args.add(jenkinsCommand2Run);
+            commandBuilder.addAllArguments( args );
+
+    } else {
+        LOGGER.info("About to use default shell ....");
+        commandBuilder.setValue(jenkinsCommand2Run);
+    }
+
+    commandBuilder.addUris(
+        CommandInfo.URI.newBuilder().setValue(
+            joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
+    return commandBuilder;
   }
 
   /**
