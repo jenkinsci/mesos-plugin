@@ -41,6 +41,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosSchedulerDriver;
+import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ContainerInfo;
@@ -345,7 +346,7 @@ public class JenkinsScheduler implements Scheduler {
           "  cpus:  " + requestedCpus + "\n" +
           "  mem:   " + requestedMem + "\n" +
           "  ports: " + requestedPorts + "\n" +
-          "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
+          "  attributes:  " + (slaveAttributes == null ? "" : slaveAttributes.toString()));
       return false;
     }
   }
@@ -428,159 +429,16 @@ public class JenkinsScheduler implements Scheduler {
     final String slaveName = request.request.slave.name;
     TaskID taskId = TaskID.newBuilder().setValue(slaveName).build();
 
-    LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
-                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
-
     if (isExistingTask(taskId)) {
         refuseOffer(offer);
         return;
     }
+      
+    CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
+    TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
 
-    CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
-    commandBuilder.setValue(
-            String.format(SLAVE_COMMAND_FORMAT,
-                    request.request.mem,
-                    request.request.slaveInfo.getJvmArgs(),
-                    request.request.slaveInfo.getJnlpArgs(),
-                    getJnlpSecret(request.request.slave.name),
-                    getJnlpUrl(request.request.slave.name)))
-        .addUris(
-                CommandInfo.URI.newBuilder().setValue(
-                        joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
-    if (request.request.slaveInfo.getAdditionalURIs() != null) {
-      for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
-        commandBuilder.addUris(
-            CommandInfo.URI.newBuilder().setValue(
-                uri.getValue()).setExecutable(uri.isExecutable()).setExtract(uri.isExtract()));
-      }
-    }
-
-    MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
-    if (externalContainerInfo != null) {
-      LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
-      CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
-      containerInfo.setImage(externalContainerInfo.getImage());
-
-      // add container option to builder
-      String[] containerOptions = request.request.getExternalContainerOptions();
-      for (int i = 0; i < containerOptions.length; i++) {
-        LOGGER.info("with option: " + containerOptions[i]);
-        containerInfo.addOptions(containerOptions[i]);
-      }
-      commandBuilder.setContainer(containerInfo.build());
-    }
-
-    TaskInfo.Builder taskBuilder = TaskInfo.newBuilder()
-        .setName("task " + taskId.getValue())
-        .setTaskId(taskId)
-        .setSlaveId(offer.getSlaveId())
-        .addResources(
-            Resource
-                .newBuilder()
-                .setName("cpus")
-                .setType(Value.Type.SCALAR)
-                .setScalar(
-                    Value.Scalar.newBuilder()
-                        .setValue(request.request.cpus).build()).build())
-        .addResources(
-            Resource
-                .newBuilder()
-                .setName("mem")
-                .setType(Value.Type.SCALAR)
-                .setScalar(
-                    Value.Scalar
-                        .newBuilder()
-                        .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
-                        .build()).build())
-        .setCommand(commandBuilder.build());
-
-    MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
-    if (containerInfo != null) {
-      ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
-
-      ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder() //
-              .setType(containerType); //
-
-      switch(containerType) {
-        case DOCKER:
-          LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
-          DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder() //
-              .setImage(containerInfo.getDockerImage())
-              .setPrivileged(containerInfo.getDockerPrivilegedMode() != null ? containerInfo.getDockerPrivilegedMode() : false);
-          
-          if (containerInfo.getParameters() != null) {
-            for (MesosSlaveInfo.Parameter parameter : containerInfo.getParameters()) {
-              LOGGER.info("Adding Docker parameter '" + parameter.getKey() + ":" + parameter.getValue() + "'");
-              dockerInfoBuilder.addParameters(Parameter.newBuilder().setKey(parameter.getKey()).setValue(parameter.getValue()).build());
-            }
-          }
-
-          String networking = request.request.slaveInfo.getContainerInfo().getNetworking();
-          dockerInfoBuilder.setNetwork(Network.valueOf(networking));
-
-          //  https://github.com/jenkinsci/mesos-plugin/issues/109
-          if (dockerInfoBuilder.getNetwork() != Network.HOST) {
-              containerInfoBuilder.setHostname(slaveName);
-          }
-
-          if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
-              List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
-              int portToUseIndex = 0;
-              List<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
-
-              Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
-
-              for (MesosSlaveInfo.PortMapping portMapping : portMappings) {
-                  PortMapping.Builder portMappingBuilder = PortMapping.newBuilder() //
-                          .setContainerPort(portMapping.getContainerPort()) //
-                          .setProtocol(portMapping.getProtocol());
-
-                  int portToUse = portMapping.getHostPort() == null ? portsToUse.get(portToUseIndex++) : portMapping.getHostPort();
-
-                  portMappingBuilder.setHostPort(portToUse);
-
-                  portRangesBuilder.addRange(
-                    Value.Range
-                      .newBuilder()
-                      .setBegin(portToUse)
-                      .setEnd(portToUse)
-                  );
-
-                  LOGGER.finest("Adding portMapping: " + portMapping);
-                  dockerInfoBuilder.addPortMappings(portMappingBuilder);
-              }
-
-              taskBuilder.addResources(
-                Resource
-                  .newBuilder()
-                  .setName("ports")
-                  .setType(Value.Type.RANGES)
-                  .setRanges(portRangesBuilder)
-                  );
-          } else {
-              LOGGER.fine("No portMappings found");
-          }
-
-          containerInfoBuilder.setDocker(dockerInfoBuilder);
-          break;
-        default:
-          LOGGER.warning("Unknown container type:" + containerInfo.getType());
-      }
-
-      if (containerInfo.getVolumes() != null) {
-        for (MesosSlaveInfo.Volume volume : containerInfo.getVolumes()) {
-          LOGGER.info("Adding volume '" + volume.getContainerPath() + "'");
-          Volume.Builder volumeBuilder = Volume.newBuilder()
-              .setContainerPath(volume.getContainerPath())
-              .setMode(volume.isReadOnly() ? Mode.RO : Mode.RW);
-          if (!volume.getHostPath().isEmpty()) {
-            volumeBuilder.setHostPath(volume.getHostPath());
-          }
-          containerInfoBuilder.addVolumes(volumeBuilder.build());
-        }
-      }
-
-      taskBuilder.setContainer(containerInfoBuilder.build());
+    if (request.request.slaveInfo.getContainerInfo() != null) {
+        getContainerInfoBuilder(offer, request, slaveName, taskBuilder);
     }
 
     List<TaskInfo> tasks = new ArrayList<TaskInfo>();
@@ -591,6 +449,203 @@ public class JenkinsScheduler implements Scheduler {
     results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
         .getValue())));
     finishedTasks.add(taskId);
+  }
+
+  private void getContainerInfoBuilder(Offer offer, Request request, String slaveName, TaskInfo.Builder taskBuilder) {
+        MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
+        ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
+
+        ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder() //
+                .setType(containerType); //
+
+        switch(containerType) {
+          case DOCKER:
+            LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
+            DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder() //
+                    .setImage(containerInfo.getDockerImage())
+                    .setPrivileged(containerInfo.getDockerPrivilegedMode() != null ? containerInfo.getDockerPrivilegedMode() : false);
+
+            if (containerInfo.getParameters() != null) {
+              for (MesosSlaveInfo.Parameter parameter : containerInfo.getParameters()) {
+                LOGGER.info("Adding Docker parameter '" + parameter.getKey() + ":" + parameter.getValue() + "'");
+                dockerInfoBuilder.addParameters(Parameter.newBuilder().setKey(parameter.getKey()).setValue(parameter.getValue()).build());
+              }
+            }
+
+            String networking = request.request.slaveInfo.getContainerInfo().getNetworking();
+            dockerInfoBuilder.setNetwork(Network.valueOf(networking));
+
+            //  https://github.com/jenkinsci/mesos-plugin/issues/109
+            if (dockerInfoBuilder.getNetwork() != Network.HOST) {
+                containerInfoBuilder.setHostname(slaveName);
+            }
+
+            if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
+                List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
+                int portToUseIndex = 0;
+                List<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
+
+                Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
+
+                for (MesosSlaveInfo.PortMapping portMapping : portMappings) {
+                    PortMapping.Builder portMappingBuilder = PortMapping.newBuilder() //
+                            .setContainerPort(portMapping.getContainerPort()) //
+                            .setProtocol(portMapping.getProtocol());
+
+                    int portToUse = portMapping.getHostPort() == null ? portsToUse.get(portToUseIndex++) : portMapping.getHostPort();
+
+                    portMappingBuilder.setHostPort(portToUse);
+
+                    portRangesBuilder.addRange(
+                      Range
+                              .newBuilder()
+                              .setBegin(portToUse)
+                              .setEnd(portToUse)
+                    );
+
+                    LOGGER.finest("Adding portMapping: " + portMapping);
+                    dockerInfoBuilder.addPortMappings(portMappingBuilder);
+                }
+
+                taskBuilder.addResources(
+                  Resource
+                          .newBuilder()
+                          .setName("ports")
+                          .setType(Value.Type.RANGES)
+                          .setRanges(portRangesBuilder)
+                    );
+            } else {
+                LOGGER.fine("No portMappings found");
+            }
+
+            containerInfoBuilder.setDocker(dockerInfoBuilder);
+            break;
+          default:
+            LOGGER.warning("Unknown container type:" + containerInfo.getType());
+        }
+
+        if (containerInfo.getVolumes() != null) {
+          for (MesosSlaveInfo.Volume volume : containerInfo.getVolumes()) {
+            LOGGER.info("Adding volume '" + volume.getContainerPath() + "'");
+            Volume.Builder volumeBuilder = Volume.newBuilder()
+                    .setContainerPath(volume.getContainerPath())
+                    .setMode(volume.isReadOnly() ? Mode.RO : Mode.RW);
+            if (!volume.getHostPath().isEmpty()) {
+              volumeBuilder.setHostPath(volume.getHostPath());
+            }
+            containerInfoBuilder.addVolumes(volumeBuilder.build());
+          }
+        }
+
+        taskBuilder.setContainer(containerInfoBuilder.build());
+  }
+
+  private TaskInfo.Builder getTaskInfoBuilder(Offer offer, Request request, TaskID taskId, CommandInfo.Builder commandBuilder) {
+        return TaskInfo.newBuilder()
+            .setName("task " + taskId.getValue())
+            .setTaskId(taskId)
+            .setSlaveId(offer.getSlaveId())
+            .addResources(
+                    Resource
+                            .newBuilder()
+                            .setName("cpus")
+                            .setType(Value.Type.SCALAR)
+                            .setScalar(
+                                    Value.Scalar.newBuilder()
+                                            .setValue(request.request.cpus).build()).build())
+            .addResources(
+                    Resource
+                            .newBuilder()
+                            .setName("mem")
+                            .setType(Value.Type.SCALAR)
+                            .setScalar(
+                                    Value.Scalar
+                                            .newBuilder()
+                                            .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
+                                            .build()).build())
+            .setCommand(commandBuilder.build());
+  }
+
+  @VisibleForTesting
+  CommandInfo.Builder getCommandInfoBuilder(Request request) {
+        CommandInfo.Builder commandBuilder = getBaseCommandBuilder(request);
+        detectAndAddAdditionalURIs(request, commandBuilder);
+        detectAndAddExternalContainerInfo(request, commandBuilder);
+        return commandBuilder;
+  }
+
+  private void detectAndAddExternalContainerInfo(Request request, CommandInfo.Builder commandBuilder) {
+        MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
+        if (externalContainerInfo != null) {
+            LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
+            CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
+            containerInfo.setImage(externalContainerInfo.getImage());
+
+            // add container option to builder
+            String[] containerOptions = request.request.getExternalContainerOptions();
+            for (int i = 0; i < containerOptions.length; i++) {
+                LOGGER.info("with option: " + containerOptions[i]);
+                containerInfo.addOptions(containerOptions[i]);
+            }
+            commandBuilder.setContainer(containerInfo.build());
+        }
+  }
+
+  private void detectAndAddAdditionalURIs(Request request, CommandInfo.Builder commandBuilder) {
+        if (request.request.slaveInfo.getAdditionalURIs() != null) {
+            for (MesosSlaveInfo.URI uri : request.request.slaveInfo.getAdditionalURIs()) {
+                commandBuilder.addUris(
+                        CommandInfo.URI.newBuilder().setValue(
+                                uri.getValue()).setExecutable(uri.isExecutable()).setExtract(uri.isExtract()));
+            }
+        }
+  }
+
+  String generateJenkinsCommand2Run(int jvmMem,String jvmArgString,String jnlpArgString,String slaveName) {
+
+      return String.format(SLAVE_COMMAND_FORMAT,
+              jvmMem,
+              jvmArgString,
+              jnlpArgString,
+              getJnlpSecret(slaveName),
+              getJnlpUrl(slaveName));
+  }
+
+  private CommandInfo.Builder getBaseCommandBuilder(Request request) {
+
+        CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
+        String jenkinsCommand2Run = generateJenkinsCommand2Run(
+            request.request.mem,
+            request.request.slaveInfo.getJvmArgs(),
+            request.request.slaveInfo.getJnlpArgs(),
+            request.request.slave.name);
+
+        if (request.request.slaveInfo.getContainerInfo() != null &&
+            request.request.slaveInfo.getContainerInfo().getUseCustomDockerCommandShell()) {
+            // Ref http://mesos.apache.org/documentation/latest/upgrades
+            // regarding setting the shell value, and the impact on the command to be
+            // launched
+            String customShell = request.request.slaveInfo.getContainerInfo().getCustomDockerCommandShell();
+            if (StringUtils.stripToNull(customShell)==null) {
+                throw new IllegalArgumentException("Invalid custom shell argument supplied  ");
+            }
+
+            LOGGER.info( String.format( "About to use custom shell: %s " , customShell));
+            commandBuilder.setShell(false);
+            commandBuilder.setValue(customShell);
+            List args = new ArrayList();
+            args.add(jenkinsCommand2Run);
+            commandBuilder.addAllArguments( args );
+
+    } else {
+        LOGGER.info("About to use default shell ....");
+        commandBuilder.setValue(jenkinsCommand2Run);
+    }
+
+    commandBuilder.addUris(
+        CommandInfo.URI.newBuilder().setValue(
+            joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX)).setExecutable(false).setExtract(false));
+    return commandBuilder;
   }
 
   /**
@@ -633,13 +688,13 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
-                (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
+      LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
+              (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
       // The task might not be present in the 'results' map if this is a duplicate terminal
-      // update.
-      LOGGER.fine("Ignoring status update " + status.getState() + " for unknown task " + taskId);
+        // update.
+        LOGGER.fine("Ignoring status update " + status.getState() + " for unknown task " + taskId);
       return;
     }
 
@@ -780,7 +835,7 @@ public class JenkinsScheduler implements Scheduler {
               cloud.stopScheduler();
             }
           } else {
-            LOGGER.info("Scheduler already stopped. NOOP.");
+              LOGGER.info("Scheduler already stopped. NOOP.");
           }
         } catch (Exception e) {
           LOGGER.info("Exception: " + e);

@@ -183,12 +183,16 @@ public class MesosSlaveInfo {
     private final String networking;
     private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
     private final List<PortMapping> portMappings;
+    private final boolean useCustomDockerCommandShell;
+    private final String customDockerCommandShell;
     private final Boolean dockerPrivilegedMode;
 
     @DataBoundConstructor
     public ContainerInfo(String type,
                          String dockerImage,
                          Boolean dockerPrivilegedMode,
+                         boolean useCustomDockerCommandShell,
+                         String customDockerCommandShell,
                          List<Volume> volumes,
                          List<Parameter> parameters,
                          String networking,
@@ -196,6 +200,8 @@ public class MesosSlaveInfo {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
+      this.useCustomDockerCommandShell = useCustomDockerCommandShell;
+      this.customDockerCommandShell = customDockerCommandShell;
       this.volumes = volumes;
       this.parameters = parameters;
 
@@ -251,6 +257,10 @@ public class MesosSlaveInfo {
     public Boolean getDockerPrivilegedMode() {
       return dockerPrivilegedMode;
     }
+
+    public boolean getUseCustomDockerCommandShell() {  return useCustomDockerCommandShell; }
+
+    public String getCustomDockerCommandShell() {  return customDockerCommandShell; }
   }
 
   public static class Parameter {
