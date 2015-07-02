@@ -14,10 +14,12 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
@@ -30,6 +32,8 @@ import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.WebMethod;
 
 public class MesosComputer extends SlaveComputer {
+  private static final Logger LOGGER = Logger.getLogger(MesosComputer.class.getName());
+
   public MesosComputer(Slave slave) {
     super(slave);
   }
@@ -51,5 +55,24 @@ public class MesosComputer extends SlaveComputer {
   @WebMethod(name="slave-agent.jnlp")
   public HttpResponse doSlaveAgentJnlp(StaplerRequest req, StaplerResponse res) throws IOException, ServletException {
 	  return new EncryptedSlaveAgentJnlpFile(this, "mesos-slave-agent.jnlp.jelly", getName(), CONNECT);
+  }
+
+  /**
+   * Delete the slave, terminate the instance. Can be called either by doDoDelete() or from MesosRetentionStrategy.
+   *
+   * @throws InterruptedException
+   */
+  public void deleteSlave() throws IOException, InterruptedException {
+      LOGGER.info("Terminating " + getName() + " slave");
+      MesosSlave slave = getNode();
+
+      // Slave already deleted
+      if (slave == null) return;
+
+      if (slave.getChannel() != null) {
+          slave.getChannel().close();
+      }
+      slave.terminate();
+      Hudson.getInstance().removeNode(slave);
   }
 }

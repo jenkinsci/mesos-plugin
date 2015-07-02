@@ -103,6 +103,9 @@ public class MesosComputerLauncher extends ComputerLauncher {
     latch.await();
 
     if (state == State.RUNNING) {
+      // Since we just launched a slave, remove it from pending deletion in case it was marked previously while
+      // we were waiting for resources to be available
+      computer.getNode().setPendingDelete(false);
       logger.println("Successfully launched slave" + name);
     }
 
