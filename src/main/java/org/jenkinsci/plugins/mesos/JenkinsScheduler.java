@@ -317,7 +317,12 @@ public class JenkinsScheduler implements Scheduler {
     if (cpus < 0) LOGGER.fine("No cpus resource present");
     if (mem < 0)  LOGGER.fine("No mem resource present");
 
-    boolean hasPortMappings = request.request.slaveInfo.getContainerInfo().hasPortMappings();
+    boolean hasPortMappings = false;
+
+    if(request.request.slaveInfo.getContainerInfo() != null) {
+      hasPortMappings = request.request.slaveInfo.getContainerInfo().hasPortMappings();
+    }
+
     boolean hasPortResources = ports != null && !ports.isEmpty();
 
     if (hasPortMappings && !hasPortResources) {
