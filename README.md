@@ -136,6 +136,12 @@ At a minimum, a container path must be entered to mount the volume. A host path 
 
 Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos slaves is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos slave where the Jenkins slave will run. This shouldn't cause problems in a homogenous environment where Jenkins slaves only run on particular Mesos slaves.
 
+### Over provisioning flags ###
+
+By default, Jenkins spawns slaves conservatively. Say, if there are 2 builds in queue, it won't spawn 2 executors immediately. It will spawn one executor and wait for sometime for the first executor to be freed before deciding to spawn the second executor. Jenkins makes sure every executor it spawns is utilized to the maximum.
+If you want to override this behvaiour and spawn an executor for each build in queue immediately without waiting, you can use these flags during Jenkins startup:
+`-Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85`
+
 Thats it!
 
 
