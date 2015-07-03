@@ -106,6 +106,9 @@
                                     <f:entry title="${%Docker Privileged Mode}" description="This will start the image using Docker's privileged mode.">
                                         <f:checkbox field="dockerPrivilegedMode" value="${slaveInfo.containerInfo.dockerPrivilegedMode}" checked="${slaveInfo.containerInfo.dockerPrivilegedMode}" />
                                     </f:entry>
+                                    <f:entry title="${%Docker Force Pull Image}" description="This will force a pull of the Docker Image regardless of whether it exists locally.">
+                                        <f:checkbox field="dockerForcePullImage" value="${slaveInfo.containerInfo.dockerForcePullImage}" checked="${slaveInfo.containerInfo.dockerForcePullImage}" />
+                                    </f:entry>
                                 </f:radioBlock>
                             </f:entry>
 

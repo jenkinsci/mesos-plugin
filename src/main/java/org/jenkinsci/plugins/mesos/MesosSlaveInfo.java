@@ -196,11 +196,13 @@ public class MesosSlaveInfo {
     private final boolean useCustomDockerCommandShell;
     private final String customDockerCommandShell;
     private final Boolean dockerPrivilegedMode;
+    private final Boolean dockerForcePullImage;
 
     @DataBoundConstructor
     public ContainerInfo(String type,
                          String dockerImage,
                          Boolean dockerPrivilegedMode,
+                         Boolean dockerForcePullImage,
                          boolean useCustomDockerCommandShell,
                          String customDockerCommandShell,
                          List<Volume> volumes,
@@ -210,6 +212,7 @@ public class MesosSlaveInfo {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
+      this.dockerForcePullImage = dockerForcePullImage;
       this.useCustomDockerCommandShell = useCustomDockerCommandShell;
       this.customDockerCommandShell = customDockerCommandShell;
       this.volumes = volumes;
@@ -266,6 +269,10 @@ public class MesosSlaveInfo {
 
     public Boolean getDockerPrivilegedMode() {
       return dockerPrivilegedMode;
+    }
+
+    public Boolean getDockerForcePullImage() {
+      return dockerForcePullImage;
     }
 
     public boolean getUseCustomDockerCommandShell() {  return useCustomDockerCommandShell; }
