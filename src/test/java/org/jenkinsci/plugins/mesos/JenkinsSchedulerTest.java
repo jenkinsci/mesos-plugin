@@ -224,6 +224,7 @@ public class JenkinsSchedulerTest {
                     "docker",
                     "test-docker-in-docker-image",
                     Boolean.TRUE,
+                    Boolean.TRUE,
                     useCustomDockerCommandShell,
                     customDockerCommandShell,
                     Collections.<MesosSlaveInfo.Volume>emptyList(),

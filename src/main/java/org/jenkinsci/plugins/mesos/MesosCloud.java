@@ -493,6 +493,7 @@ public void setJenkinsURL(String jenkinsURL) {
                   containerInfoJson.getString("type"),
                   containerInfoJson.getString("dockerImage"),
                   containerInfoJson.getBoolean("dockerPrivilegedMode"),
+                  containerInfoJson.getBoolean("dockerForcePullImage"),
                   containerInfoJson.getBoolean("useCustomDockerCommandShell"),
                   containerInfoJson.getString ("customDockerCommandShell"),
                   volumes,
