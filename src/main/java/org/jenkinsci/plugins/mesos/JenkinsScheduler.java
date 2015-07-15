@@ -317,11 +317,9 @@ public class JenkinsScheduler implements Scheduler {
     if (cpus < 0) LOGGER.fine("No cpus resource present");
     if (mem < 0)  LOGGER.fine("No mem resource present");
 
-    boolean hasPortMappings = false;
+    MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
 
-    if(request.request.slaveInfo.getContainerInfo() != null) {
-      hasPortMappings = request.request.slaveInfo.getContainerInfo().hasPortMappings();
-    }
+    boolean hasPortMappings = containerInfo != null ? containerInfo.hasPortMappings() : false;
 
     boolean hasPortResources = ports != null && !ports.isEmpty();
 
@@ -341,7 +339,9 @@ public class JenkinsScheduler implements Scheduler {
             && slaveAttributesMatch(offer, slaveAttributes)) {
       return true;
     } else {
-      String requestedPorts = StringUtils.join(request.request.slaveInfo.getContainerInfo().getPortMappings().toArray(), "/");
+      String requestedPorts = containerInfo != null
+              ? StringUtils.join(containerInfo.getPortMappings().toArray(), "/")
+              : "";
 
       LOGGER.fine(
           "Offer not sufficient for slave request:\n" +

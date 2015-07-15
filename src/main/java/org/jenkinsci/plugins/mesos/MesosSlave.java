@@ -74,7 +74,7 @@ public class MesosSlave extends Slave {
   public MesosSlaveInfo getSlaveInfo() {
     return slaveInfo;
   }
-
+ 
   public int getIdleTerminationMinutes() {
     return slaveInfo.getIdleTerminationMinutes();
   }
