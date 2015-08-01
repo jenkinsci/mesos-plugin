@@ -53,6 +53,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
+  private static final int MAX_HOSTNAME_LENGTH = 63; // Guard against LONG hostnames - RFC-1034
   private String nativeLibraryPath;
   private String master;
   private String description;
@@ -253,7 +254,7 @@ public class MesosCloud extends Cloud {
   }
 
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
-    String name = "mesos-jenkins-" + UUID.randomUUID().toString();
+    final String name = StringUtils.abbreviate("mesos-jenkins-" + StringUtils.remove(UUID.randomUUID().toString(), '-') + "-" + slaveInfo.getLabelString(), MAX_HOSTNAME_LENGTH);
     return new MesosSlave(this, name, numExecutors, slaveInfo);
   }
 
