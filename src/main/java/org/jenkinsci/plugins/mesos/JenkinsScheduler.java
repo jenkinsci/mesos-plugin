@@ -121,6 +121,7 @@ public class JenkinsScheduler implements Scheduler {
         FrameworkInfo framework = FrameworkInfo.newBuilder()
           .setUser(targetUser == null ? "" : targetUser)
           .setName(mesosCloud.getFrameworkName())
+          .setRole(mesosCloud.getRole())
           .setPrincipal(mesosCloud.getPrincipal())
           .setCheckpoint(mesosCloud.isCheckpoint())
           .setWebuiUrl(webUrl != null ? webUrl :  "")
