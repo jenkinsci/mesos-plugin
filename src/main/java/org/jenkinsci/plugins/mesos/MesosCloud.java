@@ -79,6 +79,7 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
+  private String role;
   private String slavesUser;
   private String credentialsId;
   /**
@@ -149,6 +150,7 @@ public class MesosCloud extends Cloud {
       String master,
       String description,
       String frameworkName,
+      String role,
       String slavesUser,
       String principal,
       String secret,
@@ -157,8 +159,9 @@ public class MesosCloud extends Cloud {
       boolean onDemandRegistration,
       String jenkinsURL,
       String declineOfferDuration) throws NumberFormatException {
-    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, slavesUser,
-         principal, secret, slaveInfos, checkpoint, onDemandRegistration, jenkinsURL);
+    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
+         slavesUser, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
+         jenkinsURL);
   }
 
   /**
@@ -172,6 +175,7 @@ public class MesosCloud extends Cloud {
       String master,
       String description,
       String frameworkName,
+      String role,
       String slavesUser,
       String principal,
       String secret,
@@ -185,6 +189,7 @@ public class MesosCloud extends Cloud {
     this.master = master;
     this.description = description;
     this.frameworkName = frameworkName;
+    this.role = role;
     this.slavesUser = slavesUser;
     this.principal = principal;
     this.secret = secret;
@@ -214,8 +219,8 @@ public class MesosCloud extends Cloud {
    */
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
-           source.slavesUser, source.principal, source.secret, source.slaveInfos, source.checkpoint,
-           source.onDemandRegistration, source.jenkinsURL);
+           source.role, source.slavesUser, source.principal, source.secret, source.slaveInfos,
+           source.checkpoint, source.onDemandRegistration, source.jenkinsURL);
   }
 
   // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
@@ -409,6 +414,14 @@ public class MesosCloud extends Cloud {
     this.frameworkName = frameworkName;
   }
 
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
+  }
+
   public String getSlavesUser() {
     return slavesUser;
   }
@@ -521,6 +534,9 @@ public class MesosCloud extends Cloud {
 
   protected Object readResolve() {
     migrateToCredentials();
+    if (role == null) {
+      role = "*";
+    }
     return this;
   }
 
@@ -605,6 +621,7 @@ public void setJenkinsURL(String jenkinsURL) {
     private String master;
     private String description;
     private String frameworkName;
+    private String role;
     private String slavesUser;
     private String principal;
     private String secret;
@@ -637,6 +654,7 @@ public void setJenkinsURL(String jenkinsURL) {
       master = object.getString("master");
       description = object.getString("description");
       frameworkName = object.getString("frameworkName");
+      role = object.getString("role");
       principal = object.getString("principal");
       secret = object.getString("secret");
       slaveAttributes = object.getString("slaveAttributes");
