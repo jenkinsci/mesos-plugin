@@ -290,6 +290,13 @@ public class JenkinsScheduler implements Scheduler {
     List<Range> ports = null;
 
     for (Resource resource : offer.getResourcesList()) {
+      String resourceRole = resource.getRole();
+      String expectedRole = mesosCloud.getRole();
+      if (! resourceRole.equals(expectedRole)) {
+        LOGGER.warning("Resource role " + resourceRole +
+            " doesn't match expected role " + expectedRole);
+        continue;
+      }
       if (resource.getName().equals("cpus")) {
         if (resource.getType().equals(Value.Type.SCALAR)) {
           cpus = resource.getScalar().getValue();
