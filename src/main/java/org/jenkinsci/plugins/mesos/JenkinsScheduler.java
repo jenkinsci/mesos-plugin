@@ -526,6 +526,7 @@ public class JenkinsScheduler implements Scheduler {
                 .newBuilder()
                 .setName("cpus")
                 .setType(Value.Type.SCALAR)
+                .setRole(request.request.role)
                 .setScalar(
                     Value.Scalar.newBuilder()
                         .setValue(request.request.cpus).build()).build())
@@ -534,6 +535,7 @@ public class JenkinsScheduler implements Scheduler {
                 .newBuilder()
                 .setName("mem")
                 .setType(Value.Type.SCALAR)
+                .setRole(request.request.role)
                 .setScalar(
                     Value.Scalar
                         .newBuilder()
@@ -726,7 +728,7 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
+    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState() +
                 (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
