@@ -73,6 +73,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
+  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
   private static final int MAX_HOSTNAME_LENGTH = 63; // Guard against LONG hostnames - RFC-1034
   private String nativeLibraryPath;
   private String master;
@@ -93,6 +94,7 @@ public class MesosCloud extends Cloud {
   private final boolean checkpoint; // Set true to enable checkpointing. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
   private String jenkinsURL;
+  private String declineOfferDuration;
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -153,7 +155,8 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
-      String jenkinsURL) throws NumberFormatException {
+      String jenkinsURL,
+      String declineOfferDuration) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, slavesUser,
          principal, secret, slaveInfos, checkpoint, onDemandRegistration, jenkinsURL);
   }
@@ -190,6 +193,7 @@ public class MesosCloud extends Cloud {
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
     this.setJenkinsURL(jenkinsURL);
+    this.setDeclineOfferDuration(declineOfferDuration);
     if(!onDemandRegistration) {
 	    JenkinsScheduler.SUPERVISOR_LOCK.lock();
 	    try {
@@ -560,6 +564,40 @@ public class MesosCloud extends Cloud {
 public void setJenkinsURL(String jenkinsURL) {
 	this.jenkinsURL = jenkinsURL;
 }
+
+  public String getDeclineOfferDuration() {
+    if (declineOfferDuration == null) {
+      return DEFAULT_DECLINE_OFFER_DURATION;
+    } else {
+      return declineOfferDuration;
+    }
+  }
+
+  public double getDeclineOfferDurationDouble() {
+    return Double.parseDouble(getDeclineOfferDuration());
+  }
+
+  public void setDeclineOfferDuration(String declineOfferDuration) {
+    try {
+      if (declineOfferDuration == null) {
+        LOGGER.info("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+        this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
+      } else {
+        double duration = Double.parseDouble(declineOfferDuration);
+        if (duration >= 1000) {
+          this.declineOfferDuration = declineOfferDuration;
+        } else {
+          LOGGER.warning("Minimum declineOfferDuration (1000) > " + declineOfferDuration
+              + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+          this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
+        }
+      }
+    } catch (NumberFormatException e) {
+      LOGGER.warning("Unable to parse declineOfferDuration: " + declineOfferDuration
+          + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+      this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
+    }
+  }
 
 @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {

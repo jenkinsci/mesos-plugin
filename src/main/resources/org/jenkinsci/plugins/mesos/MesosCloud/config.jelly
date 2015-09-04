@@ -41,6 +41,11 @@
                     <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
                 <st:nbsp/>${%No}
         </f:entry>
+
+        <f:entry title="${%Decline offer duration}" field="declineOfferDuration" description="${%Decline offers for specified amount of time in case no slave is queued. The plugin asks for new offers in case a new slave needs to be started. In milliseconds.}">
+          <f:number field="declineOfferDuration" clazz="required positive-number" min="1000" steps="1000" default="600000"/>
+        </f:entry>
+
         <f:entry>
             <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
                 <table width="100%">

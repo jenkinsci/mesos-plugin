@@ -90,7 +90,7 @@ public class JenkinsScheduler implements Scheduler {
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
   private Set<TaskID> finishedTasks;
-  private volatile MesosSchedulerDriver driver;
+  private volatile SchedulerDriver driver;
   private String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
   private volatile boolean running;
@@ -184,6 +184,11 @@ public class JenkinsScheduler implements Scheduler {
   public synchronized void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
     LOGGER.info("Enqueuing jenkins slave request");
     requests.add(new Request(request, result));
+    if (driver != null) {
+      // Ask mesos to send all offers, even the those we declined earlier.
+      // See comment in resourceOffers() for further details.
+      driver.reviveOffers();
+    }
   }
 
   /**
@@ -275,6 +280,17 @@ public class JenkinsScheduler implements Scheduler {
   public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     LOGGER.fine("Received offers " + offers.size());
     for (Offer offer : offers) {
+      if (requests.isEmpty()) {
+        // Decline offer for a longer period if no slave is waiting to get spawned.
+        // This prevents unnecessarily getting offers every few seconds and causing
+        // starvation when running a lot of frameworks.
+        double rejectOfferDuration = mesosCloud.getDeclineOfferDurationDouble();
+        LOGGER.info("No slave in queue. Rejecting offers for " + rejectOfferDuration + " ms");
+        Filters filters = Filters.newBuilder().setRefuseSeconds(rejectOfferDuration).build();
+        driver.declineOffer(offer.getId(), filters);
+        return;
+      }
+
       boolean matched = false;
       for (Request request : requests) {
         if (matches(offer, request)) {
@@ -404,6 +420,11 @@ public class JenkinsScheduler implements Scheduler {
     }
 
     return slaveTypeMatch;
+  }
+
+  @VisibleForTesting
+  void setDriver(SchedulerDriver driver) {
+    this.driver = driver;
   }
 
   @VisibleForTesting
