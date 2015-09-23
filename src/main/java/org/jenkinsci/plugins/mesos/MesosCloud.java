@@ -502,6 +502,15 @@ public void setJenkinsURL(String jenkinsURL) {
                   portMappings);
             }
 
+            MesosSlaveInfo.RunAsUserInfo runAsUserInfo = null;
+              if (label.has("runAsUserInfo")) {
+                JSONObject runAsUserInfoJson = label.getJSONObject("runAsUserInfo");
+                runAsUserInfo = new MesosSlaveInfo.RunAsUserInfo(
+                        runAsUserInfoJson.getString("username"),
+                        runAsUserInfoJson.getString("command")
+                        );
+            }
+
             List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
             if (label.has("additionalURIs")) {
               JSONArray additionalURIsJson = label.getJSONArray("additionalURIs");
@@ -528,7 +537,8 @@ public void setJenkinsURL(String jenkinsURL) {
                 object.getString("jnlpArgs"),
                 externalContainerInfo,
                 containerInfo,
-                additionalURIs);
+                additionalURIs,
+                runAsUserInfo);
             slaveInfos.add(slaveInfo);
           }
         }

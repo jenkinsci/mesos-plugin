@@ -632,14 +632,22 @@ public class JenkinsScheduler implements Scheduler {
         return commandBuilder;
   }
 
-  String generateJenkinsCommand2Run(int jvmMem,String jvmArgString,String jnlpArgString,String slaveName) {
+  String generateJenkinsCommand2Run(int jvmMem, String jvmArgString, String jnlpArgString, String slaveName, MesosSlaveInfo.RunAsUserInfo runAsUserInfo) {
 
-      return String.format(SLAVE_COMMAND_FORMAT,
-              jvmMem,
-              jvmArgString,
-              jnlpArgString,
-              getJnlpSecret(slaveName),
-              getJnlpUrl(slaveName));
+    String slaveCmd = String.format(SLAVE_COMMAND_FORMAT,
+            jvmMem,
+            jvmArgString,
+            jnlpArgString,
+            getJnlpSecret(slaveName),
+            getJnlpUrl(slaveName));
+
+    if (runAsUserInfo != null) {
+      slaveCmd = runAsUserInfo.getCommand()
+              .replace(MesosSlaveInfo.RunAsUserInfo.TOKEN_USERNAME, runAsUserInfo.getUsername())
+              .replace(MesosSlaveInfo.RunAsUserInfo.TOKEN_SLAVE_COMMAND, slaveCmd);
+    }
+
+    return slaveCmd;
   }
 
   private CommandInfo.Builder getBaseCommandBuilder(Request request) {
@@ -649,7 +657,8 @@ public class JenkinsScheduler implements Scheduler {
             request.request.mem,
             request.request.slaveInfo.getJvmArgs(),
             request.request.slaveInfo.getJnlpArgs(),
-            request.request.slave.name);
+            request.request.slave.name,
+            request.request.slaveInfo.getRunAsUserInfo());
 
         if (request.request.slaveInfo.getContainerInfo() != null &&
             request.request.slaveInfo.getContainerInfo().getUseCustomDockerCommandShell()) {

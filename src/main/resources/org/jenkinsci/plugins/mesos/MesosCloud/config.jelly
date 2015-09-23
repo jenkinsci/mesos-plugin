@@ -95,6 +95,15 @@
                         <f:textbox field="jnlpArgs" default="" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
+                    <f:optionalBlock title="${%Run as User}" name="runAsUserInfo" checked="${slaveInfo.runAsUserInfo != null}">
+                        <f:entry title="${%Username}">
+                            <f:textbox clazz="required" field="username" default="${slaveInfo.runAsUserInfo.DEFAULT_USERNAME}" value="${slaveInfo.runAsUserInfo.username}" />
+                        </f:entry>
+                        <f:entry title="${%Command}">
+                            <f:textbox clazz="required" field="command" default="${slaveInfo.runAsUserInfo.DEFAULT_COMMAND}" value="${slaveInfo.runAsUserInfo.command}" />
+                        </f:entry>
+                    </f:optionalBlock>
+
                     <f:advanced>
                         <f:optionalBlock title="${%Use Docker Containerizer}" name="containerInfo" checked="${slaveInfo.containerInfo != null}">
 
