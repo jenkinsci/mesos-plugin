@@ -22,6 +22,8 @@ import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.RetentionStrategy;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.Collections;

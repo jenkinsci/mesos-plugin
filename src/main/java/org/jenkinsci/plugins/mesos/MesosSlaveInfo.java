@@ -36,6 +36,7 @@ public class MesosSlaveInfo {
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
+  private final List<Command> additionalCommands;
 
   private String labelString = DEFAULT_LABEL_NAME;
 
@@ -58,7 +59,8 @@ public class MesosSlaveInfo {
       String jnlpArgs,
       ExternalContainerInfo externalContainerInfo,
       ContainerInfo containerInfo,
-      List<URI> additionalURIs)
+      List<URI> additionalURIs,
+      List<Command> additionalCommands)
       throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
@@ -77,6 +79,7 @@ public class MesosSlaveInfo {
     this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
+    this.additionalCommands = additionalCommands;
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
@@ -151,7 +154,11 @@ public class MesosSlaveInfo {
     return additionalURIs;
   }
 
-  /**
+  public List<Command> getAdditionalCommands() {
+    return additionalCommands;
+  }
+
+    /**
    * Removes any additional {@code -Xmx} JVM args from the provided JVM
    * arguments. This is to ensure that the logic that sets the maximum heap
    * sized based on the memory available to the slave is not overriden by a
@@ -356,6 +363,20 @@ public class MesosSlaveInfo {
       return readOnly;
     }
   }
+
+  public static class Command {
+      private final String value;
+
+      @DataBoundConstructor
+      public Command(String value) {
+        this.value = value;
+      }
+
+      public String getValue() {
+        return value;
+      }
+
+    }
 
   public static class URI {
     private final String value;

@@ -238,6 +238,24 @@
                                 </fieldset>
                             </f:repeatable>
                         </f:entry>
+
+                        <f:entry title="${%Additional Commands}" field="additionalCommands">
+                            <f:repeatable add="${%Add Command}" var="command" name="additionalCommands" items="${slaveInfo.additionalCommands}" noAddButton="false" minimum="0">
+                                <fieldset>
+                                    <table width="100%">
+                                        <f:entry title="${%Command}">
+                                            <f:textbox clazz="required" field="value" default="" value="${command.value}" />
+                                        </f:entry>
+
+                                        <f:entry>
+                                            <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                                <f:repeatableDeleteButton value="${%Delete Command}" /><br/>
+                                            </div>
+                                        </f:entry>
+                                    </table>
+                                </fieldset>
+                            </f:repeatable>
+                        </f:entry>
                     </f:advanced>
 
                     <f:entry>
