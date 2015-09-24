@@ -82,7 +82,10 @@
                     </f:entry>
 
                     <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
-                        <f:number field="idleTerminationMinutes" clazz="required number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
+                        <f:number field="idleTerminationMinutes" clazz="required number" default="3" value="${slaveInfo.maximumTimeToLiveMinutes}"/>
+                    </f:entry>
+                    <f:entry title="${%Maxium Time To Live}" field="maximumTimeToLiveMinutes">
+                        <f:number field="maximumTimeToLiveMinutes" clazz="required number" default="3" value="${slaveInfo.maximumTimeToLiveMinutes}"/>
                     </f:entry>
                     <f:entry title="${%Mesos Offer Selection Attributes}">
                         <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>

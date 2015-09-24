@@ -38,13 +38,15 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
    * terminated.
    */
   public final int idleTerminationMinutes;
+  private final int maximumTimeToLive;
   private ReentrantLock checkLock = new ReentrantLock(false);
 
   private static final Logger LOGGER = Logger
       .getLogger(MesosRetentionStrategy.class.getName());
 
-  public MesosRetentionStrategy(int idleTerminationMinutes) {
+  public MesosRetentionStrategy(int idleTerminationMinutes, int maximumTimeToLive) {
     this.idleTerminationMinutes = idleTerminationMinutes;
+    this.maximumTimeToLive = maximumTimeToLive;
   }
 
 
@@ -79,11 +81,11 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
       return 1;
     }
 
+    final long idleMilliseconds =
+            DateTimeUtils.currentTimeMillis() - c.getIdleStartMilliseconds();
     // Terminate the computer if it is idle for longer than
     // 'idleTerminationMinutes'.
     if (isTerminable() && c.isIdle()) {
-      final long idleMilliseconds =
-          DateTimeUtils.currentTimeMillis() - c.getIdleStartMilliseconds();
 
       if (idleMilliseconds > MINUTES.toMillis(idleTerminationMinutes)) {
         LOGGER.info("Disconnecting idle computer " + c.getName());
@@ -92,6 +94,20 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
         if (!c.isOffline()) {
           c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
         }
+      }
+    }
+
+    // Terminate the computer if it is exists for longer than
+    // 'maximumTimeToLive'.
+    final long timeLivedInMilliseconds =
+            DateTimeUtils.currentTimeMillis() - c.getConnectTime();
+
+    if (timeLivedInMilliseconds > MINUTES.toMillis(maximumTimeToLive)) {
+      LOGGER.info("Disconnecting computer greater maximum TTL " + c.getName());
+      c.getNode().setPendingDelete(true);
+
+      if (!c.isOffline()) {
+        c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
       }
     }
     return 1;
