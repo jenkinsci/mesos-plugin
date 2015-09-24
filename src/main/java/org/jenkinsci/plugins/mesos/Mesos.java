@@ -14,21 +14,37 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo;
 import org.apache.mesos.Scheduler;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 public abstract class Mesos {
   private static Map<MesosCloud, Mesos> clouds = new HashMap<MesosCloud, Mesos>();
 
   public static class JenkinsSlave {
     String name;
+    String hostName;
+    Collection<DockerInfo.PortMapping> actualPortMappings;
+
+    public JenkinsSlave(String name, String hostName, Collection<DockerInfo.PortMapping> actualPortMappings) {
+      this.name = name;
+      this.hostName = hostName;
+
+      if (actualPortMappings == null) {
+          this.actualPortMappings = new ArrayList();
+      } else {
+          this.actualPortMappings = actualPortMappings;
+      }
+    }
 
     public JenkinsSlave(String name) {
-      this.name = name;
-    }
+        this(name, null, null);
+      }
+
   }
 
   public static class SlaveRequest {

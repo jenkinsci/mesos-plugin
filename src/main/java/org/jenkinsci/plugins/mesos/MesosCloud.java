@@ -485,7 +485,10 @@ public void setJenkinsURL(String jenkinsURL) {
                   portMappings.add(new MesosSlaveInfo.PortMapping(
                           portMappingJson.getInt("containerPort"),
                           portMappingJson.getInt("hostPort"),
-                          portMappingJson.getString("protocol")));
+                          portMappingJson.getString("protocol"),
+                          portMappingJson.getString("description"),
+                          portMappingJson.getString("urlFormat")
+                  ));
                 }
               }
 

@@ -139,6 +139,12 @@
                                                             <f:option value="udp" selected="${portMapping.protocol == 'udp'}">udp</f:option>
                                                         </select>
                                                     </f:entry>
+                                                    <f:entry title="${%Description}" field="portMapping.description">
+                                                        <f:textbox clazz="required" default="" value="${portMapping.description}" />
+                                                    </f:entry>
+                                                    <f:entry title="${%URL Format}" field="portMapping.urlFormat">
+                                                        <f:textbox default="http://{hostname}:{port}" value="${portMapping.urlFormat}" />
+                                                    </f:entry>
                                                     <f:entry>
                                                         <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
                                                             <f:repeatableDeleteButton value="${%Delete Port Mapping}" /><br/>
