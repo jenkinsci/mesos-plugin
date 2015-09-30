@@ -104,7 +104,6 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
 
     if (timeLivedInMilliseconds > MINUTES.toMillis(maximumTimeToLive)) {
       LOGGER.info("Disconnecting computer greater maximum TTL " + c.getName());
-      c.getNode().setPendingDelete(true);
 
       if (!c.isOffline()) {
         c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
