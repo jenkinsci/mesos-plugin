@@ -5,14 +5,4 @@
     <f:readOnlyTextbox  name="cloudName" value="${instance.displayName}"/>
   </f:entry>
   
-  <!-- Some read-only contents 
-    - TODO: Rework the layout to show the informative info: supported labels, etc.
-  -->
-  <f:entry title="${%Mesos Master [hostname:port]}" field="master">
-    <f:readOnlyTextbox field="master" clazz="required"/>
-  </f:entry>
-  <f:entry title="${%Description}">
-    <f:readOnlyTextbox field="description" />
-  </f:entry>
-  
 </j:jelly>
