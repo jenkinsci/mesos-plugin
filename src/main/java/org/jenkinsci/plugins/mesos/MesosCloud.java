@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 import javax.servlet.ServletException;
 
@@ -124,7 +125,29 @@ public class MesosCloud extends Cloud {
       boolean checkpoint,
       boolean onDemandRegistration,
       String jenkinsURL) throws NumberFormatException {
-    super("MesosCloud");
+    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, slavesUser, 
+            principal, secret, slaveInfos, checkpoint, onDemandRegistration, jenkinsURL);
+  }
+  
+  /**
+   * Constructor, which also allows to specify a custom name.
+   * @throws NumberFormatException Numeric parameter parsing error
+   * @since TODO
+   */
+  protected MesosCloud(
+      String cloudName,
+      String nativeLibraryPath,
+      String master,
+      String description,
+      String frameworkName,
+      String slavesUser,
+      String principal,
+      String secret,
+      List<MesosSlaveInfo> slaveInfos,
+      boolean checkpoint,
+      boolean onDemandRegistration,
+      String jenkinsURL) throws NumberFormatException {
+    super(cloudName);
 
     this.nativeLibraryPath = nativeLibraryPath;
     this.master = master;
@@ -147,6 +170,20 @@ public class MesosCloud extends Cloud {
     }
   }
 
+  /**
+   * Copy constructor.
+   * Allows to create copies of the original mesos cloud. Since it's a singleton
+   * by design, this method also allows specifying a new name.
+   * @param name Name of the cloud to be created
+   * @param source Source Mesos cloud implementation
+   * @since TODO
+   */
+  public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
+      this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
+           source.slavesUser, source.principal, source.secret, source.slaveInfos, source.checkpoint,
+           source.onDemandRegistration, source.jenkinsURL);
+  }
+          
   // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
   // or lookups won't work if any fields are changed.  Use master string as the key since
   // the rest of this code assumes it is unique among the Cloud objects.
