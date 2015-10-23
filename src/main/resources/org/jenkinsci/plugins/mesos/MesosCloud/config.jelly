@@ -204,11 +204,11 @@
 
                         <f:optionalBlock title="${%Use External Containerizer}" name="externalContainerInfo" checked="${slaveInfo.externalContainerInfo != null}">
                             <f:entry title="${%External Container image}" field="image" description="Docker image requires prefix docker:///">
-                                <f:textbox field="image" value="${externalContainerInfo.image}" default=""/>
+                                <f:textbox field="image" value="${slaveInfo.externalContainerInfo.image}" default=""/>
                             </f:entry>
 
                             <f:entry title="${%External Container options}" field="options" description="Comma separated list of options to pass to the containerizer">
-                                <f:textbox field="options" value="${externalContainerInfo.options}" default=""/>
+                                <f:textbox field="options" value="${slaveInfo.externalContainerInfo.options}" default=""/>
                             </f:entry>
                         </f:optionalBlock>
 
