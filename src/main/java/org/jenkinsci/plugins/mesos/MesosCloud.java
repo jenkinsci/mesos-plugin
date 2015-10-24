@@ -14,15 +14,28 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.Node.Mode;
+import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
@@ -41,6 +54,8 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -48,7 +63,11 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -58,8 +77,17 @@ public class MesosCloud extends Cloud {
   private String description;
   private String frameworkName;
   private String slavesUser;
-  private String principal;
-  private String secret;
+  private String credentialsId;
+  /**
+   * @deprecated Create credentials then use credentialsId instead.
+   */
+  @Deprecated
+  private transient String principal;
+  /**
+   * @deprecated Create credentials then use credentialsId instead.
+   */
+  @Deprecated
+  private transient String secret;
   private final boolean checkpoint; // Set true to enable checkpointing. False by default.
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
   private String jenkinsURL;
@@ -133,6 +161,7 @@ public class MesosCloud extends Cloud {
     this.slavesUser = slavesUser;
     this.principal = principal;
     this.secret = secret;
+    migrateToCredentials();
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
@@ -206,6 +235,22 @@ public class MesosCloud extends Cloud {
       LOGGER.info("Mesos master has not changed, leaving the scheduler running");
     }
 
+  }
+
+  /**
+   * Returns the credentials object associated with the stored credentialsId.
+   *
+   * @return The credentials object associated with the stored credentialsId. May be null if credentialsId is null or
+   * if there is no credentials associated with the given id.
+   */
+  public StandardUsernamePasswordCredentials getCredentials() {
+    List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
+      : URIRequirementBuilder.fromUri(master.trim()).build();
+    Jenkins jenkins = Jenkins.getInstance();
+    return CredentialsMatchers.firstOrNull(CredentialsProvider
+      .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
+      CredentialsMatchers.withId(credentialsId)
+    );
   }
 
   @Override
@@ -322,21 +367,55 @@ public class MesosCloud extends Cloud {
     this.slavesUser = slavesUser;
   }
 
+  /**
+   * @deprecated Use MesosCloud#getCredentials().getUsername() instead.
+   * @return
+   */
+  @Deprecated
   public String getPrincipal() {
-        return principal;
-    }
+    StandardUsernamePasswordCredentials credentials = getCredentials();
+    return credentials == null ? "jenkins" : credentials.getUsername();
+  }
 
+  /**
+   * @deprecated Define credentials and use MesosCloud#setCredentialsId instead.
+   * @param principal
+   */
+  @Deprecated
   public void setPrincipal(String principal) {
-        this.principal = principal;
-    }
+    this.principal = principal;
+  }
 
+  /**
+   * @return The credentialsId to use for this mesos cloud
+   */
+  public String getCredentialsId() {
+    return credentialsId;
+  }
+
+  @DataBoundSetter
+  public void setCredentialsId(String credentialsId) {
+    this.credentialsId = credentialsId;
+  }
+
+  /**
+   * @deprecated Use MesosCloud#getCredentials().getPassword() instead.
+   * @return
+   */
+  @Deprecated
   public String getSecret() {
-        return secret;
-    }
+    StandardUsernamePasswordCredentials credentials = getCredentials();
+    return credentials == null ? "" : Secret.toString(credentials.getPassword());
+  }
 
+  /**
+   * @deprecated Define credentials and use MesosCloud#setCredentialsId instead.
+   * @param secret
+   */
+  @Deprecated
   public void setSecret(String secret) {
-        this.secret = secret;
-    }
+    this.secret = secret;
+  }
 
   public boolean isOnDemandRegistration() {
     return onDemandRegistration;
@@ -390,6 +469,44 @@ public class MesosCloud extends Cloud {
     return null;
   }
 
+  protected Object readResolve() {
+    migrateToCredentials();
+    return this;
+  }
+
+  /**
+   * Migrate principal/secret to credentials
+   */
+  private void migrateToCredentials() {
+    if (principal != null) {
+      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
+        : URIRequirementBuilder.fromUri(master.trim()).build();
+      Jenkins jenkins = Jenkins.getInstance();
+      // Look up existing credentials with the same username.
+      List<StandardUsernamePasswordCredentials> credentials = CredentialsMatchers.filter(CredentialsProvider
+        .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
+        CredentialsMatchers.withUsername(principal)
+      );
+      for (StandardUsernamePasswordCredentials cred: credentials) {
+        if (StringUtils.equals(secret, Secret.toString(cred.getPassword()))) {
+          // If some credentials have the same username/password, use those.
+          this.credentialsId = cred.getId();
+          break;
+        }
+      }
+      if (credentialsId == null) {
+        // If we couldn't find any existing credentials,
+        // create new credentials with the principal and secret and use it.
+        StandardUsernamePasswordCredentials newCredentials = new UsernamePasswordCredentialsImpl(
+          CredentialsScope.SYSTEM, null, null, principal, secret);
+        SystemCredentialsProvider.getInstance().getCredentials().add(newCredentials);
+        this.credentialsId = newCredentials.getId();
+      }
+      principal = null;
+      secret = null;
+    }
+  }
+
   public String getJenkinsURL() {
 	return jenkinsURL;
 }
@@ -415,6 +532,17 @@ public void setJenkinsURL(String jenkinsURL) {
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
+    }
+
+    @Restricted(DoNotUse.class) // Stapler only.
+    @SuppressWarnings("unused") // Used by stapler.
+    public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item item, @QueryParameter String master) {
+      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
+        : URIRequirementBuilder.fromUri(master.trim()).build();
+      return new StandardListBoxModel().withEmptySelection().withMatching(
+        CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class),
+        CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, item, null, domainRequirements)
+      );
     }
 
     @Override
