@@ -12,4 +12,8 @@
           <f:readOnlyTextbox field="idleTerminationMinutes" clazz="number"/>
         </f:entry>
 
+        <f:entry title="${%Maximum Time To Live}" field="maximumTimeToLiveMinutes">
+          <f:readOnlyTextbox field="maximumTimeToLiveMinutes" clazz="number"/>
+        </f:entry>
+
 </j:jelly>
