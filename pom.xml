@@ -83,7 +83,6 @@
 
   <properties>
     <jenkins.version>1.565.3</jenkins.version>
-    <jenkins-test-harness.version>1.565.3</jenkins-test-harness.version>
     <findbugs.failOnError>false</findbugs.failOnError>
     <mesos.version>0.27.0</mesos.version>
     <protobuf.version>2.5.0</protobuf.version>
@@ -156,6 +155,17 @@
           <optional>true</optional>
       </dependency>
   </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Need to be the same as hamcrest-library pulled by core -->
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>1.3</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
   <build>
       <plugins>

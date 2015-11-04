@@ -289,7 +289,7 @@ public class MesosSlaveInfo {
                          List<Volume> volumes,
                          List<Parameter> parameters,
                          String networking,
-                         List<PortMapping> portMappings) throws FormException {
+                         List<PortMapping> portMappings) {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
