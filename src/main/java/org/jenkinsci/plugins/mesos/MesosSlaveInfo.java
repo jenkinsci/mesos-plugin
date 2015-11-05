@@ -4,15 +4,12 @@ import hudson.model.Descriptor.FormException;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 
 import hudson.model.Label;
-import hudson.model.Node;
 import hudson.model.Node.Mode;
-import hudson.model.labels.LabelAtom;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
