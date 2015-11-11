@@ -169,10 +169,10 @@ public class MesosSlaveInfo {
   }
 
   /**
-   * Check if the label in the slave matches the provided label, either both are null or are the same
+   * Check if the label in the slave matches the provided label, either both are null or are the same.
    * 
    * @param label
-   * @return whether the slave label matches
+   * @return Whether the slave label matches.
    */
   public boolean matchesLabel(@CheckForNull Label label) {
     return ((label == null) && (getLabelString() == null))
