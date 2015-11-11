@@ -6,9 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import hudson.model.Node;
-import hudson.model.Node.Mode;
+import javax.annotation.CheckForNull;
 
+import hudson.model.Label;
+import hudson.model.Node.Mode;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -37,6 +38,7 @@ public class MesosSlaveInfo {
   private final List<URI> additionalURIs;
   private final Mode mode;
 
+  @CheckForNull
   private String labelString = DEFAULT_LABEL_NAME;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlaveInfo.class
@@ -68,8 +70,7 @@ public class MesosSlaveInfo {
     this.remoteFSRoot = StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot
         .trim() : "jenkins";
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
-    this.labelString = StringUtils.isNotBlank(labelString) ? labelString
-        : DEFAULT_LABEL_NAME;
+    this.labelString = StringUtils.isNotBlank(labelString) ? labelString : null;
     this.mode = mode != null ? mode : Mode.NORMAL;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
@@ -91,6 +92,7 @@ public class MesosSlaveInfo {
     this.slaveAttributes = jsonObject;
   }
 
+  @CheckForNull
   public String getLabelString() {
     return labelString;
   }
@@ -164,6 +166,17 @@ public class MesosSlaveInfo {
    */
   private String cleanseJvmArgs(final String jvmArgs) {
     return jvmArgs.replaceAll(JVM_ARGS_PATTERN, "");
+  }
+
+  /**
+   * Check if the label in the slave matches the provided label, either both are null or are the same.
+   * 
+   * @param label
+   * @return Whether the slave label matches.
+   */
+  public boolean matchesLabel(@CheckForNull Label label) {
+    return ((label == null) && (getLabelString() == null))
+      || (getLabelString() != null && label != null && label.matches(Label.parse(getLabelString())));
   }
 
   public static class ExternalContainerInfo {

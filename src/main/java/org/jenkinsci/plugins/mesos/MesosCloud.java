@@ -272,9 +272,9 @@ public class MesosCloud extends Cloud {
     // item in the list of configured Mesos labels.
     // TODO(vinod): The framework may not have the resources necessary
     // to start a task when it comes time to launch the slave.
-    if (label != null && slaveInfos != null) {
+    if (slaveInfos != null) {
       for (MesosSlaveInfo slaveInfo : slaveInfos) {
-        if (label.matches(Label.parse(slaveInfo.getLabelString()))) {
+        if (slaveInfo.matchesLabel(label)) {
           return true;
         }
       }
@@ -365,7 +365,7 @@ public class MesosCloud extends Cloud {
   private MesosSlaveInfo getSlaveInfo(List<MesosSlaveInfo> slaveInfos,
       Label label) {
     for (MesosSlaveInfo slaveInfo : slaveInfos) {
-      if (label.matches(Label.parse(slaveInfo.getLabelString()))) {
+      if (slaveInfo.matchesLabel(label)) {
         return slaveInfo;
       }
     }
