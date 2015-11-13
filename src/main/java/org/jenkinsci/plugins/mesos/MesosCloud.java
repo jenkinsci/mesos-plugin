@@ -57,6 +57,7 @@ public class MesosCloud extends Cloud {
   private String master;
   private String description;
   private String frameworkName;
+  private String role;
   private String slavesUser;
   private String principal;
   private String secret;
@@ -117,6 +118,7 @@ public class MesosCloud extends Cloud {
       String master,
       String description,
       String frameworkName,
+      String role,
       String slavesUser,
       String principal,
       String secret,
@@ -130,6 +132,7 @@ public class MesosCloud extends Cloud {
     this.master = master;
     this.description = description;
     this.frameworkName = frameworkName;
+    this.role = role;
     this.slavesUser = slavesUser;
     this.principal = principal;
     this.secret = secret;
@@ -314,6 +317,14 @@ public class MesosCloud extends Cloud {
     this.frameworkName = frameworkName;
   }
 
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
+  }
+
   public String getSlavesUser() {
     return slavesUser;
   }
@@ -404,6 +415,7 @@ public void setJenkinsURL(String jenkinsURL) {
     private String master;
     private String description;
     private String frameworkName;
+    private String role;
     private String slavesUser;
     private String principal;
     private String secret;
@@ -425,6 +437,7 @@ public void setJenkinsURL(String jenkinsURL) {
       master = object.getString("master");
       description = object.getString("description");
       frameworkName = object.getString("frameworkName");
+      role = object.getString("role");
       principal = object.getString("principal");
       secret = object.getString("secret");
       slaveAttributes = object.getString("slaveAttributes");

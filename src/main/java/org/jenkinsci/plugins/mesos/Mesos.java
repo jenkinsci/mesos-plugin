@@ -35,12 +35,15 @@ public abstract class Mesos {
     JenkinsSlave slave;
     final double cpus;
     final int mem;
+    final String role;
     final MesosSlaveInfo slaveInfo;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, MesosSlaveInfo slaveInfo) {
+    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String role,
+        MesosSlaveInfo slaveInfo) {
       this.slave = slave;
       this.cpus = cpus;
       this.mem = mem;
+      this.role = role;
       this.slaveInfo = slaveInfo;
     }
 

@@ -121,6 +121,7 @@ public class JenkinsScheduler implements Scheduler {
         FrameworkInfo framework = FrameworkInfo.newBuilder()
           .setUser(targetUser == null ? "" : targetUser)
           .setName(mesosCloud.getFrameworkName())
+          .setRole(mesosCloud.getRole())
           .setPrincipal(mesosCloud.getPrincipal())
           .setCheckpoint(mesosCloud.isCheckpoint())
           .setWebuiUrl(webUrl != null ? webUrl :  "")
@@ -289,6 +290,13 @@ public class JenkinsScheduler implements Scheduler {
     List<Range> ports = null;
 
     for (Resource resource : offer.getResourcesList()) {
+      String resourceRole = resource.getRole();
+      String expectedRole = mesosCloud.getRole();
+      if (! resourceRole.equals(expectedRole)) {
+        LOGGER.warning("Resource role " + resourceRole +
+            " doesn't match expected role " + expectedRole);
+        continue;
+      }
       if (resource.getName().equals("cpus")) {
         if (resource.getType().equals(Value.Type.SCALAR)) {
           cpus = resource.getScalar().getValue();
@@ -518,6 +526,7 @@ public class JenkinsScheduler implements Scheduler {
                 .newBuilder()
                 .setName("cpus")
                 .setType(Value.Type.SCALAR)
+                .setRole(request.request.role)
                 .setScalar(
                     Value.Scalar.newBuilder()
                         .setValue(request.request.cpus).build()).build())
@@ -526,6 +535,7 @@ public class JenkinsScheduler implements Scheduler {
                 .newBuilder()
                 .setName("mem")
                 .setType(Value.Type.SCALAR)
+                .setRole(request.request.role)
                 .setScalar(
                     Value.Scalar
                         .newBuilder()
@@ -718,7 +728,7 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
+    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState() +
                 (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
