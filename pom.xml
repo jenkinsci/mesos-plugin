@@ -78,11 +78,12 @@
   </pluginRepositories>
 
   <properties>
-    <mesos.version>0.22.1</mesos.version>
-    <protobuf.version>2.5.0</protobuf.version>
+    <mesos.version>0.25.0</mesos.version>
+    <protobuf.version>2.6.1</protobuf.version>
+    <joda-time.version>2.9.1</joda-time.version>
     <mockito.version>1.10.19</mockito.version>
-    <powermock.version>1.6.2</powermock.version>
-    <assertj.version>2.1.0</assertj.version>
+    <powermock.version>1.6.3</powermock.version>
+    <assertj.version>2.2.0</assertj.version>
     <guava.version>18.0</guava.version>
   </properties>
 
@@ -100,7 +101,7 @@
       <dependency>
           <groupId>joda-time</groupId>
           <artifactId>joda-time</artifactId>
-          <version>2.8.1</version>
+          <version>${joda-time.version}</version>
       </dependency>
       <dependency>
           <groupId>org.mockito</groupId>
