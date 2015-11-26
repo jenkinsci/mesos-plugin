@@ -151,6 +151,9 @@ public class JenkinsScheduler implements Scheduler {
         } catch(RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
         } finally {
+            if (driver != null) {
+                driver.abort();
+            }
             driver = null;
             running = false;
         }
