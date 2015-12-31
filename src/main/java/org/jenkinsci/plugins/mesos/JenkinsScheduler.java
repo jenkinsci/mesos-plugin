@@ -114,42 +114,49 @@ public class JenkinsScheduler implements Scheduler {
     new Thread(new Runnable() {
       @Override
       public void run() {
-        String targetUser = mesosCloud.getSlavesUser();
-        String webUrl = Jenkins.getInstance().getRootUrl();
-        if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
-        // Have Mesos fill in the current user.
-        FrameworkInfo framework = FrameworkInfo.newBuilder()
-          .setUser(targetUser == null ? "" : targetUser)
-          .setName(mesosCloud.getFrameworkName())
-          .setPrincipal(mesosCloud.getPrincipal())
-          .setCheckpoint(mesosCloud.isCheckpoint())
-          .setWebuiUrl(webUrl != null ? webUrl :  "")
-          .build();
+        try {
+            String targetUser = mesosCloud.getSlavesUser();
+            String webUrl = Jenkins.getInstance().getRootUrl();
+            if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
+            // Have Mesos fill in the current user.
+            FrameworkInfo framework = FrameworkInfo.newBuilder()
+                    .setUser(targetUser == null ? "" : targetUser)
+                    .setName(mesosCloud.getFrameworkName())
+                    .setPrincipal(mesosCloud.getPrincipal())
+                    .setCheckpoint(mesosCloud.isCheckpoint())
+                    .setWebuiUrl(webUrl != null ? webUrl : "")
+                    .build();
 
-        LOGGER.info("Initializing the Mesos driver with options"
-        + "\n" + "Framework Name: " + framework.getName()
-        + "\n" + "Principal: " + framework.getPrincipal()
-        + "\n" + "Checkpointing: " + framework.getCheckpoint()
-        );
+            LOGGER.info("Initializing the Mesos driver with options"
+                            + "\n" + "Framework Name: " + framework.getName()
+                            + "\n" + "Principal: " + framework.getPrincipal()
+                            + "\n" + "Checkpointing: " + framework.getCheckpoint()
+            );
 
-        if (StringUtils.isNotBlank(mesosCloud.getSecret())) {
-            Credential credential = Credential.newBuilder()
-              .setPrincipal(mesosCloud.getPrincipal())
-              .setSecret(ByteString.copyFromUtf8(mesosCloud.getSecret()))
-              .build();
+            if (StringUtils.isNotBlank(mesosCloud.getSecret())) {
+                Credential credential = Credential.newBuilder()
+                        .setPrincipal(mesosCloud.getPrincipal())
+                        .setSecret(ByteString.copyFromUtf8(mesosCloud.getSecret()))
+                        .build();
 
-            LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
-            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
-        } else {
-            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+                LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
+                driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
+            } else {
+                driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+            }
+            Status runStatus = driver.run();
+            if (runStatus != Status.DRIVER_STOPPED) {
+                LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
+            }
+        } catch(RuntimeException e) {
+            LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
+        } finally {
+            if (driver != null) {
+                driver.abort();
+            }
+            driver = null;
+            running = false;
         }
-        Status runStatus = driver.run();
-        if (runStatus != Status.DRIVER_STOPPED) {
-          LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
-        }
-
-        driver = null;
-        running = false;
       }
     }).start();
   }
