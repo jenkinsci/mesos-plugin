@@ -15,7 +15,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -57,10 +59,10 @@ public class JenkinsSchedulerTest {
     public void testFindPortsToUse() {
         Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
 
-        List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+        Set<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
         assertEquals(1, portsToUse.size());
-        assertEquals(Integer.valueOf(31000), portsToUse.get(0));
+        assertEquals(Integer.valueOf(31000), portsToUse.iterator().next());
     }
 
     @Test
@@ -71,10 +73,10 @@ public class JenkinsSchedulerTest {
             public void run() {
                 Protos.Offer offer = createOfferWithVariableRanges(31000, 31000);
 
-                List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+                Set<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
                 assertEquals(1, portsToUse.size());
-                assertEquals(Integer.valueOf(31000), portsToUse.get(0));
+                assertEquals(Integer.valueOf(31000), portsToUse.iterator().next());
             }
         });
 
@@ -125,11 +127,12 @@ public class JenkinsSchedulerTest {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
+                SortedSet<Integer> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
 
                 assertEquals(2, portsToUse.size());
-                assertEquals(Integer.valueOf(31000), portsToUse.get(0));
-                assertEquals(Integer.valueOf(31005), portsToUse.get(1));
+                Iterator<Integer> iterator = portsToUse.iterator();
+                assertEquals(Integer.valueOf(31000), iterator.next());
+                assertEquals(Integer.valueOf(31005), iterator.next());
             }
         });
 

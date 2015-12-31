@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -400,8 +402,8 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   @VisibleForTesting
-  List<Integer> findPortsToUse(Offer offer, int maxCount) {
-      Set<Integer> portsToUse = new HashSet<Integer>();
+  SortedSet<Integer> findPortsToUse(Offer offer, int maxCount) {
+      SortedSet<Integer> portsToUse = new TreeSet<Integer>();
       List<Value.Range> portRangesList = null;
 
       // Locate the port resource in the offer
@@ -421,20 +423,15 @@ public class JenkinsScheduler implements Scheduler {
        */
       // Check this port range for ports that we can use
       for (Value.Range currentPortRange : portRangesList) {
-          int candidatePort = (int) currentPortRange.getBegin();
-
-          // Check each port until we reach the end.
-          // If the port is already in the list of ports to use, ignore it and check the next one
-          while (candidatePort <= currentPortRange.getEnd() && portsToUse.size() < maxCount) {
-              if (!portsToUse.contains(candidatePort)) {
-                  portsToUse.add(candidatePort);
-              } else {
-                  candidatePort++;
-              }
-          }
+        // Check each port until we reach the end of the current range
+        int begin = (int) currentPortRange.getBegin();
+        long end = currentPortRange.getEnd();
+        for (int candidatePort = begin; candidatePort <= end && portsToUse.size() < maxCount; candidatePort++) {
+            portsToUse.add(candidatePort);
+        }
       }
 
-      return new ArrayList(portsToUse);
+      return portsToUse;
   }
 
   private void createMesosTask(Offer offer, Request request) {
@@ -573,9 +570,8 @@ public class JenkinsScheduler implements Scheduler {
 
           if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
               List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
-              int portToUseIndex = 0;
-              List<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
-
+              Set<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
+              Iterator<Integer> iterator = portsToUse.iterator();
               Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
 
               for (MesosSlaveInfo.PortMapping portMapping : portMappings) {
@@ -583,7 +579,7 @@ public class JenkinsScheduler implements Scheduler {
                           .setContainerPort(portMapping.getContainerPort()) //
                           .setProtocol(portMapping.getProtocol());
 
-                  int portToUse = portMapping.getHostPort() == null ? portsToUse.get(portToUseIndex++) : portMapping.getHostPort();
+                  int portToUse = portMapping.getHostPort() == null ? iterator.next() : portMapping.getHostPort();
 
                   portMappingBuilder.setHostPort(portToUse);
 
