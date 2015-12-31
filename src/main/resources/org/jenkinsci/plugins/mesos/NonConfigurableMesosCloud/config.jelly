@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form">
+  
+  <f:entry title="${%Cloud name}">
+    <f:readOnlyTextbox  name="cloudName" value="${instance.displayName}"/>
+  </f:entry>
+  
+</j:jelly>
