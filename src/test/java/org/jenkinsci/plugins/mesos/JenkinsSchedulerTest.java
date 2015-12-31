@@ -82,9 +82,9 @@ public class JenkinsSchedulerTest {
 
         executorService.shutdown();
 
-        // Test that there is no infinite loop by asserting that the task finishes in 500ms or less
+        // Test that there is no infinite loop
         try {
-            assertTrue(executorService.awaitTermination(500L, TimeUnit.MILLISECONDS));
+            assertTrue(executorService.awaitTermination(2L, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -138,9 +138,9 @@ public class JenkinsSchedulerTest {
 
         executorService.shutdown();
 
-        // Test that there is no infinite loop by asserting that the task finishes in 500ms or less
+        // Test that there is no infinite loop
         try {
-            assertTrue(executorService.awaitTermination(999999500L, TimeUnit.MILLISECONDS));
+            assertTrue(executorService.awaitTermination(2L, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
