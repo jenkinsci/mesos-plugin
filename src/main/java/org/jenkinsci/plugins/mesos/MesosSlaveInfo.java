@@ -18,7 +18,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
+
 public class MesosSlaveInfo {
+  public static final int UNLIMITED_MAX_NODES = -1;
   private static final String DEFAULT_LABEL_NAME = "mesos";
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
@@ -291,6 +296,17 @@ public class MesosSlaveInfo {
     public boolean getUseCustomDockerCommandShell() {  return useCustomDockerCommandShell; }
 
     public String getCustomDockerCommandShell() {  return customDockerCommandShell; }
+
+    public PortMapping getPortMapping(int containerPort) {
+      for (PortMapping portMapping : portMappings) {
+          if (portMapping.getContainerPort() == containerPort) {
+              return portMapping;
+          }
+      }
+    
+      return null;
+    }
+
   }
 
   public static class Parameter {
@@ -314,16 +330,19 @@ public class MesosSlaveInfo {
 
   public static class PortMapping {
 
-    // TODO validate 1 to 65535
-    private final Integer containerPort;
-    private final Integer hostPort;
+    private final Integer containerPort; // TODO validate 1 to 65535
+    private final Integer hostPort;      // TODO validate 1 to 65535
     private final String protocol;
+    private final String description;
+    private final String urlFormat;
 
     @DataBoundConstructor
-    public PortMapping(Integer containerPort, Integer hostPort, String protocol) {
+    public PortMapping(Integer containerPort, Integer hostPort, String protocol, String description, String urlFormat) {
         this.containerPort = containerPort;
         this.hostPort = hostPort;
         this.protocol = protocol;
+        this.description = description;
+        this.urlFormat = urlFormat;
     }
 
     public Integer getContainerPort() {
@@ -338,9 +357,23 @@ public class MesosSlaveInfo {
         return protocol;
     }
 
-    @Override
-    public String toString() {
-        return (hostPort == null ? 0 : hostPort) + ":" + containerPort;
+    public String getDescription() {
+        return description;
+    }
+
+    public String getUrlFormat() {
+        return urlFormat;
+    }
+
+    public boolean hasUrlFormat() {
+        return urlFormat != null;
+    }
+
+    public String getFormattedUrl(String hostname, Integer hostPort) {
+        String[] searchList = {"{hostname}", "{hostPort}"};
+        String[] replaceList = {hostname, String.valueOf(hostPort)};
+        return StringUtils.replaceEach(urlFormat, searchList, replaceList);
+
     }
 
   }
