@@ -16,9 +16,11 @@
 package org.jenkinsci.plugins.mesos;
 
 
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import hudson.model.Computer;
 import hudson.model.Node;
+import hudson.util.Secret;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,25 +120,28 @@ public class JenkinsScheduler implements Scheduler {
           String targetUser = mesosCloud.getSlavesUser();
           String webUrl = Jenkins.getInstance().getRootUrl();
           if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
+          StandardUsernamePasswordCredentials credentials = mesosCloud.getCredentials();
+          String principal = credentials == null ? "jenkins" : credentials.getUsername();
+          String secret = credentials == null ? "" : Secret.toString(credentials.getPassword());
           // Have Mesos fill in the current user.
           FrameworkInfo framework = FrameworkInfo.newBuilder()
             .setUser(targetUser == null ? "" : targetUser)
             .setName(mesosCloud.getFrameworkName())
-            .setPrincipal(mesosCloud.getPrincipal())
+            .setPrincipal(principal)
             .setCheckpoint(mesosCloud.isCheckpoint())
             .setWebuiUrl(webUrl != null ? webUrl : "")
             .build();
 
           LOGGER.info("Initializing the Mesos driver with options"
             + "\n" + "Framework Name: " + framework.getName()
-            + "\n" + "Principal: " + framework.getPrincipal()
+            + "\n" + "Principal: " + principal
             + "\n" + "Checkpointing: " + framework.getCheckpoint()
           );
 
-          if (StringUtils.isNotBlank(mesosCloud.getSecret())) {
+          if (StringUtils.isNotBlank(secret)) {
             Credential credential = Credential.newBuilder()
-              .setPrincipal(mesosCloud.getPrincipal())
-              .setSecret(ByteString.copyFromUtf8(mesosCloud.getSecret()))
+              .setPrincipal(principal)
+              .setSecret(ByteString.copyFromUtf8(secret))
               .build();
 
             LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());

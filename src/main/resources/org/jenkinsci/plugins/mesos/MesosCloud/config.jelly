@@ -1,4 +1,4 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:entry title="Mesos native library path" field="nativeLibraryPath">
         <f:textbox field="nativeLibraryPath" clazz="required"/>
     </f:entry>
@@ -19,12 +19,8 @@
         <f:textbox field="slavesUser" default=""/>
     </f:entry>
 
-    <f:entry title="${%Framework Principal}" field="principal">
-      <f:textbox field="principal" default="jenkins" />
-    </f:entry>
-
-    <f:entry title="${%Framework Secret}" field="secret" description="${%Specify secret to enable framework authentication}">
-      <f:textbox field="secret"/>
+    <f:entry field="credentialsId" title="${%Framework credentials}">
+        <c:select/>
     </f:entry>
 
     <f:entry title="${%Jenkins URL }" field="jenkinsURL">
