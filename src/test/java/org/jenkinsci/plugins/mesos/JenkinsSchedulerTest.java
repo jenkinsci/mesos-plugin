@@ -15,7 +15,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -57,10 +59,10 @@ public class JenkinsSchedulerTest {
     public void testFindPortsToUse() {
         Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
 
-        List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+        Set<Long> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
         assertEquals(1, portsToUse.size());
-        assertEquals(Integer.valueOf(31000), portsToUse.get(0));
+        assertEquals(Long.valueOf(31000), portsToUse.iterator().next());
     }
 
     @Test
@@ -71,18 +73,18 @@ public class JenkinsSchedulerTest {
             public void run() {
                 Protos.Offer offer = createOfferWithVariableRanges(31000, 31000);
 
-                List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+                Set<Long> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
                 assertEquals(1, portsToUse.size());
-                assertEquals(Integer.valueOf(31000), portsToUse.get(0));
+                assertEquals(Long.valueOf(31000), portsToUse.iterator().next());
             }
         });
 
         executorService.shutdown();
 
-        // Test that there is no infinite loop by asserting that the task finishes in 500ms or less
+        // Test that there is no infinite loop
         try {
-            assertTrue(executorService.awaitTermination(500L, TimeUnit.MILLISECONDS));
+            assertTrue(executorService.awaitTermination(2L, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -125,19 +127,20 @@ public class JenkinsSchedulerTest {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                List<Integer> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
+                SortedSet<Long> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
 
                 assertEquals(2, portsToUse.size());
-                assertEquals(Integer.valueOf(31000), portsToUse.get(0));
-                assertEquals(Integer.valueOf(31005), portsToUse.get(1));
+                Iterator<Long> iterator = portsToUse.iterator();
+                assertEquals(Long.valueOf(31000), iterator.next());
+                assertEquals(Long.valueOf(31005), iterator.next());
             }
         });
 
         executorService.shutdown();
 
-        // Test that there is no infinite loop by asserting that the task finishes in 500ms or less
+        // Test that there is no infinite loop
         try {
-            assertTrue(executorService.awaitTermination(999999500L, TimeUnit.MILLISECONDS));
+            assertTrue(executorService.awaitTermination(2L, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
