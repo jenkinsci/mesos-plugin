@@ -154,10 +154,10 @@ public class MesosCloud extends Cloud {
       boolean checkpoint,
       boolean onDemandRegistration,
       String jenkinsURL) throws NumberFormatException {
-    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, slavesUser, 
-            principal, secret, slaveInfos, checkpoint, onDemandRegistration, jenkinsURL);
+    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, slavesUser,
+         principal, secret, slaveInfos, checkpoint, onDemandRegistration, jenkinsURL);
   }
-  
+
   /**
    * Constructor, which also allows to specify a custom name.
    * @throws NumberFormatException Numeric parameter parsing error
@@ -213,7 +213,7 @@ public class MesosCloud extends Cloud {
            source.slavesUser, source.principal, source.secret, source.slaveInfos, source.checkpoint,
            source.onDemandRegistration, source.jenkinsURL);
   }
-          
+
   // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
   // or lookups won't work if any fields are changed.  Use master string as the key since
   // the rest of this code assumes it is unique among the Cloud objects.
