@@ -45,7 +45,7 @@
             <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
                 <table width="100%">
                     <f:entry title="${%Label String}">
-                        <f:textbox field="labelString" default="mesos" value="${slaveInfo.labelString}" />
+                        <f:textbox field="labelString" default="${slaveInfo == null ? 'mesos' : ''}" value="${slaveInfo.labelString}" />
                     </f:entry>
 
                     <f:slave-mode name="mode" node="${slaveInfo}" />
