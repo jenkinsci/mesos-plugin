@@ -161,7 +161,7 @@ public class MesosCloud extends Cloud {
   /**
    * Constructor, which also allows to specify a custom name.
    * @throws NumberFormatException Numeric parameter parsing error
-   * @since TODO
+   * @since 0.9.0
    */
   protected MesosCloud(
       String cloudName,
@@ -206,7 +206,7 @@ public class MesosCloud extends Cloud {
    * by design, this method also allows specifying a new name.
    * @param name Name of the cloud to be created
    * @param source Source Mesos cloud implementation
-   * @since TODO
+   * @since 0.9.0
    */
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
