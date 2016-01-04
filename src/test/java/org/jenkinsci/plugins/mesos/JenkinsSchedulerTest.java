@@ -59,10 +59,10 @@ public class JenkinsSchedulerTest {
     public void testFindPortsToUse() {
         Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
 
-        Set<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+        Set<Long> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
         assertEquals(1, portsToUse.size());
-        assertEquals(Integer.valueOf(31000), portsToUse.iterator().next());
+        assertEquals(Long.valueOf(31000), portsToUse.iterator().next());
     }
 
     @Test
@@ -73,10 +73,10 @@ public class JenkinsSchedulerTest {
             public void run() {
                 Protos.Offer offer = createOfferWithVariableRanges(31000, 31000);
 
-                Set<Integer> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
+                Set<Long> portsToUse = jenkinsScheduler.findPortsToUse(offer, 1);
 
                 assertEquals(1, portsToUse.size());
-                assertEquals(Integer.valueOf(31000), portsToUse.iterator().next());
+                assertEquals(Long.valueOf(31000), portsToUse.iterator().next());
             }
         });
 
@@ -127,12 +127,12 @@ public class JenkinsSchedulerTest {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                SortedSet<Integer> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
+                SortedSet<Long> portsToUse = jenkinsScheduler.findPortsToUse(protoOffer, 2);
 
                 assertEquals(2, portsToUse.size());
-                Iterator<Integer> iterator = portsToUse.iterator();
-                assertEquals(Integer.valueOf(31000), iterator.next());
-                assertEquals(Integer.valueOf(31005), iterator.next());
+                Iterator<Long> iterator = portsToUse.iterator();
+                assertEquals(Long.valueOf(31000), iterator.next());
+                assertEquals(Long.valueOf(31005), iterator.next());
             }
         });
 

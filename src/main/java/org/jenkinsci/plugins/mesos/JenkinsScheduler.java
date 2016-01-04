@@ -402,8 +402,8 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   @VisibleForTesting
-  SortedSet<Integer> findPortsToUse(Offer offer, int maxCount) {
-      SortedSet<Integer> portsToUse = new TreeSet<Integer>();
+  SortedSet<Long> findPortsToUse(Offer offer, int maxCount) {
+      SortedSet<Long> portsToUse = new TreeSet<Long>();
       List<Value.Range> portRangesList = null;
 
       // Locate the port resource in the offer
@@ -424,9 +424,9 @@ public class JenkinsScheduler implements Scheduler {
       // Check this port range for ports that we can use
       for (Value.Range currentPortRange : portRangesList) {
         // Check each port until we reach the end of the current range
-        int begin = (int) currentPortRange.getBegin();
+        long begin = currentPortRange.getBegin();
         long end = currentPortRange.getEnd();
-        for (int candidatePort = begin; candidatePort <= end && portsToUse.size() < maxCount; candidatePort++) {
+        for (long candidatePort = begin; candidatePort <= end && portsToUse.size() < maxCount; candidatePort++) {
             portsToUse.add(candidatePort);
         }
       }
@@ -570,8 +570,8 @@ public class JenkinsScheduler implements Scheduler {
 
           if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
               List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
-              Set<Integer> portsToUse = findPortsToUse(offer, portMappings.size());
-              Iterator<Integer> iterator = portsToUse.iterator();
+              Set<Long> portsToUse = findPortsToUse(offer, portMappings.size());
+              Iterator<Long> iterator = portsToUse.iterator();
               Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
 
               for (MesosSlaveInfo.PortMapping portMapping : portMappings) {
@@ -579,9 +579,9 @@ public class JenkinsScheduler implements Scheduler {
                           .setContainerPort(portMapping.getContainerPort()) //
                           .setProtocol(portMapping.getProtocol());
 
-                  int portToUse = portMapping.getHostPort() == null ? iterator.next() : portMapping.getHostPort();
+                  Long portToUse = portMapping.getHostPort() == null ? iterator.next() : portMapping.getHostPort();
 
-                  portMappingBuilder.setHostPort(portToUse);
+                  portMappingBuilder.setHostPort(portToUse.intValue());
 
                   portRangesBuilder.addRange(
                     Value.Range
