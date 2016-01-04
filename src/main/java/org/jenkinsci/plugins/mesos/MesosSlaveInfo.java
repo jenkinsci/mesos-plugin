@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
+import hudson.Util;
 import hudson.model.Descriptor.FormException;
 
 import java.util.Collections;
@@ -19,7 +20,6 @@ import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class MesosSlaveInfo {
-  private static final String DEFAULT_LABEL_NAME = "mesos";
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
   private final double slaveCpus;
@@ -39,7 +39,7 @@ public class MesosSlaveInfo {
   private final Mode mode;
 
   @CheckForNull
-  private String labelString = DEFAULT_LABEL_NAME;
+  private String labelString;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlaveInfo.class
       .getName());
@@ -70,7 +70,7 @@ public class MesosSlaveInfo {
     this.remoteFSRoot = StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot
         .trim() : "jenkins";
     this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
-    this.labelString = StringUtils.isNotBlank(labelString) ? labelString : null;
+    this.labelString = Util.fixEmptyAndTrim(labelString);
     this.mode = mode != null ? mode : Mode.NORMAL;
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
