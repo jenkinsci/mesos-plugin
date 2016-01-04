@@ -335,8 +335,16 @@ public class MesosCloud extends Cloud {
     return list;
   }
 
+  private String dashLabel(MesosSlaveInfo slaveInfo) {
+    if (slaveInfo.getLabelString() == null) {
+      return StringUtils.EMPTY;
+    } else {
+      return "-" + slaveInfo.getLabelString();
+    }
+  }
+
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
-    final String name = StringUtils.abbreviate("mesos-jenkins-" + StringUtils.remove(UUID.randomUUID().toString(), '-') + "-" + slaveInfo.getLabelString(), MAX_HOSTNAME_LENGTH);
+    final String name = StringUtils.abbreviate("mesos-jenkins-" + StringUtils.remove(UUID.randomUUID().toString(), '-') + dashLabel(slaveInfo), MAX_HOSTNAME_LENGTH);
     return new MesosSlave(this, name, numExecutors, slaveInfo);
   }
 
