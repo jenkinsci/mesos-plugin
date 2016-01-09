@@ -18,19 +18,19 @@ import org.jenkinsci.plugins.mesos.MesosSlave;
 public class MesosRunListener extends RunListener<Run> {
 
   private static final Logger LOGGER = Logger.getLogger(MesosRunListener.class.getName());
-  
+
   public MesosRunListener() {
-    
+
   }
-  
+
   /**
    * @param targetType
    */
   @SuppressWarnings("unchecked")
   public MesosRunListener(Class targetType) {
-    super(targetType);    
+    super(targetType);
   }
-  
+
   /**
    * Prints the actual Hostname where Mesos slave is provisioned in console output.
    * This would help us debug/take action if build fails in that slave.

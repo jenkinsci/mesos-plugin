@@ -37,6 +37,7 @@ public class MesosSlaveInfo {
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
+  private final RunAsUserInfo runAsUserInfo;
 
   @CheckForNull
   private String labelString;
@@ -60,7 +61,8 @@ public class MesosSlaveInfo {
       String jnlpArgs,
       ExternalContainerInfo externalContainerInfo,
       ContainerInfo containerInfo,
-      List<URI> additionalURIs)
+      List<URI> additionalURIs,
+      RunAsUserInfo runAsUserInfo)
       throws NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
@@ -90,6 +92,7 @@ public class MesosSlaveInfo {
         }
     }
     this.slaveAttributes = jsonObject;
+    this.runAsUserInfo = runAsUserInfo;
   }
 
   @CheckForNull
@@ -153,7 +156,11 @@ public class MesosSlaveInfo {
     return additionalURIs;
   }
 
-  /**
+  public RunAsUserInfo getRunAsUserInfo() {
+    return runAsUserInfo;
+  }
+
+    /**
    * Removes any additional {@code -Xmx} JVM args from the provided JVM
    * arguments. This is to ensure that the logic that sets the maximum heap
    * sized based on the memory available to the slave is not overriden by a
@@ -196,6 +203,28 @@ public class MesosSlaveInfo {
     public String getImage() {
       return image;
     }
+  }
+
+  public static class RunAsUserInfo {
+      public  final static String TOKEN_USERNAME = "{USERNAME}";
+      public  final static String TOKEN_SLAVE_COMMAND = "{SLAVE_CMD}";
+
+      private final String username;
+      private final String command;
+
+      @DataBoundConstructor
+      public RunAsUserInfo(String username, String command) {
+          this.username = username;
+          this.command = command;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+      public String getCommand() {
+          return command;
+      }
   }
 
   public static class ContainerInfo {
