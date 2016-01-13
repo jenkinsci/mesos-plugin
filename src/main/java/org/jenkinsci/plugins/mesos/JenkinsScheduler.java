@@ -89,7 +89,6 @@ public class JenkinsScheduler implements Scheduler {
 
   private Queue<Request> requests;
   private Map<TaskID, Result> results;
-  private Set<TaskID> finishedTasks;
   private volatile MesosSchedulerDriver driver;
   private String jenkinsMaster;
   private volatile MesosCloud mesosCloud;
@@ -107,7 +106,6 @@ public class JenkinsScheduler implements Scheduler {
 
     requests = new LinkedList<Request>();
     results = new HashMap<TaskID, Result>();
-    finishedTasks = Collections.newSetFromMap(new ConcurrentHashMap<TaskID, Boolean>());
   }
 
   public synchronized void init() {
@@ -182,7 +180,7 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   public synchronized void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
-    LOGGER.info("Enqueuing jenkins slave request");
+    LOGGER.info("Enqueuing jenkins slave request for " + request.slave.name);
     requests.add(new Request(request, result));
   }
 
@@ -247,9 +245,6 @@ public class JenkinsScheduler implements Scheduler {
         LOGGER.warning("Asked to kill unknown mesos task " + taskId);
     }
 
-    // Since this task is now running, we should not start this task up again at a later point in time
-    finishedTasks.add(taskId);
-
     if (mesosCloud.isOnDemandRegistration()) {
       supervise();
     }
@@ -275,23 +270,54 @@ public class JenkinsScheduler implements Scheduler {
   public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     LOGGER.fine("Received offers " + offers.size());
     for (Offer offer : offers) {
-      boolean matched = false;
+      boolean usedOffer = false;
       for (Request request : requests) {
         if (matches(offer, request)) {
-          matched = true;
-          LOGGER.fine("Offer matched! Creating mesos task");
-
           try {
-              createMesosTask(offer, request);
+              final String slaveName = request.request.slave.name;
+              TaskID taskId = TaskID.newBuilder().setValue(slaveName).build();
+
+              // Ignore this task if it is currently running.
+              // TODO(vinod): Figure out why a duplicate 'request' is created in
+              // the first place.
+              if (results.containsKey(taskId)) {
+                  LOGGER.info("Ignoring attempt to launch duplicate task " + taskId.getValue());
+                  requests.remove(request);
+
+                  // TODO(vinod): Try to match other requests for this offer instead of 'break'ing
+                  // out here and declining the offer.
+                  break;
+              }
+
+              LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
+                      joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
+
+              CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
+              TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
+
+              if (request.request.slaveInfo.getContainerInfo() != null) {
+                  getContainerInfoBuilder(offer, request, slaveName, taskBuilder);
+              }
+
+              List<TaskInfo> tasks = new ArrayList<TaskInfo>();
+              tasks.add(taskBuilder.build());
+              Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
+
+              driver.launchTasks(offer.getId(), tasks, filters);
+              usedOffer = true;
+
+              results.put(
+                      taskId,
+                      new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId().getValue())));
           } catch (Exception e) {
               LOGGER.log(Level.SEVERE, e.getMessage(), e);
           }
-          requests.remove(request);
-          break;
+            requests.remove(request);
+            break;
         }
       }
 
-      if (!matched) {
+      if (!usedOffer) {
         driver.declineOffer(offer.getId());
       }
     }
@@ -439,56 +465,6 @@ public class JenkinsScheduler implements Scheduler {
       return portsToUse;
   }
 
-  private void createMesosTask(Offer offer, Request request) {
-    final String slaveName = request.request.slave.name;
-    TaskID taskId = TaskID.newBuilder().setValue(slaveName).build();
-
-    LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
-                joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
-
-    if (isExistingTask(taskId)) {
-        refuseOffer(offer);
-        return;
-    }
-
-    for (final Computer computer : Jenkins.getInstance().getComputers()) {
-        if (!MesosComputer.class.isInstance(computer)) {
-            LOGGER.finer("Not a mesos computer, skipping");
-            continue;
-        }
-
-        MesosComputer mesosComputer = (MesosComputer) computer;
-
-        if (mesosComputer == null) {
-            LOGGER.fine("The mesos computer is null, skipping");
-            continue;
-        }
-
-        MesosSlave mesosSlave = mesosComputer.getNode();
-
-        if (taskId.getValue().equals(computer.getName()) && mesosSlave.isPendingDelete()) {
-            LOGGER.info("This mesos task " + taskId.getValue() + " is pending deletion. Not launching another task");
-            driver.declineOffer(offer.getId());
-        }
-    }
-
-    CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
-    TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
-
-    if (request.request.slaveInfo.getContainerInfo() != null) {
-        getContainerInfoBuilder(offer, request, slaveName, taskBuilder);
-    }
-
-    List<TaskInfo> tasks = new ArrayList<TaskInfo>();
-    tasks.add(taskBuilder.build());
-    Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
-    driver.launchTasks(offer.getId(), tasks, filters);
-
-    results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
-        .getValue())));
-    finishedTasks.add(taskId);
-  }
-
   private void detectAndAddAdditionalURIs(Request request, CommandInfo.Builder commandBuilder) {
 
     if (request.request.slaveInfo.getAdditionalURIs() != null) {
@@ -623,7 +599,7 @@ public class JenkinsScheduler implements Scheduler {
               .setContainerPath(volume.getContainerPath())
               .setMode(volume.isReadOnly() ? Mode.RO : Mode.RW);
           if (!volume.getHostPath().isEmpty()) {
-            volumeBuilder.setHostPath(volume.getHostPath());
+              volumeBuilder.setHostPath(volume.getHostPath());
           }
           containerInfoBuilder.addVolumes(volumeBuilder.build());
         }
@@ -688,28 +664,6 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   /**
-   * Checks if the given taskId already exists or just finished running. If it has, then refuse the offer.
-   * @param taskId The task id
-   * @return True if the task already exists, false otherwise
-   */
-  @VisibleForTesting
-  boolean isExistingTask(TaskID taskId) {
-      // If the task has already been queued, don't launch it again
-      if (results.containsKey(taskId)) {
-          LOGGER.info("Task " + taskId.getValue() + " has already been launched, ignoring and refusing offer");
-          return true;
-      }
-
-      // If the task has already finished, then do not start it up again even if we are offered it
-      if (finishedTasks.contains(taskId)) {
-          LOGGER.info("Task " + taskId.getValue() + " has already finished. Ignoring and refusing offer");
-          return true;
-      }
-
-      return false;
-  }
-
-  /**
    * Refuses the offer provided by launching no tasks.
    * @param offer The offer to refuse
    */
@@ -726,7 +680,7 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
     TaskID taskId = status.getTaskId();
-    LOGGER.fine("Status update: task " + taskId + " is in state " + status.getState() +
+    LOGGER.info("Status update: task " + taskId + " is in state " + status.getState() +
                 (status.hasMessage() ? " with message '" + status.getMessage() + "'" : ""));
 
     if (!results.containsKey(taskId)) {
