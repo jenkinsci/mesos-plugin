@@ -72,6 +72,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+
+import java.util.*;
+
 public class MesosCloud extends Cloud {
   private static final int MAX_HOSTNAME_LENGTH = 63; // Guard against LONG hostnames - RFC-1034
   private String nativeLibraryPath;
@@ -687,6 +690,18 @@ public void setJenkinsURL(String jenkinsURL) {
                     URIJson.getBoolean("extract")));
               }
             }
+
+
+            List<MesosSlaveInfo.Command> additionalCommands = new ArrayList<MesosSlaveInfo.Command>();
+            if (label.has("additionalCommands")) {
+              JSONArray additionalCommandsJson = label.getJSONArray("additionalCommands");
+              for (Object obj : additionalCommandsJson) {
+                JSONObject additionalCommandJson = (JSONObject) obj;
+                additionalCommands.add(new MesosSlaveInfo.Command(
+                        additionalCommandJson.getString("value")));
+              }
+            }
+
             MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
                 object.getString("labelString"),
                 (Mode) object.get("mode"),
@@ -702,7 +717,8 @@ public void setJenkinsURL(String jenkinsURL) {
                 object.getString("jnlpArgs"),
                 externalContainerInfo,
                 containerInfo,
-                additionalURIs);
+                additionalURIs,
+                additionalCommands);
             slaveInfos.add(slaveInfo);
           }
         }
