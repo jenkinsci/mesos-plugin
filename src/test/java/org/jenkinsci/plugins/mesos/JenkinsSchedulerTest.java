@@ -4,6 +4,7 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import jenkins.model.Jenkins;
 import org.apache.mesos.Protos;
+import org.apache.mesos.SchedulerDriver;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,6 +15,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -149,6 +151,45 @@ public class JenkinsSchedulerTest {
     }
 
     @Test
+    public void testDeclineOffersWithNoRequestsInQueue() throws Exception {
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+    }
+
+    @Test
+    public void testDeclineOffersWithRequestsInQueue() throws Exception {
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver).declineOffer(offer.getId());
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+    }
+
+    @Test
+    public void testReviveOffersWhenAddingSlaveRequest() throws Exception {
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+        Mockito.verify(driver).reviveOffers();
+    }
+
+    @Test
     public void testConstructMesosCommandInfoWithNoContainer() throws Exception {
         JenkinsScheduler.Request request = mockMesosRequest(Boolean.FALSE, null, null);
 
@@ -216,11 +257,11 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.getCommandInfoBuilder(request);
     }
 
-    private JenkinsScheduler.Request mockMesosRequest(
-            Boolean useDocker,
-            Boolean useCustomDockerCommandShell,
-            String customDockerCommandShell) throws Descriptor.FormException {
 
+    private Mesos.SlaveRequest mockSlaveRequest(
+        Boolean useDocker,
+        Boolean useCustomDockerCommandShell,
+        String customDockerCommandShell) throws Descriptor.FormException {
         MesosSlaveInfo.ContainerInfo containerInfo = null;
         if (useDocker) {
             containerInfo = new MesosSlaveInfo.ContainerInfo(
@@ -252,11 +293,17 @@ public class JenkinsSchedulerTest {
                 null,               // externalContainerInfo,
                 containerInfo,      // containerInfo,
                 null);              //additionalURIs
-        Mesos.SlaveRequest slaveReq = new Mesos.SlaveRequest(new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME),0.2d,TEST_JENKINS_SLAVE_MEM,mesosSlaveInfo);
+        return new Mesos.SlaveRequest(new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME),0.2d,TEST_JENKINS_SLAVE_MEM,mesosSlaveInfo);
+    }
+
+    private JenkinsScheduler.Request mockMesosRequest(
+            Boolean useDocker,
+            Boolean useCustomDockerCommandShell,
+            String customDockerCommandShell) throws Descriptor.FormException {
         Mesos.SlaveResult slaveResult = Mockito.mock(Mesos.SlaveResult.class);
-
-        return jenkinsScheduler.new Request(slaveReq,slaveResult);
-
+        return jenkinsScheduler.new Request(
+            mockSlaveRequest(useDocker, useCustomDockerCommandShell, customDockerCommandShell),
+            slaveResult);
     }
 
     private Protos.Offer createOfferWithVariableRanges(long rangeBegin, long rangeEnd) {
