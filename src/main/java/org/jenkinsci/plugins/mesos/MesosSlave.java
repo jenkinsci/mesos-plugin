@@ -22,6 +22,7 @@ import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -55,7 +56,8 @@ public class MesosSlave extends Slave {
     this.slaveInfo = slaveInfo;
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
-
+    EnvironmentVariablesNodeProperty.Entry entry = new EnvironmentVariablesNodeProperty.Entry("_JAVA_OPTIONS", "-Xmx"+slaveInfo.getExecutorMem()+"m");
+    getNodeProperties().add(new EnvironmentVariablesNodeProperty(entry));
     LOGGER.info("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 
