@@ -293,7 +293,8 @@ public class JenkinsSchedulerTest {
                 null,               // externalContainerInfo,
                 containerInfo,      // containerInfo,
                 null);              //additionalURIs
-        return new Mesos.SlaveRequest(new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME),0.2d,TEST_JENKINS_SLAVE_MEM,mesosSlaveInfo);
+        return new Mesos.SlaveRequest(
+            new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo);
     }
 
     private JenkinsScheduler.Request mockMesosRequest(

@@ -72,9 +72,10 @@ public class MesosComputerLauncher extends ComputerLauncher {
     // Create the request.
     double cpus = computer.getNode().getCpus();
     int mem = computer.getNode().getMem();
+    String role = cloud.getRole();
 
     Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name),
-        cpus, mem, computer.getNode().getSlaveInfo());
+        cpus, mem, role, computer.getNode().getSlaveInfo());
 
     // Launch the jenkins slave.
     final CountDownLatch latch = new CountDownLatch(1);

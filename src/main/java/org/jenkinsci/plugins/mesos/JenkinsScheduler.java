@@ -22,6 +22,8 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.util.Secret;
 
+import java.lang.Math;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -129,6 +131,7 @@ public class JenkinsScheduler implements Scheduler {
           FrameworkInfo framework = FrameworkInfo.newBuilder()
             .setUser(targetUser == null ? "" : targetUser)
             .setName(mesosCloud.getFrameworkName())
+            .setRole(mesosCloud.getRole())
             .setPrincipal(principal)
             .setCheckpoint(mesosCloud.isCheckpoint())
             .setWebuiUrl(webUrl != null ? webUrl : "")
@@ -319,6 +322,13 @@ public class JenkinsScheduler implements Scheduler {
     List<Range> ports = null;
 
     for (Resource resource : offer.getResourcesList()) {
+      String resourceRole = resource.getRole();
+      String expectedRole = mesosCloud.getRole();
+      if (! (resourceRole.equals(expectedRole) || resourceRole.equals("*"))) {
+        LOGGER.warning("Resource role " + resourceRole +
+            " doesn't match expected role " + expectedRole);
+        continue;
+      }
       if (resource.getName().equals("cpus")) {
         if (resource.getType().equals(Value.Type.SCALAR)) {
           cpus = resource.getScalar().getValue();
@@ -539,29 +549,45 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   private TaskInfo.Builder getTaskInfoBuilder(Offer offer, Request request, TaskID taskId, CommandInfo.Builder commandBuilder) {
-      return TaskInfo.newBuilder()
+    TaskInfo.Builder builder = TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
         .setTaskId(taskId)
         .setSlaveId(offer.getSlaveId())
-        .addResources(
+        .setCommand(commandBuilder.build());
+
+    double cpusNeeded = request.request.cpus;
+    double memNeeded = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
+
+    for (Resource r : offer.getResourcesList()) {
+      if (r.getName().equals("cpus") && cpusNeeded > 0) {
+        double cpus = Math.min(r.getScalar().getValue(), cpusNeeded);
+        builder.addResources(
             Resource
                 .newBuilder()
                 .setName("cpus")
                 .setType(Value.Type.SCALAR)
+                .setRole(r.getRole())
                 .setScalar(
                     Value.Scalar.newBuilder()
-                        .setValue(request.request.cpus).build()).build())
-        .addResources(
+                        .setValue(cpus).build()).build());
+        cpusNeeded -= cpus;
+      } else if (r.getName().equals("mem") && memNeeded > 0) {
+        double mem = Math.min(r.getScalar().getValue(), memNeeded);
+        builder.addResources(
             Resource
                 .newBuilder()
                 .setName("mem")
                 .setType(Value.Type.SCALAR)
+                .setRole(r.getRole())
                 .setScalar(
-                    Value.Scalar
-                        .newBuilder()
-                        .setValue((1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem)
-                        .build()).build())
-        .setCommand(commandBuilder.build());
+                    Value.Scalar.newBuilder()
+                        .setValue(mem).build()).build());
+        memNeeded -= mem;
+      } else if (cpusNeeded == 0 && memNeeded == 0) {
+        break;
+      }
+    }
+    return builder;
   }
 
   private void getContainerInfoBuilder(Offer offer, Request request, String slaveName, TaskInfo.Builder taskBuilder) {
