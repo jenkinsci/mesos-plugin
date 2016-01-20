@@ -47,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,7 +73,6 @@ import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
-  private static final int MAX_HOSTNAME_LENGTH = 63; // Guard against LONG hostnames - RFC-1034
   private String nativeLibraryPath;
   private String master;
   private String description;
@@ -339,17 +337,8 @@ public class MesosCloud extends Cloud {
     return list;
   }
 
-  private String dashLabel(MesosSlaveInfo slaveInfo) {
-    if (slaveInfo.getLabelString() == null) {
-      return StringUtils.EMPTY;
-    } else {
-      return StringUtils.remove("-" + slaveInfo.getLabelString(), " ");
-    }
-  }
-
   private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
-    final String name = StringUtils.left("mesos-jenkins-" + StringUtils.remove(UUID.randomUUID().toString(), '-') + dashLabel(slaveInfo), MAX_HOSTNAME_LENGTH);
-    return new MesosSlave(this, name, numExecutors, slaveInfo);
+    return new MesosSlave(this, MesosUtils.buildNodeName(slaveInfo.getLabelString()), numExecutors, slaveInfo);
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
