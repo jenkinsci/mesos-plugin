@@ -6,41 +6,38 @@ $script = <<SCRIPT
  # Exit on any errors.
  set -e
 
- # Install prerequisites for mesos.
- echo "Installing prerequisite packages for mesos..."
+ # Setup
+ apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv E56151BF
+ DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+ CODENAME=$(lsb_release -cs)
 
+ # Add the repository
+ echo "deb http://repos.mesosphere.com/${DISTRO} ${CODENAME} main" | \
+   sudo tee /etc/apt/sources.list.d/mesosphere.list
  apt-get -y update
- apt-get -y install openjdk-6-jdk
- apt-get -y install libcurl3
- apt-get -y install zookeeperd
- apt-get -y install libapr1-dev
- apt-get -y install libsvn-dev
 
- # Download mesos.
- MESOS_VERSION="0.21.1-1.0"
- echo "Downloading mesos ${MESOS_VERSION}..."
- wget http://downloads.mesosphere.io/master/ubuntu/12.04/mesos_${MESOS_VERSION}.ubuntu1204_amd64.deb
+ # Library to do xpath and extract version from pom.xml
+ apt-get -y install libxml-xpath-perl
 
- echo "Installing mesos..."
- dpkg --install mesos_${MESOS_VERSION}.ubuntu1204_amd64.deb
- echo "Done"
+ # Look up mesos version from the pom.xml
+ MESOS_VERSION=$(cat /vagrant/pom.xml | xpath -q -e /project/properties/mesos.version/text\\(\\) 2>/dev/null)
 
- # Symlink /usr/lib/libjvm.so for mesos.
- ln -s /usr/lib/jvm/java-6-openjdk-amd64/jre/lib/amd64/server/libjvm.so /usr/lib/libjvm.so
+ # Install
+ apt-get -y install --force-yes --install-recommends mesos=${MESOS_VERSION}\*
 
- echo "Starting mesos master"
- start mesos-master
+ #echo "Starting mesos master"
+ service mesos-master restart
 
- echo "Starting mesos slave"
- start mesos-slave
+ #echo "Starting mesos slave"
+ service mesos-slave restart
 
  echo "Installing prerequisite packages for mesos-jenkins plugin..."
- apt-get -y install maven
+ apt-get -y --force-yes install openjdk-7-jdk maven
 
  # Acquire latest code (either from local source on host, or latest release download) of mesos-jenkins plugin.
  MESOS_PLUGIN_VERSION="local"
- # MESOS_PLUGIN_VERSION="0.5.0" (0.5.0 is latest but not compatible with 0.6.0-SNAPSHOT changes, once
- # release has been performed this should be updated to 0.6.0 and then all should work well again)
+ #MESOS_PLUGIN_VERSION="0.9.0"
+
 
  if [ $MESOS_PLUGIN_VERSION = "local" ]; then
     mkdir -p mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
@@ -77,20 +74,18 @@ $script = <<SCRIPT
 SCRIPT
 
 
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
-VAGRANTFILE_API_VERSION = "2"
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure(2) do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # All Vagrant configuration is done here. The most common configuration
-  # options are documented and commented below. For a complete reference,
-  # please see the online documentation at vagrantup.com.
-
-  # Every Vagrant virtual environment requires a box to build off of.
-  config.vm.box = "precise64"
-
-  # The url from where the 'config.vm.box' box will be fetched if it
-  # doesn't already exist on the user's system.
-  config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://atlas.hashicorp.com/search.
+  config.vm.box = "ubuntu/trusty64"
 
   # Forward mesos ports.
   config.vm.network "forwarded_port", guest: 5050, host: 5050
