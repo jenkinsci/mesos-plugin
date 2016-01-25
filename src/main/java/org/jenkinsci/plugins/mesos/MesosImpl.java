@@ -4,43 +4,73 @@ import org.apache.mesos.Scheduler;
 
 public class MesosImpl extends Mesos {
   @Override
-  public synchronized void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
-    stopScheduler();
-    scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
-    scheduler.init();
-  }
-
-  @Override
-  public synchronized boolean isSchedulerRunning() {
-    return scheduler != null && scheduler.isRunning();
-  }
-
-  @Override
-  public synchronized void stopScheduler() {
-    if (scheduler != null) {
-      scheduler.stop();
-      scheduler = null;
+  public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
+    lock();
+    try {
+      stopScheduler();
+      scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
+      scheduler.init();
+    } finally {
+      unlock();
     }
   }
 
   @Override
-  public synchronized void startJenkinsSlave(SlaveRequest request, SlaveResult result) {
-    if (scheduler != null) {
-      scheduler.requestJenkinsSlave(request, result);
+  public boolean isSchedulerRunning() {
+    lock();
+    try {
+      return scheduler != null && scheduler.isRunning();
+    } finally {
+      unlock();
     }
   }
 
   @Override
-  public synchronized void stopJenkinsSlave(String name) {
-    if (scheduler != null) {
-      scheduler.terminateJenkinsSlave(name);
+  public void stopScheduler() {
+    lock();
+    try {
+      if (scheduler != null) {
+        scheduler.stop();
+        scheduler = null;
+      }
+    } finally {
+      unlock();
     }
   }
 
   @Override
-  public synchronized void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
-    scheduler.setMesosCloud(mesosCloud);
-    scheduler.setJenkinsMaster(jenkinsMaster);
+  public void startJenkinsSlave(SlaveRequest request, SlaveResult result) {
+    lock();
+    try {
+      if (scheduler != null) {
+        scheduler.requestJenkinsSlave(request, result);
+      }
+    } finally {
+      unlock();
+    }
+  }
+
+  @Override
+  public void stopJenkinsSlave(String name) {
+    lock();
+    try {
+      if (scheduler != null) {
+        scheduler.terminateJenkinsSlave(name);
+      }
+    } finally {
+      unlock();
+    }
+  }
+
+  @Override
+  public void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
+    lock();
+    try {
+      scheduler.setMesosCloud(mesosCloud);
+      scheduler.setJenkinsMaster(jenkinsMaster);
+    } finally {
+      unlock();
+    }
   }
 
   private JenkinsScheduler scheduler;
@@ -50,4 +80,11 @@ public class MesosImpl extends Mesos {
     return scheduler;
   }
 
+  private void unlock() {
+    JenkinsScheduler.SUPERVISOR_LOCK.unlock();
+  }
+
+  private void lock() {
+    JenkinsScheduler.SUPERVISOR_LOCK.lock();
+  }
 }
