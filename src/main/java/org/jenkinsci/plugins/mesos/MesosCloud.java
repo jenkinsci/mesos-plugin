@@ -289,13 +289,17 @@ public class MesosCloud extends Cloud {
    * if there is no credentials associated with the given id.
    */
   public StandardUsernamePasswordCredentials getCredentials() {
-    List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
-      : URIRequirementBuilder.fromUri(master.trim()).build();
-    Jenkins jenkins = Jenkins.getInstance();
-    return CredentialsMatchers.firstOrNull(CredentialsProvider
-      .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
-      CredentialsMatchers.withId(credentialsId)
-    );
+    if (credentialsId == null) {
+      return null;
+    } else {
+      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
+              : URIRequirementBuilder.fromUri(master.trim()).build();
+      Jenkins jenkins = Jenkins.getInstance();
+      return CredentialsMatchers.firstOrNull(CredentialsProvider
+                      .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
+              CredentialsMatchers.withId(credentialsId)
+      );
+    }
   }
 
   @Override
