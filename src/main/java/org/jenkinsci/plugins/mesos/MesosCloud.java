@@ -219,6 +219,7 @@ public class MesosCloud extends Cloud {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.principal, source.secret, source.slaveInfos,
            source.checkpoint, source.onDemandRegistration, source.jenkinsURL);
+      this.credentialsId = source.getCredentialsId();
   }
 
   // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
