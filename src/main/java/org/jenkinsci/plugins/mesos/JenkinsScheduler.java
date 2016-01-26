@@ -157,6 +157,8 @@ public class JenkinsScheduler implements Scheduler {
           Status runStatus = driver.run();
           if (runStatus != Status.DRIVER_STOPPED) {
             LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
+          } else {
+            LOGGER.info("The Mesos driver was stopped.");
           }
         } catch(RuntimeException e) {
           LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
@@ -173,6 +175,7 @@ public class JenkinsScheduler implements Scheduler {
 
   public synchronized void stop() {
     if (driver != null) {
+      LOGGER.info("Stopping Mesos driver.");
       driver.stop();
     } else {
       LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
