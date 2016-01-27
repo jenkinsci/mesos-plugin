@@ -41,6 +41,7 @@ $script = <<SCRIPT
 
  if [ $MESOS_PLUGIN_VERSION = "local" ]; then
     mkdir -p mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
+    rm -rf mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}/src
     cp -r /vagrant/src mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}/src
     cp -r /vagrant/pom.xml mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}/pom.xml
     chown -R vagrant:vagrant mesos-plugin-mesos-${MESOS_PLUGIN_VERSION}
