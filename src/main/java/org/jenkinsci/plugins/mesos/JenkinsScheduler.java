@@ -297,23 +297,23 @@ public class JenkinsScheduler implements Scheduler {
         return;
       }
 
-      boolean matched = false;
+      boolean taskCreated = false;
       for (Request request : requests) {
         if (matches(offer, request)) {
-          matched = true;
           LOGGER.fine("Offer matched! Creating mesos task");
 
           try {
-              createMesosTask(offer, request);
+            createMesosTask(offer, request);
+            taskCreated = true;
           } catch (Exception e) {
-              LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
           }
           requests.remove(request);
           break;
         }
       }
 
-      if (!matched) {
+      if (!taskCreated) {
         driver.declineOffer(offer.getId());
       }
     }
