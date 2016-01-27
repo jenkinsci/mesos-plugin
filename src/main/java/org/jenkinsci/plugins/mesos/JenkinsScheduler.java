@@ -294,26 +294,26 @@ public class JenkinsScheduler implements Scheduler {
         LOGGER.info("No slave in queue. Rejecting offers for " + rejectOfferDuration + " ms");
         Filters filters = Filters.newBuilder().setRefuseSeconds(rejectOfferDuration).build();
         driver.declineOffer(offer.getId(), filters);
-        return;
+        continue;
       }
 
-      boolean matched = false;
+      boolean taskCreated = false;
       for (Request request : requests) {
         if (matches(offer, request)) {
-          matched = true;
           LOGGER.fine("Offer matched! Creating mesos task");
 
           try {
-              createMesosTask(offer, request);
+            createMesosTask(offer, request);
+            taskCreated = true;
           } catch (Exception e) {
-              LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
           }
           requests.remove(request);
           break;
         }
       }
 
-      if (!matched) {
+      if (!taskCreated) {
         driver.declineOffer(offer.getId());
       }
     }
