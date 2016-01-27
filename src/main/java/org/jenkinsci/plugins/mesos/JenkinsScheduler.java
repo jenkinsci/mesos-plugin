@@ -294,7 +294,7 @@ public class JenkinsScheduler implements Scheduler {
         LOGGER.info("No slave in queue. Rejecting offers for " + rejectOfferDuration + " ms");
         Filters filters = Filters.newBuilder().setRefuseSeconds(rejectOfferDuration).build();
         driver.declineOffer(offer.getId(), filters);
-        return;
+        continue;
       }
 
       boolean taskCreated = false;
