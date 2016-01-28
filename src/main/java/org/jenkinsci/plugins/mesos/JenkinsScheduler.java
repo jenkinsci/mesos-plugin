@@ -121,6 +121,7 @@ public class JenkinsScheduler implements Scheduler {
       @Override
       public void run() {
         try {
+          SUPERVISOR_LOCK.lock();
           String targetUser = mesosCloud.getSlavesUser();
           String webUrl = Jenkins.getInstance().getRootUrl();
           if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
@@ -154,6 +155,7 @@ public class JenkinsScheduler implements Scheduler {
           } else {
             driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
           }
+          SUPERVISOR_LOCK.unlock();
           Status runStatus = driver.run();
           if (runStatus != Status.DRIVER_STOPPED) {
             LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
@@ -163,17 +165,20 @@ public class JenkinsScheduler implements Scheduler {
         } catch(RuntimeException e) {
           LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
         } finally {
+          SUPERVISOR_LOCK.lock();
           if (driver != null) {
             driver.abort();
           }
           driver = null;
           running = false;
+          SUPERVISOR_LOCK.unlock();
         }
       }
     }).start();
   }
 
   public synchronized void stop() {
+    SUPERVISOR_LOCK.lock();
     if (driver != null) {
       LOGGER.info("Stopping Mesos driver.");
       driver.stop();
@@ -181,6 +186,7 @@ public class JenkinsScheduler implements Scheduler {
       LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
     }
     running = false;
+    SUPERVISOR_LOCK.unlock();
   }
 
   public synchronized boolean isRunning() {
