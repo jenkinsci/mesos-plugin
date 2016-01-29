@@ -2,7 +2,12 @@ package org.jenkinsci.plugins.mesos;
 
 import org.apache.mesos.Scheduler;
 
+import java.util.logging.Logger;
+
 public class MesosImpl extends Mesos {
+
+  private static final Logger LOGGER = Logger.getLogger(MesosImpl.class.getName());
+
   @Override
   public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     lock();
@@ -30,8 +35,12 @@ public class MesosImpl extends Mesos {
     lock();
     try {
       if (scheduler != null) {
-        scheduler.stop();
-        scheduler = null;
+        if (scheduler.reachedMinimumTimeToLive()) {
+          scheduler.stop();
+          scheduler = null;
+        } else {
+          LOGGER.info("Not stopping scheduler because it has been created too recently.");
+        }
       }
     } finally {
       unlock();

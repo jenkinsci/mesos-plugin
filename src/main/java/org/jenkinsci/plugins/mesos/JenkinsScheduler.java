@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -81,6 +82,12 @@ import com.google.protobuf.ByteString;
 public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
 
+  /**
+   * When created, we expect this scheduler to live for at least 1 minute before killing it.
+   * This prevents race conditions between threads provisioning new nodes and threads terminating them.
+   */
+  private static final Long MINIMUM_TIME_TO_LIVE = TimeUnit.MINUTES.toMillis(1);
+
   // We allocate 10% more memory to the Mesos task to account for the JVM overhead.
   private static final double JVM_MEM_OVERHEAD_FACTOR = 0.1;
 
@@ -97,11 +104,14 @@ public class JenkinsScheduler implements Scheduler {
   private volatile MesosCloud mesosCloud;
   private volatile boolean running;
 
+  private long startedTime;
+
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
   public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
 
   public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
+    startedTime = System.currentTimeMillis();
     LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster + " and mesos " + mesosCloud.getMaster());
 
     this.jenkinsMaster = jenkinsMaster;
@@ -201,6 +211,10 @@ public class JenkinsScheduler implements Scheduler {
       // See comment in resourceOffers() for further details.
       driver.reviveOffers();
     }
+  }
+
+  public boolean reachedMinimumTimeToLive() {
+    return System.currentTimeMillis() - startedTime > MINIMUM_TIME_TO_LIVE;
   }
 
   /**
