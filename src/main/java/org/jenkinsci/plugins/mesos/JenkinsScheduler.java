@@ -126,20 +126,14 @@ public class JenkinsScheduler implements Scheduler {
     // This is to ensure that isRunning() returns true even when the driver is not yet inside run().
     // This is important because MesosCloud.provision() starts a new framework whenever isRunning() is false.
     running = true;
-    // Start the framework.
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          SUPERVISOR_LOCK.lock();
-          String targetUser = mesosCloud.getSlavesUser();
-          String webUrl = Jenkins.getInstance().getRootUrl();
-          if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
-          StandardUsernamePasswordCredentials credentials = mesosCloud.getCredentials();
-          String principal = credentials == null ? "jenkins" : credentials.getUsername();
-          String secret = credentials == null ? "" : Secret.toString(credentials.getPassword());
-          // Have Mesos fill in the current user.
-          FrameworkInfo framework = FrameworkInfo.newBuilder()
+    String targetUser = mesosCloud.getSlavesUser();
+    String webUrl = Jenkins.getInstance().getRootUrl();
+    if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
+    StandardUsernamePasswordCredentials credentials = mesosCloud.getCredentials();
+    String principal = credentials == null ? "jenkins" : credentials.getUsername();
+    String secret = credentials == null ? "" : Secret.toString(credentials.getPassword());
+    // Have Mesos fill in the current user.
+    FrameworkInfo framework = FrameworkInfo.newBuilder()
             .setUser(targetUser == null ? "" : targetUser)
             .setName(mesosCloud.getFrameworkName())
             .setRole(mesosCloud.getRole())
@@ -148,24 +142,28 @@ public class JenkinsScheduler implements Scheduler {
             .setWebuiUrl(webUrl != null ? webUrl : "")
             .build();
 
-          LOGGER.info("Initializing the Mesos driver with options"
+    LOGGER.info("Initializing the Mesos driver with options"
             + "\n" + "Framework Name: " + framework.getName()
             + "\n" + "Principal: " + principal
             + "\n" + "Checkpointing: " + framework.getCheckpoint()
-          );
+    );
 
-          if (StringUtils.isNotBlank(secret)) {
-            Credential credential = Credential.newBuilder()
+    if (StringUtils.isNotBlank(secret)) {
+      Credential credential = Credential.newBuilder()
               .setPrincipal(principal)
               .setSecret(ByteString.copyFromUtf8(secret))
               .build();
 
-            LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
-            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
-          } else {
-            driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
-          }
-          SUPERVISOR_LOCK.unlock();
+      LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
+      driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
+    } else {
+      driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+    }
+    // Start the framework.
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
           Status runStatus = driver.run();
           if (runStatus != Status.DRIVER_STOPPED) {
             LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
