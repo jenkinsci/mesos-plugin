@@ -516,11 +516,9 @@ public class MesosCloud extends Cloud {
   */
 
   public JSONObject getSlaveAttributeForLabel(String labelName) {
-    if(labelName!=null) {
-      for (MesosSlaveInfo slaveInfo : slaveInfos) {
-        if (labelName.equals(slaveInfo.getLabelString())) {
+    for (MesosSlaveInfo slaveInfo : slaveInfos) {
+      if (StringUtils.equals(labelName, slaveInfo.getLabelString())) {
           return slaveInfo.getSlaveAttributes();
-        }
       }
     }
     return null;
