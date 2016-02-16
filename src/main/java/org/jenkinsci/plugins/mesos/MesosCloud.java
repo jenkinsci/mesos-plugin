@@ -222,24 +222,90 @@ public class MesosCloud extends Cloud {
       this.credentialsId = source.getCredentialsId();
   }
 
-  // Since MesosCloud is used as a key to a Hashmap, we need to set equals/hashcode
-  // or lookups won't work if any fields are changed.  Use master string as the key since
-  // the rest of this code assumes it is unique among the Cloud objects.
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    MesosCloud that = (MesosCloud) o;
-
-    if (master != null ? !master.equals(that.master) : that.master != null) return false;
-
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MesosCloud other = (MesosCloud) obj;
+    if (checkpoint != other.checkpoint)
+      return false;
+    if (credentialsId == null) {
+      if (other.credentialsId != null)
+        return false;
+    } else if (!credentialsId.equals(other.credentialsId))
+      return false;
+    if (declineOfferDuration == null) {
+      if (other.declineOfferDuration != null)
+        return false;
+    } else if (!declineOfferDuration.equals(other.declineOfferDuration))
+      return false;
+    if (description == null) {
+      if (other.description != null)
+        return false;
+    } else if (!description.equals(other.description))
+      return false;
+    if (frameworkName == null) {
+      if (other.frameworkName != null)
+        return false;
+    } else if (!frameworkName.equals(other.frameworkName))
+      return false;
+    if (jenkinsURL == null) {
+      if (other.jenkinsURL != null)
+        return false;
+    } else if (!jenkinsURL.equals(other.jenkinsURL))
+      return false;
+    if (master == null) {
+      if (other.master != null)
+        return false;
+    } else if (!master.equals(other.master))
+      return false;
+    if (nativeLibraryPath == null) {
+      if (other.nativeLibraryPath != null)
+        return false;
+    } else if (!nativeLibraryPath.equals(other.nativeLibraryPath))
+      return false;
+    if (onDemandRegistration != other.onDemandRegistration)
+      return false;
+    if (role == null) {
+      if (other.role != null)
+        return false;
+    } else if (!role.equals(other.role))
+      return false;
+    if (slaveInfos == null) {
+      if (other.slaveInfos != null)
+        return false;
+    } else if (!slaveInfos.equals(other.slaveInfos))
+      return false;
+    if (slavesUser == null) {
+      if (other.slavesUser != null)
+        return false;
+    } else if (!slavesUser.equals(other.slavesUser))
+      return false;
     return true;
   }
 
   @Override
   public int hashCode() {
-    return master != null ? master.hashCode() : 0;
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (checkpoint ? 1231 : 1237);
+    result = prime * result + ((credentialsId == null) ? 0 : credentialsId.hashCode());
+    result =
+        prime * result + ((declineOfferDuration == null) ? 0 : declineOfferDuration.hashCode());
+    result = prime * result + ((description == null) ? 0 : description.hashCode());
+    result = prime * result + ((frameworkName == null) ? 0 : frameworkName.hashCode());
+    result = prime * result + ((jenkinsURL == null) ? 0 : jenkinsURL.hashCode());
+    result = prime * result + ((master == null) ? 0 : master.hashCode());
+    result = prime * result + ((nativeLibraryPath == null) ? 0 : nativeLibraryPath.hashCode());
+    result = prime * result + (onDemandRegistration ? 1231 : 1237);
+    result = prime * result + ((role == null) ? 0 : role.hashCode());
+    result = prime * result + ((slaveInfos == null) ? 0 : slaveInfos.hashCode());
+    result = prime * result + ((slavesUser == null) ? 0 : slavesUser.hashCode());
+    return result;
   }
 
   public void restartMesos() {
