@@ -112,4 +112,14 @@ public class MesosCleanupThread extends AsyncPeriodicWork {
 
         }
     }
+
+    @Override
+    protected Level getNormalLoggingLevel() {
+        return Level.FINE;
+    }
+
+    @Override
+    protected Level getSlowLoggingLevel() {
+        return Level.INFO;
+    }
 }
