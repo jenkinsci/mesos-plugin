@@ -8,7 +8,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>mesos</artifactId>
-  <version>0.10.1-SNAPSHOT</version>
+  <version>0.10.1</version>
   <packaging>hpi</packaging>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
 
@@ -16,7 +16,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/mesos-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/mesos-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/mesos-plugin</url>
-    <tag>HEAD</tag>
+    <tag>mesos-0.10.1</tag>
   </scm>
 
   <developers>
