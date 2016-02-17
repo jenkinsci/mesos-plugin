@@ -98,7 +98,7 @@
                     </f:entry>
 
                     <f:entry title="${%Additional Jenkins Slave Agent JNLP arguments}" field="jnlpArgs">
-                        <f:textbox field="jnlpArgs" default="" value="${slaveInfo.jnlpArgs}"/>
+                        <f:textbox field="jnlpArgs" default="-noReconnect" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
                     <f:advanced>
