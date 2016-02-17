@@ -50,6 +50,11 @@
       <name>Manivannan Selvaraj</name>
       <email>citizenmani@gmail.com </email>
     </developer>
+    <developer>
+      <id>vlatombe</id>
+      <name>Vincent Latombe</name>
+      <email>vincent@latombe.net</email>
+    </developer>
   </developers>
   <contributors>
     <contributor>
