@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.565.3</version><!-- the minimum Jenkins core compatible version to run plugin on -->
+    <version>2.0</version>
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
@@ -78,6 +78,9 @@
   </pluginRepositories>
 
   <properties>
+    <jenkins.version>1.565.3</jenkins.version>
+    <jenkins-test-harness.version>1.565.3</jenkins-test-harness.version>
+    <findbugs.failOnError>false</findbugs.failOnError>
     <mesos.version>0.22.1</mesos.version>
     <protobuf.version>2.5.0</protobuf.version>
     <mockito.version>1.10.19</mockito.version>
