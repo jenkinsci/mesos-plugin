@@ -159,7 +159,7 @@ public class MesosCloud extends Cloud {
       String declineOfferDuration) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
          slavesUser, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-         jenkinsURL);
+         jenkinsURL, declineOfferDuration);
   }
 
   /**
@@ -180,7 +180,8 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
-      String jenkinsURL) throws NumberFormatException {
+      String jenkinsURL,
+      String declineOfferDuration) throws NumberFormatException {
     super(cloudName);
 
     this.nativeLibraryPath = nativeLibraryPath;
@@ -218,7 +219,7 @@ public class MesosCloud extends Cloud {
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.jenkinsURL);
+           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration);
       this.credentialsId = source.getCredentialsId();
   }
 
@@ -654,7 +655,7 @@ public void setJenkinsURL(String jenkinsURL) {
   public void setDeclineOfferDuration(String declineOfferDuration) {
     try {
       if (declineOfferDuration == null) {
-        LOGGER.info("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+        LOGGER.fine("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
         this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
       } else {
         double duration = Double.parseDouble(declineOfferDuration);
