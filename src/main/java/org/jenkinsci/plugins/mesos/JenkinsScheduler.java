@@ -24,11 +24,12 @@ import hudson.util.Secret;
 
 import java.lang.Math;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -149,10 +150,17 @@ public class JenkinsScheduler implements Scheduler {
     );
 
     if (StringUtils.isNotBlank(secret)) {
-      Credential credential = Credential.newBuilder()
-              .setPrincipal(principal)
-              .setSecret(ByteString.copyFromUtf8(secret))
-              .build();
+
+      Credential.Builder credentialBuilder = Credential.newBuilder()
+              .setPrincipal(principal);
+      try {
+        // Mesos 0.25.0 or later
+        credentialBuilder.setSecret(secret);
+      } catch (NoSuchMethodError e) {
+        // Mesos 0.24.0 or older
+        setSecretForOldMesos(credentialBuilder, secret);
+      }
+      Credential credential = credentialBuilder.build();
 
       LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
       driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
@@ -183,6 +191,23 @@ public class JenkinsScheduler implements Scheduler {
         }
       }
     }).start();
+  }
+
+  private void setSecretForOldMesos(Credential.Builder credentialBuilder, String secret) {
+    try {
+      // Call the previous method flavor Credential.Builder#setSecret(ByteString)
+      Method setSecret = credentialBuilder.getClass().getMethod("setSecret", ByteString.class);
+      setSecret.invoke(credentialBuilder,ByteString.copyFromUtf8(secret));
+    } catch (NoSuchMethodException e) {
+      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
+      throw new IllegalStateException(e);
+    } catch (InvocationTargetException e) {
+      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
+      throw new IllegalStateException(e);
+    } catch (IllegalAccessException e) {
+      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
+      throw new IllegalStateException(e);
+    }
   }
 
   public synchronized void stop() {
@@ -552,23 +577,6 @@ public class JenkinsScheduler implements Scheduler {
     }
   }
 
-  private void detectAndAddExternalContainerInfo(Request request, CommandInfo.Builder commandBuilder) {
-    MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
-    if (externalContainerInfo != null) {
-      LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
-      CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
-      containerInfo.setImage(externalContainerInfo.getImage());
-
-      // add container option to builder
-      String[] containerOptions = request.request.getExternalContainerOptions();
-      for (int i = 0; i < containerOptions.length; i++) {
-        LOGGER.info("with option: " + containerOptions[i]);
-        containerInfo.addOptions(containerOptions[i]);
-      }
-      commandBuilder.setContainer(containerInfo.build());
-    }
-  }
-
   private TaskInfo.Builder getTaskInfoBuilder(Offer offer, Request request, TaskID taskId, CommandInfo.Builder commandBuilder) {
     TaskInfo.Builder builder = TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
@@ -704,7 +712,6 @@ public class JenkinsScheduler implements Scheduler {
   CommandInfo.Builder getCommandInfoBuilder(Request request) {
         CommandInfo.Builder commandBuilder = getBaseCommandBuilder(request);
         detectAndAddAdditionalURIs(request, commandBuilder);
-        detectAndAddExternalContainerInfo(request, commandBuilder);
         return commandBuilder;
   }
 

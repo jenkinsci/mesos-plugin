@@ -212,16 +212,6 @@
                             </f:entry>
                         </f:optionalBlock>
 
-                        <f:optionalBlock title="${%Use External Containerizer}" name="externalContainerInfo" checked="${slaveInfo.externalContainerInfo != null}">
-                            <f:entry title="${%External Container image}" field="image" description="Docker image requires prefix docker:///">
-                                <f:textbox field="image" value="${slaveInfo.externalContainerInfo.image}" default=""/>
-                            </f:entry>
-
-                            <f:entry title="${%External Container options}" field="options" description="Comma separated list of options to pass to the containerizer">
-                                <f:textbox field="options" value="${slaveInfo.externalContainerInfo.options}" default=""/>
-                            </f:entry>
-                        </f:optionalBlock>
-
                         <f:entry title="${%Additional URIs}" field="additionalURIs">
                             <f:repeatable add="${%Add URI}" var="uri" name="additionalURIs" items="${slaveInfo.additionalURIs}" noAddButton="false" minimum="0">
                                 <fieldset>

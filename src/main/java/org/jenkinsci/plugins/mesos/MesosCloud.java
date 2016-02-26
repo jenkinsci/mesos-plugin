@@ -727,15 +727,6 @@ public void setJenkinsURL(String jenkinsURL) {
         for (int i = 0; i < labels.size(); i++) {
           JSONObject label = labels.getJSONObject(i);
           if (label != null) {
-            MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = null;
-            if (label.has("externalContainerInfo")) {
-              JSONObject externalContainerInfoJson = label
-                  .getJSONObject("externalContainerInfo");
-              externalContainerInfo = new MesosSlaveInfo.ExternalContainerInfo(
-                  externalContainerInfoJson.getString("image"),
-                  externalContainerInfoJson.getString("options"));
-            }
-
             MesosSlaveInfo.ContainerInfo containerInfo = null;
             if (label.has("containerInfo")) {
               JSONObject containerInfoJson = label
