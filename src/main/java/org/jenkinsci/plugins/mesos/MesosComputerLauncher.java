@@ -119,7 +119,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
       try {
         LOGGER.info("Waiting for slave computer connection " + name);
         Thread.sleep(5000);
-      } catch (InterruptedException ignored) {}
+      } catch (InterruptedException ignored) { return; }
     }
     if (computer.isOnline()) {
       LOGGER.info("Slave computer connected " + name);
