@@ -107,22 +107,22 @@ public class MesosComputerLauncher extends ComputerLauncher {
       // Since we just launched a slave, remove it from pending deletion in case it was marked previously while
       // we were waiting for resources to be available
       computer.getNode().setPendingDelete(false);
-      waitForSlaveConnection(computer);
+      waitForSlaveConnection(computer, logger);
       logger.println("Successfully launched slave" + name);
     }
 
     LOGGER.info("Finished launching slave computer " + name);
   }
 
-  private void waitForSlaveConnection(MesosComputer computer) {
+  private void waitForSlaveConnection(MesosComputer computer, PrintStream logger) {
     while (computer.isOffline() && computer.isConnecting()) {
       try {
-        LOGGER.info("Waiting for slave computer connection " + name);
+        logger.println("Waiting for slave computer connection " + name);
         Thread.sleep(5000);
       } catch (InterruptedException ignored) { return; }
     }
     if (computer.isOnline()) {
-      LOGGER.info("Slave computer connected " + name);
+      logger.println("Slave computer connected " + name);
     } else {
       LOGGER.warning("Slave computer offline " + name);
     }
