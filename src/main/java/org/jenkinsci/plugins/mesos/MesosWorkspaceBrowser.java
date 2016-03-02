@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.WorkspaceBrowser;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
+import org.apache.commons.lang.ObjectUtils;
 
 import java.io.File;
 import java.util.List;
@@ -35,9 +36,9 @@ public class MesosWorkspaceBrowser extends WorkspaceBrowser {
       if (mesosCloud != null) {
         List<MesosSlaveInfo> slaveInfos = mesosCloud.getSlaveInfos();
         for (MesosSlaveInfo mesosSlaveInfo : slaveInfos) {
-          if (mesosSlaveInfo.getLabelString().equals(assignedLabel)) {
+          if(ObjectUtils.equals(mesosSlaveInfo.getLabelString(), assignedLabel)) {
             String workspacePath = mesosSlaveInfo.getRemoteFSRoot()
-                + File.separator + WORKSPACE + File.separator + jobName;
+                    + File.separator + WORKSPACE + File.separator + jobName;
             LOGGER.info("Workspace Path: " + workspacePath);
             File workspace = new File(workspacePath);
             LOGGER.info("Workspace exists ? " + workspace.exists());
