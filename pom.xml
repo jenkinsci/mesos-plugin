@@ -91,6 +91,7 @@
     <powermock.version>1.6.2</powermock.version>
     <assertj.version>2.1.0</assertj.version>
     <guava.version>18.0</guava.version>
+    <apache-commons-collections.version>4.1</apache-commons-collections.version>
   </properties>
 
   <dependencies>
@@ -142,6 +143,11 @@
           <groupId>com.google.guava</groupId>
           <artifactId>guava</artifactId>
           <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-collections4</artifactId>
+          <version>${apache-commons-collections.version}</version>
       </dependency>
   </dependencies>
 

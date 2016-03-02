@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,6 +46,8 @@ import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.collections4.OrderedMapIterator;
+import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos.Attribute;
@@ -109,6 +110,12 @@ public class JenkinsScheduler implements Scheduler {
   private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
   public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
+
+  private static int lruCacheSize = Integer.getInteger(JenkinsScheduler.class.getName()+".lruCacheSize", 10);
+
+  private static LRUMap<String, Object> recentlyAcceptedOffers = new LRUMap<String, Object>(lruCacheSize);
+
+  private static final Object IGNORE = new Object();
 
   public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     startedTime = System.currentTimeMillis();
@@ -303,6 +310,7 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     LOGGER.fine("Received offers " + offers.size());
+    reArrangeOffersBasedOnAffinity(offers);
     for (Offer offer : offers) {
       if (requests.isEmpty()) {
         // Decline offer for a longer period if no slave is waiting to get spawned.
@@ -323,6 +331,7 @@ public class JenkinsScheduler implements Scheduler {
           try {
             createMesosTask(offer, request);
             taskCreated = true;
+            recentlyAcceptedOffers.put(offer.getSlaveId().getValue(), IGNORE);
           } catch (Exception e) {
             LOGGER.log(Level.SEVERE, e.getMessage(), e);
           }
@@ -335,6 +344,44 @@ public class JenkinsScheduler implements Scheduler {
         driver.declineOffer(offer.getId());
       }
     }
+  }
+
+  /**
+   * Makes sure that it gives priority to recent mesos slaves
+   * (LRU algorithm) if its present in offers list.
+   * This will help in reducing build time since all the required
+   * artifacts will be present already.
+   * @param offers
+   */
+  private void reArrangeOffersBasedOnAffinity(List<Offer> offers) {
+    if(recentlyAcceptedOffers.size() > 0) {
+      //Iterates from least to most recently used.
+      OrderedMapIterator<String, Object> mapIterator = recentlyAcceptedOffers.mapIterator();
+      while (mapIterator.hasNext()) {
+        String recentSlaveId = mapIterator.next();
+        reArrangeOffersBasedOnAffinity(offers, recentSlaveId);
+      }
+    }
+  }
+
+  private void reArrangeOffersBasedOnAffinity(List<Offer> offers, String recentSlaveId) {
+    int offerIndex = getOfferIndex(offers, recentSlaveId);
+    if(offerIndex > 0) {
+      LOGGER.fine("Rearranging offers based on affinity");
+      Offer recentOffer = offers.remove(offerIndex);
+      offers.add(0, recentOffer);
+    }
+  }
+
+  private int getOfferIndex(List<Offer> offers, String recentSlaveId) {
+    int offerIndex = -1;
+    for (Offer offer : offers) {
+      if(offer.getSlaveId().getValue().equals(recentSlaveId)) {
+        offerIndex = offers.indexOf(offer);
+        return offerIndex;
+      }
+    }
+    return offerIndex;
   }
 
   private boolean matches(Offer offer, Request request) {
