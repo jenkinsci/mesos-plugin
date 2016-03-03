@@ -281,7 +281,7 @@ public class JenkinsSchedulerTest {
                 "testLabelString",  // labelString,
                 Node.Mode.NORMAL,
                 "0.2",              // slaveCpus,
-                "512",              //slaveMem,
+                "512",              // slaveMem,
                 "2",                // maxExecutors,
                 "0.2",              // executorCpus,
                 "512",              // executorMem,
@@ -289,7 +289,8 @@ public class JenkinsSchedulerTest {
                 "2",                // idleTerminationMinutes,
                 null,               // slaveAttributes,
                 null,               // jvmArgs,
-                null,               //jnlpArgs,
+                null,               // jnlpArgs,
+                null,               // defaultSlave,
                 null,               // externalContainerInfo,
                 containerInfo,      // containerInfo,
                 null);              //additionalURIs

@@ -815,6 +815,7 @@ public void setJenkinsURL(String jenkinsURL) {
                 object.getString("slaveAttributes"),
                 object.getString("jvmArgs"),
                 object.getString("jnlpArgs"),
+                object.getString("defaultSlave"),
                 externalContainerInfo,
                 containerInfo,
                 additionalURIs);

@@ -101,6 +101,10 @@
                         <f:textbox field="jnlpArgs" default="-noReconnect" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
+                    <f:entry title="${%Mark this Slave Info as default for all Jobs}" field="defaultSlave">
+                        <f:checkbox field="defaultSlave" checked="${slaveInfo.defaultSlave}" onclick="checkDefaultSlave(this)"/>
+                    </f:entry>
+
                     <f:advanced>
                         <f:optionalBlock title="${%Use Docker Containerizer}" name="containerInfo" checked="${slaveInfo.containerInfo != null}">
 
@@ -257,4 +261,17 @@
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>
+
+
+    <script type="text/javascript">
+        function checkDefaultSlave(element) {
+            var checkboxes = document.getElementsByName("_.defaultSlave");
+            for (var i = 0; i &lt; checkboxes.length; i++) {
+                if (checkboxes[i] !== element) {
+                    checkboxes[i].checked = false;
+                }
+            }
+        }
+    </script>
+
 </j:jelly>

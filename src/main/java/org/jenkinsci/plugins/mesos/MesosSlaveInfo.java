@@ -31,6 +31,7 @@ public class MesosSlaveInfo {
   private final int idleTerminationMinutes;
   private final String jvmArgs;
   private final String jnlpArgs;
+  private final boolean defaultSlave;
   // Slave attributes JSON representation.
   private final JSONObject slaveAttributes;
   private final ExternalContainerInfo externalContainerInfo;
@@ -58,6 +59,7 @@ public class MesosSlaveInfo {
       String slaveAttributes,
       String jvmArgs,
       String jnlpArgs,
+      String defaultSlave,
       ExternalContainerInfo externalContainerInfo,
       ContainerInfo containerInfo,
       List<URI> additionalURIs)
@@ -75,6 +77,7 @@ public class MesosSlaveInfo {
     this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
         : DEFAULT_JVM_ARGS;
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
+    this.defaultSlave = Boolean.valueOf(defaultSlave);
     this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
@@ -143,6 +146,10 @@ public class MesosSlaveInfo {
 
   public ExternalContainerInfo getExternalContainerInfo() {
     return externalContainerInfo;
+  }
+
+  public boolean isDefaultSlave() {
+    return defaultSlave;
   }
 
   public ContainerInfo getContainerInfo() {
