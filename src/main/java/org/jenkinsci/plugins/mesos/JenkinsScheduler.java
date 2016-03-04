@@ -309,7 +309,7 @@ public class JenkinsScheduler implements Scheduler {
         // This prevents unnecessarily getting offers every few seconds and causing
         // starvation when running a lot of frameworks.
         double rejectOfferDuration = mesosCloud.getDeclineOfferDurationDouble();
-        LOGGER.info("No slave in queue. Rejecting offers for " + rejectOfferDuration + " ms");
+        LOGGER.fine("No slave in queue. Rejecting offers for " + rejectOfferDuration + " ms");
         Filters filters = Filters.newBuilder().setRefuseSeconds(rejectOfferDuration).build();
         driver.declineOffer(offer.getId(), filters);
         continue;
