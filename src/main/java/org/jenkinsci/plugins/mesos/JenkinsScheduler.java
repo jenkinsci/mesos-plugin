@@ -935,7 +935,7 @@ public class JenkinsScheduler implements Scheduler {
               scheduler.clearResults();
               activeTasks = false;
             }
-            LOGGER.info("Active slaves: " + activeSlaves
+            LOGGER.fine("Active slaves: " + activeSlaves
                 + " | Pending tasks: " + pendingTasks + " | Active tasks: " + activeTasks);
             if (!activeTasks && !activeSlaves && !pendingTasks) {
               LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
