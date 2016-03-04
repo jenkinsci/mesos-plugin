@@ -44,6 +44,58 @@ public class MesosSlaveInfo {
   private static final Logger LOGGER = Logger.getLogger(MesosSlaveInfo.class
       .getName());
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    MesosSlaveInfo that = (MesosSlaveInfo) o;
+
+    if (Double.compare(that.slaveCpus, slaveCpus) != 0) return false;
+    if (slaveMem != that.slaveMem) return false;
+    if (Double.compare(that.executorCpus, executorCpus) != 0) return false;
+    if (maxExecutors != that.maxExecutors) return false;
+    if (executorMem != that.executorMem) return false;
+    if (idleTerminationMinutes != that.idleTerminationMinutes) return false;
+    if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) return false;
+    if (jvmArgs != null ? !jvmArgs.equals(that.jvmArgs) : that.jvmArgs != null) return false;
+    if (jnlpArgs != null ? !jnlpArgs.equals(that.jnlpArgs) : that.jnlpArgs != null) return false;
+    if (slaveAttributes != null ? !slaveAttributes.equals(that.slaveAttributes) : that.slaveAttributes != null)
+      return false;
+    if (externalContainerInfo != null ? !externalContainerInfo.equals(that.externalContainerInfo) : that.externalContainerInfo != null)
+      return false;
+    if (containerInfo != null ? !containerInfo.equals(that.containerInfo) : that.containerInfo != null) return false;
+    if (additionalURIs != null ? !additionalURIs.equals(that.additionalURIs) : that.additionalURIs != null)
+      return false;
+    if (mode != that.mode) return false;
+    return labelString != null ? labelString.equals(that.labelString) : that.labelString == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    temp = Double.doubleToLongBits(slaveCpus);
+    result = (int) (temp ^ (temp >>> 32));
+    result = 31 * result + slaveMem;
+    temp = Double.doubleToLongBits(executorCpus);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    result = 31 * result + maxExecutors;
+    result = 31 * result + executorMem;
+    result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);
+    result = 31 * result + idleTerminationMinutes;
+    result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
+    result = 31 * result + (jnlpArgs != null ? jnlpArgs.hashCode() : 0);
+    result = 31 * result + (slaveAttributes != null ? slaveAttributes.hashCode() : 0);
+    result = 31 * result + (externalContainerInfo != null ? externalContainerInfo.hashCode() : 0);
+    result = 31 * result + (containerInfo != null ? containerInfo.hashCode() : 0);
+    result = 31 * result + (additionalURIs != null ? additionalURIs.hashCode() : 0);
+    result = 31 * result + (mode != null ? mode.hashCode() : 0);
+    result = 31 * result + (labelString != null ? labelString.hashCode() : 0);
+    return result;
+  }
+
   @DataBoundConstructor
   public MesosSlaveInfo(
       String labelString,
@@ -196,6 +248,25 @@ public class MesosSlaveInfo {
     public String getImage() {
       return image;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      ExternalContainerInfo that = (ExternalContainerInfo) o;
+
+      if (image != null ? !image.equals(that.image) : that.image != null) return false;
+      return options != null ? options.equals(that.options) : that.options == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = image != null ? image.hashCode() : 0;
+      result = 31 * result + (options != null ? options.hashCode() : 0);
+      return result;
+    }
   }
 
   public static class ContainerInfo {
@@ -291,6 +362,43 @@ public class MesosSlaveInfo {
     public boolean getUseCustomDockerCommandShell() {  return useCustomDockerCommandShell; }
 
     public String getCustomDockerCommandShell() {  return customDockerCommandShell; }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      ContainerInfo that = (ContainerInfo) o;
+
+      if (useCustomDockerCommandShell != that.useCustomDockerCommandShell) return false;
+      if (type != null ? !type.equals(that.type) : that.type != null) return false;
+      if (dockerImage != null ? !dockerImage.equals(that.dockerImage) : that.dockerImage != null) return false;
+      if (volumes != null ? !volumes.equals(that.volumes) : that.volumes != null) return false;
+      if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
+      if (networking != null ? !networking.equals(that.networking) : that.networking != null) return false;
+      if (portMappings != null ? !portMappings.equals(that.portMappings) : that.portMappings != null) return false;
+      if (customDockerCommandShell != null ? !customDockerCommandShell.equals(that.customDockerCommandShell) : that.customDockerCommandShell != null)
+        return false;
+      if (dockerPrivilegedMode != null ? !dockerPrivilegedMode.equals(that.dockerPrivilegedMode) : that.dockerPrivilegedMode != null)
+        return false;
+      return dockerForcePullImage != null ? dockerForcePullImage.equals(that.dockerForcePullImage) : that.dockerForcePullImage == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = type != null ? type.hashCode() : 0;
+      result = 31 * result + (dockerImage != null ? dockerImage.hashCode() : 0);
+      result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
+      result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
+      result = 31 * result + (networking != null ? networking.hashCode() : 0);
+      result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
+      result = 31 * result + (useCustomDockerCommandShell ? 1 : 0);
+      result = 31 * result + (customDockerCommandShell != null ? customDockerCommandShell.hashCode() : 0);
+      result = 31 * result + (dockerPrivilegedMode != null ? dockerPrivilegedMode.hashCode() : 0);
+      result = 31 * result + (dockerForcePullImage != null ? dockerForcePullImage.hashCode() : 0);
+      return result;
+    }
   }
 
   public static class Parameter {

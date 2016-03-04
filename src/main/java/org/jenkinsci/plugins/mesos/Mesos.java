@@ -14,10 +14,16 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import hudson.Extension;
+import hudson.XmlFile;
+import hudson.model.Saveable;
+import hudson.model.listeners.SaveableListener;
+import jenkins.model.Jenkins;
 import org.apache.mesos.Scheduler;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public abstract class Mesos {
@@ -68,7 +74,13 @@ public abstract class Mesos {
   abstract public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud);
   abstract public void updateScheduler(String jenkinsMaster, MesosCloud mesosCloud);
   abstract public boolean isSchedulerRunning();
-  abstract public void stopScheduler();
+
+  /**
+   * Stops the scheduler.
+   * @param force {@code false} to stop the scheduler gracefully, {@code true} to force stop
+   * @return {@code true} if the scheduler is stopped after the call, {@code false} otherwise.
+     */
+  abstract public boolean stopScheduler(boolean force);
   abstract public Scheduler getScheduler();
   /**
    * Starts a jenkins slave asynchronously in the mesos cluster.
@@ -104,4 +116,25 @@ public abstract class Mesos {
     return clouds.values();
   }
 
+
+  /**
+   * When Jenkins configuration is saved, teardown any active scheduler whose cloud has been removed.
+   */
+  @Extension
+  public static class GarbageCollectorImpl extends SaveableListener {
+
+    @Override
+    public void onChange(Saveable o, XmlFile file) {
+      if (o instanceof Jenkins) {
+        Jenkins j = (Jenkins) o;
+        for (Iterator<Map.Entry<MesosCloud, Mesos>> it = clouds.entrySet().iterator(); it.hasNext();) {
+          Map.Entry<MesosCloud, Mesos> entry = it.next();
+          if (!j.clouds.contains(entry.getKey())) {
+            entry.getValue().stopScheduler(true);
+            it.remove();
+          }
+        }
+      }
+    }
+  }
 }
