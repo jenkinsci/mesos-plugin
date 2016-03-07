@@ -939,7 +939,7 @@ public class JenkinsScheduler implements Scheduler {
                 + " | Pending tasks: " + pendingTasks + " | Active tasks: " + activeTasks);
             if (!activeTasks && !activeSlaves && !pendingTasks) {
               LOGGER.info("No active tasks, or slaves or pending slave requests. Stopping the scheduler.");
-              cloud.stopScheduler(false);
+              cloud.stopScheduler();
             }
           } else {
             LOGGER.info("Scheduler already stopped. NOOP.");

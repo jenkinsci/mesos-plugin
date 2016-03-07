@@ -76,10 +76,17 @@ public abstract class Mesos {
   abstract public boolean isSchedulerRunning();
 
   /**
+   * Stops the scheduler gracefully.
+   * @return {@code true} if the scheduler is stopped after the call, {@code false} otherwise.
+   */
+  public boolean stopScheduler() {
+    return stopScheduler(false);
+  }
+  /**
    * Stops the scheduler.
    * @param force {@code false} to stop the scheduler gracefully, {@code true} to force stop
    * @return {@code true} if the scheduler is stopped after the call, {@code false} otherwise.
-     */
+   */
   abstract public boolean stopScheduler(boolean force);
   abstract public Scheduler getScheduler();
   /**
