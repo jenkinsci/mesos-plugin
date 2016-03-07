@@ -47,15 +47,15 @@ public class MesosItemListener  extends ItemListener {
             LOGGER.log(Level.WARNING, "MesosListener.setLabel(), item was null");
             return ;
         }
-        LOGGER.info("MesosListener.setLabel(), setting label");
+        LOGGER.fine("MesosListener.setLabel(), setting label");
         AbstractProject<?, ?> job = (AbstractProject<?, ?>) item;
         Label label = job.getAssignedLabel();
         try {
             if(label == null) { // No label assigned, override now
-                LOGGER.log(Level.INFO, "No label assigned to job - " + item.getDisplayName() + ". Assigning a label now...");
+                LOGGER.log(Level.FINE, "No label assigned to job - " + item.getDisplayName() + ". Assigning a label now...");
                 label = getLabel();
                 if (label != null) {
-                    LOGGER.log(Level.INFO, "Assigned - " + label.getName() + "  to job - " + item.getDisplayName());
+                    LOGGER.log(Level.INFO, "Assigned \"" + label.getName() + "\"  to job \"" + item.getDisplayName() + "\"");
                     job.setAssignedLabel(label);
                 }
             }
