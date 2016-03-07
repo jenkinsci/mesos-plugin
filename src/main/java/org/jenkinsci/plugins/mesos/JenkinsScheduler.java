@@ -24,8 +24,6 @@ import hudson.util.Secret;
 
 import java.lang.Math;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -151,16 +149,10 @@ public class JenkinsScheduler implements Scheduler {
 
     if (StringUtils.isNotBlank(secret)) {
 
-      Credential.Builder credentialBuilder = Credential.newBuilder()
-              .setPrincipal(principal);
-      try {
-        // Mesos 0.25.0 or later
-        credentialBuilder.setSecret(secret);
-      } catch (NoSuchMethodError e) {
-        // Mesos 0.24.0 or older
-        setSecretForOldMesos(credentialBuilder, secret);
-      }
-      Credential credential = credentialBuilder.build();
+      Credential credential = Credential.newBuilder()
+              .setPrincipal(principal)
+              .setSecret(secret)
+              .build();
 
       LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
       driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
@@ -191,23 +183,6 @@ public class JenkinsScheduler implements Scheduler {
         }
       }
     }).start();
-  }
-
-  private void setSecretForOldMesos(Credential.Builder credentialBuilder, String secret) {
-    try {
-      // Call the previous method flavor Credential.Builder#setSecret(ByteString)
-      Method setSecret = credentialBuilder.getClass().getMethod("setSecret", ByteString.class);
-      setSecret.invoke(credentialBuilder,ByteString.copyFromUtf8(secret));
-    } catch (NoSuchMethodException e) {
-      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
-      throw new IllegalStateException(e);
-    } catch (InvocationTargetException e) {
-      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
-      throw new IllegalStateException(e);
-    } catch (IllegalAccessException e) {
-      LOGGER.log(Level.SEVERE, "Unable to call setSecret, unsupported version of Mesos", e);
-      throw new IllegalStateException(e);
-    }
   }
 
   public synchronized void stop() {
