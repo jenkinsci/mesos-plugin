@@ -62,8 +62,6 @@ public class MesosSlaveInfo {
     if (jnlpArgs != null ? !jnlpArgs.equals(that.jnlpArgs) : that.jnlpArgs != null) return false;
     if (slaveAttributes != null ? !slaveAttributes.equals(that.slaveAttributes) : that.slaveAttributes != null)
       return false;
-    if (externalContainerInfo != null ? !externalContainerInfo.equals(that.externalContainerInfo) : that.externalContainerInfo != null)
-      return false;
     if (containerInfo != null ? !containerInfo.equals(that.containerInfo) : that.containerInfo != null) return false;
     if (additionalURIs != null ? !additionalURIs.equals(that.additionalURIs) : that.additionalURIs != null)
       return false;
@@ -88,7 +86,6 @@ public class MesosSlaveInfo {
     result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
     result = 31 * result + (jnlpArgs != null ? jnlpArgs.hashCode() : 0);
     result = 31 * result + (slaveAttributes != null ? slaveAttributes.hashCode() : 0);
-    result = 31 * result + (externalContainerInfo != null ? externalContainerInfo.hashCode() : 0);
     result = 31 * result + (containerInfo != null ? containerInfo.hashCode() : 0);
     result = 31 * result + (additionalURIs != null ? additionalURIs.hashCode() : 0);
     result = 31 * result + (mode != null ? mode.hashCode() : 0);
@@ -111,7 +108,6 @@ public class MesosSlaveInfo {
       String jvmArgs,
       String jnlpArgs,
       String defaultSlave,
-      ExternalContainerInfo externalContainerInfo,
       ContainerInfo containerInfo,
       List<URI> additionalURIs)
       throws NumberFormatException {
@@ -129,7 +125,6 @@ public class MesosSlaveInfo {
         : DEFAULT_JVM_ARGS;
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
     this.defaultSlave = Boolean.valueOf(defaultSlave);
-    this.externalContainerInfo = externalContainerInfo;
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
 

@@ -291,7 +291,6 @@ public class JenkinsSchedulerTest {
                 null,               // jvmArgs,
                 null,               // jnlpArgs,
                 null,               // defaultSlave,
-                null,               // externalContainerInfo,
                 containerInfo,      // containerInfo,
                 null);              //additionalURIs
         return new Mesos.SlaveRequest(

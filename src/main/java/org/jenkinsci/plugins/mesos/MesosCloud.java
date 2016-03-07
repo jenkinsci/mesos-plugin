@@ -808,7 +808,6 @@ public void setJenkinsURL(String jenkinsURL) {
                 object.getString("jvmArgs"),
                 object.getString("jnlpArgs"),
                 object.getString("defaultSlave"),
-                externalContainerInfo,
                 containerInfo,
                 additionalURIs);
             slaveInfos.add(slaveInfo);
