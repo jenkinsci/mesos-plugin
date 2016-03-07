@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -149,9 +148,10 @@ public class JenkinsScheduler implements Scheduler {
     );
 
     if (StringUtils.isNotBlank(secret)) {
+
       Credential credential = Credential.newBuilder()
               .setPrincipal(principal)
-              .setSecret(ByteString.copyFromUtf8(secret))
+              .setSecret(secret)
               .build();
 
       LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
@@ -552,23 +552,6 @@ public class JenkinsScheduler implements Scheduler {
     }
   }
 
-  private void detectAndAddExternalContainerInfo(Request request, CommandInfo.Builder commandBuilder) {
-    MesosSlaveInfo.ExternalContainerInfo externalContainerInfo = request.request.slaveInfo.getExternalContainerInfo();
-    if (externalContainerInfo != null) {
-      LOGGER.info("Launching in External Container Mode:" + externalContainerInfo.getImage());
-      CommandInfo.ContainerInfo.Builder containerInfo = CommandInfo.ContainerInfo.newBuilder();
-      containerInfo.setImage(externalContainerInfo.getImage());
-
-      // add container option to builder
-      String[] containerOptions = request.request.getExternalContainerOptions();
-      for (int i = 0; i < containerOptions.length; i++) {
-        LOGGER.info("with option: " + containerOptions[i]);
-        containerInfo.addOptions(containerOptions[i]);
-      }
-      commandBuilder.setContainer(containerInfo.build());
-    }
-  }
-
   private TaskInfo.Builder getTaskInfoBuilder(Offer offer, Request request, TaskID taskId, CommandInfo.Builder commandBuilder) {
     TaskInfo.Builder builder = TaskInfo.newBuilder()
         .setName("task " + taskId.getValue())
@@ -704,7 +687,6 @@ public class JenkinsScheduler implements Scheduler {
   CommandInfo.Builder getCommandInfoBuilder(Request request) {
         CommandInfo.Builder commandBuilder = getBaseCommandBuilder(request);
         detectAndAddAdditionalURIs(request, commandBuilder);
-        detectAndAddExternalContainerInfo(request, commandBuilder);
         return commandBuilder;
   }
 

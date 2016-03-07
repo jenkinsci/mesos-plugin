@@ -34,7 +34,6 @@ public class MesosSlaveInfo {
   private final boolean defaultSlave;
   // Slave attributes JSON representation.
   private final JSONObject slaveAttributes;
-  private final ExternalContainerInfo externalContainerInfo;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
@@ -194,10 +193,6 @@ public class MesosSlaveInfo {
 
   public String getJnlpArgs() {
     return jnlpArgs;
-  }
-
-  public ExternalContainerInfo getExternalContainerInfo() {
-    return externalContainerInfo;
   }
 
   public boolean isDefaultSlave() {
