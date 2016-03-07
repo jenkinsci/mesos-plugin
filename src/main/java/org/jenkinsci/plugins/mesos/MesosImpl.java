@@ -12,7 +12,6 @@ public class MesosImpl extends Mesos {
   public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
     lock();
     try {
-      stopScheduler();
       scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
       scheduler.init();
     } finally {
@@ -31,17 +30,20 @@ public class MesosImpl extends Mesos {
   }
 
   @Override
-  public void stopScheduler() {
+  public boolean stopScheduler(boolean force) {
     lock();
     try {
       if (scheduler != null) {
-        if (scheduler.reachedMinimumTimeToLive()) {
+        if (force || scheduler.reachedMinimumTimeToLive()) {
           scheduler.stop();
           scheduler = null;
+          return true;
         } else {
           LOGGER.info("Not stopping scheduler because it has been created too recently.");
+          return false;
         }
       }
+      return true;
     } finally {
       unlock();
     }

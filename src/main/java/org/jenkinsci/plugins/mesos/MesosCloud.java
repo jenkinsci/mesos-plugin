@@ -150,6 +150,7 @@ public class MesosCloud extends Cloud {
       String frameworkName,
       String role,
       String slavesUser,
+      String credentialsId,
       String principal,
       String secret,
       List<MesosSlaveInfo> slaveInfos,
@@ -158,7 +159,7 @@ public class MesosCloud extends Cloud {
       String jenkinsURL,
       String declineOfferDuration) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
-         slavesUser, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
+         slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
          jenkinsURL, declineOfferDuration);
   }
 
@@ -175,6 +176,7 @@ public class MesosCloud extends Cloud {
       String frameworkName,
       String role,
       String slavesUser,
+      String credentialsId,
       String principal,
       String secret,
       List<MesosSlaveInfo> slaveInfos,
@@ -190,6 +192,7 @@ public class MesosCloud extends Cloud {
     this.frameworkName = frameworkName;
     this.role = role;
     this.slavesUser = slavesUser;
+    this.credentialsId = credentialsId;
     this.principal = principal;
     this.secret = secret;
     migrateToCredentials();
@@ -218,9 +221,8 @@ public class MesosCloud extends Cloud {
    */
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
-           source.role, source.slavesUser, source.principal, source.secret, source.slaveInfos,
+           source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
            source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration);
-      this.credentialsId = source.getCredentialsId();
   }
 
   @Override
@@ -341,7 +343,7 @@ public class MesosCloud extends Cloud {
         LOGGER.info("Scheduler was down, restarting the scheduler");
       }
 
-      Mesos.getInstance(this).stopScheduler();
+      Mesos.getInstance(this).stopScheduler(true);
       Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
     } else {
       Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
@@ -517,7 +519,6 @@ public class MesosCloud extends Cloud {
     return credentialsId;
   }
 
-  @DataBoundSetter
   public void setCredentialsId(String credentialsId) {
     this.credentialsId = credentialsId;
   }
