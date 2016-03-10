@@ -62,20 +62,26 @@ public class MesosComputerLauncher extends ComputerLauncher {
     // This might happen if the computer was offline when Jenkins was shutdown.
     // Since Jenkins persists its state, it tries to launch offline slaves when
     // it restarts.
+    MesosSlave node = computer.getNode();
     if (!mesos.isSchedulerRunning()) {
       LOGGER.warning("Not launching " + name +
                      " because the Mesos Jenkins scheduler is not running");
-      computer.getNode().terminate();
+      if (node != null) {
+        node.terminate();
+      }
+      return;
+    }
+    if (node == null) {
       return;
     }
 
     // Create the request.
-    double cpus = computer.getNode().getCpus();
-    int mem = computer.getNode().getMem();
+    double cpus = node.getCpus();
+    int mem = node.getMem();
     String role = cloud.getRole();
 
     Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name),
-        cpus, mem, role, computer.getNode().getSlaveInfo());
+        cpus, mem, role, node.getSlaveInfo());
 
     // Launch the jenkins slave.
     final CountDownLatch latch = new CountDownLatch(1);
@@ -106,7 +112,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
     if (state == State.RUNNING) {
       // Since we just launched a slave, remove it from pending deletion in case it was marked previously while
       // we were waiting for resources to be available
-      computer.getNode().setPendingDelete(false);
+      node.setPendingDelete(false);
       waitForSlaveConnection(computer, logger);
       logger.println("Successfully launched slave" + name);
     }

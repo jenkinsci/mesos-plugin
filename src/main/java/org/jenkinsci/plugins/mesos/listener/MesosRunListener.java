@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos.listener;
 
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.Computer;
 import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -41,8 +42,13 @@ public class MesosRunListener extends RunListener<Run> {
       Node node = getCurrentNode();
       if (node instanceof MesosSlave) {
         try {
-          String hostname = node.toComputer().getHostName();
-          listener.getLogger().println("Mesos slave(hostname): " + hostname);
+          Computer computer = node.toComputer();
+          if (computer != null) {
+            String hostname = computer.getHostName();
+            listener.getLogger().println("Mesos slave(hostname): " + hostname);
+          } else {
+            listener.getLogger().println("Mesos slave(computer is null)");
+          }
         } catch (IOException e) {
           LOGGER.warning("IOException while trying to get hostname: " + e);
           e.printStackTrace();
@@ -57,7 +63,14 @@ public class MesosRunListener extends RunListener<Run> {
    * Returns the current {@link Node} on which we are building.
    */
   private final Node getCurrentNode() {
-    return Executor.currentExecutor().getOwner().getNode();
+    Executor executor = Executor.currentExecutor();
+    if (executor != null) {
+      Computer owner = executor.getOwner();
+      if (owner != null) {
+        return owner.getNode();
+      }
+    }
+    return null;
   }
 
 }

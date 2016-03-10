@@ -68,7 +68,8 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
    * @return The number of minutes to check again afterwards
    */
   private long checkInternal(MesosComputer c) {
-    if (c.getNode() == null) {
+    MesosSlave node = c.getNode();
+    if (node == null) {
       return 1;
     }
 
@@ -87,10 +88,10 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
 
       if (idleMilliseconds > MINUTES.toMillis(idleTerminationMinutes)) {
         LOGGER.info("Disconnecting idle computer " + c.getName());
-        c.getNode().setPendingDelete(true);
+        node.setPendingDelete(true);
 
         if (!c.isOffline()) {
-          c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
+          c.setTemporarilyOffline(true, OfflineCause.create(Messages._MesosRetentionStrategy_DeletedCause()));
         }
       }
     }

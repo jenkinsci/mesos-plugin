@@ -14,8 +14,10 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Hudson;
 import hudson.model.Slave;
+import hudson.remoting.VirtualChannel;
 import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
@@ -23,6 +25,7 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
+import jenkins.model.Jenkins;
 import jenkins.slaves.EncryptedSlaveAgentJnlpFile;
 
 import org.kohsuke.stapler.HttpRedirect;
@@ -46,8 +49,10 @@ public class MesosComputer extends SlaveComputer {
   @Override
   public HttpResponse doDoDelete() throws IOException {
     checkPermission(DELETE);
-    if (getNode() != null)
-      getNode().terminate();
+      MesosSlave node = getNode();
+      if (node != null) {
+          node.terminate();
+      }
     return new HttpRedirect("..");
   }
 
@@ -69,10 +74,20 @@ public class MesosComputer extends SlaveComputer {
       // Slave already deleted
       if (slave == null) return;
 
-      if (slave.getChannel() != null) {
-          slave.getChannel().close();
+      VirtualChannel channel = slave.getChannel();
+      if (channel != null) {
+          channel.close();
       }
       slave.terminate();
-      Hudson.getInstance().removeNode(slave);
+      getJenkins().removeNode(slave);
   }
+
+    @NonNull
+    private static Jenkins getJenkins() {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins == null) {
+            throw new IllegalStateException("Jenkins is null");
+        }
+        return jenkins;
+    }
 }

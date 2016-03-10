@@ -21,6 +21,7 @@ import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.slaves.ComputerLauncher;
+import jenkins.model.Jenkins;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -30,8 +31,12 @@ import org.apache.commons.lang.StringUtils;
 
 public class MesosSlave extends Slave {
 
-  private final MesosCloud cloud;
+  private static final long serialVersionUID = 1L;
+
+  private final String cloudId;
+  private transient MesosCloud cloud;
   private final MesosSlaveInfo slaveInfo;
+  private final int idleTerminationMinutes;
   private final double cpus;
   private final int mem;
   private boolean pendingDelete;
@@ -50,14 +55,27 @@ public class MesosSlave extends Slave {
           new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),
           slaveInfo.getNodeProperties());
     this.cloud = cloud;
+    this.cloudId = cloud.getDisplayName();
     this.slaveInfo = slaveInfo;
+    this.idleTerminationMinutes = slaveInfo.getIdleTerminationMinutes();
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
     LOGGER.info("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 
   public MesosCloud getCloud() {
-    return this.cloud;
+    if (cloud == null) {
+      cloud = (MesosCloud) getJenkins().getCloud(cloudId);
+    }
+    return cloud;
+  }
+
+  private Jenkins getJenkins() {
+    Jenkins jenkins = Jenkins.getInstance();
+    if (jenkins == null) {
+      throw new IllegalStateException("Jenkins is null");
+    }
+    return jenkins;
   }
 
   public double getCpus() {
@@ -73,7 +91,7 @@ public class MesosSlave extends Slave {
   }
  
   public int getIdleTerminationMinutes() {
-    return slaveInfo.getIdleTerminationMinutes();
+    return idleTerminationMinutes;
   }
 
   public void terminate() {

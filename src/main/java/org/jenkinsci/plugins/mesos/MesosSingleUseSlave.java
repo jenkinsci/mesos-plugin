@@ -6,6 +6,8 @@ import hudson.Launcher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Computer;
+import hudson.model.Executor;
 import hudson.slaves.OfflineCause;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -55,13 +57,21 @@ public class MesosSingleUseSlave extends BuildWrapper {
     @Override
     @SuppressWarnings("rawtypes")
     public Environment setUp(AbstractBuild build, Launcher launcher, final BuildListener listener) {
-        if (MesosComputer.class.isInstance(build.getExecutor().getOwner())) {
-            final MesosComputer c = (MesosComputer) build.getExecutor().getOwner();
+        Executor executor = build.getExecutor();
+        if (executor == null) {
+            throw new IllegalStateException("Executor is null");
+        }
+        final Computer owner = executor.getOwner();
+        if (owner == null) {
+            throw new IllegalStateException("Computer is null");
+        }
+        if (MesosComputer.class.isInstance(owner)) {
+            final MesosComputer c = (MesosComputer) owner;
             return new Environment() {
                 @Override
                 public boolean tearDown(AbstractBuild build, final BuildListener listener) throws IOException, InterruptedException {
                     LOGGER.warning("Single-use slave " + c.getName() + " getting torn down.");
-                    c.setTemporarilyOffline(true, OfflineCause.create(Messages._SingleUseCause()));
+                    c.setTemporarilyOffline(true, OfflineCause.create(Messages._MesosSingleUseSlave_OfflineCause()));
                     return true;
                 }
             };
@@ -69,7 +79,7 @@ public class MesosSingleUseSlave extends BuildWrapper {
             return new Environment() {
                 @Override
                 public boolean tearDown(AbstractBuild build, final BuildListener listener) throws IOException, InterruptedException {
-                    LOGGER.fine("Not a single use slave, this is a " + build.getExecutor().getOwner().getClass());
+                    LOGGER.fine("Not a single use slave, this is a " + owner.getClass());
                     return true;
                 }
             };
@@ -92,4 +102,3 @@ public class MesosSingleUseSlave extends BuildWrapper {
 
     }
 }
-

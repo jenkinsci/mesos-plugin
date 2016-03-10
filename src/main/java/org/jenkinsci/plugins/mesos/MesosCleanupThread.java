@@ -8,7 +8,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Computer;
 import hudson.model.TaskListener;
@@ -61,16 +63,25 @@ public class MesosCleanupThread extends AsyncPeriodicWork {
     }
 
     private static MesosCleanupThread getInstance() {
-        return Jenkins.getInstance().getExtensionList(AsyncPeriodicWork.class).get(MesosCleanupThread.class);
+        return getJenkins().getExtensionList(AsyncPeriodicWork.class).get(MesosCleanupThread.class);
+    }
+
+    @NonNull
+    private static Jenkins getJenkins() {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins == null) {
+            throw new IllegalStateException("Jenkins is null");
+        }
+        return jenkins;
     }
 
     @Override
     protected void execute(TaskListener listener) {
-        final ImmutableList.Builder<ListenableFuture<?>> deletedNodesBuilder = ImmutableList.<ListenableFuture<?>>builder();
+        final ImmutableList.Builder<ListenableFuture<?>> deletedNodesBuilder = ImmutableList.builder();
         ListeningExecutorService executor = MoreExecutors.listeningDecorator(Computer.threadPoolForRemoting);
-        final ImmutableList.Builder<MesosComputer> computersToDeleteBuilder = ImmutableList.<MesosComputer>builder();
+        final ImmutableList.Builder<MesosComputer> computersToDeleteBuilder = ImmutableList.builder();
 
-        for (final Computer c : Jenkins.getInstance().getComputers()) {
+        for (final Computer c : getJenkins().getComputers()) {
             if (MesosComputer.class.isInstance(c)) {
                 MesosSlave mesosSlave = (MesosSlave) c.getNode();
 
@@ -82,7 +93,10 @@ public class MesosCleanupThread extends AsyncPeriodicWork {
                         public void run() {
                             logger.log(Level.INFO, "Deleting pending node " + comp.getName());
                             try {
-                                comp.getNode().terminate();
+                                MesosSlave node = comp.getNode();
+                                if (node != null) {
+                                    node.terminate();
+                                }
                             } catch (RuntimeException e) {
                                 logger.log(Level.WARNING, "Failed to disconnect and delete " + comp.getName() + ": " + e.getMessage());
                                 throw e;

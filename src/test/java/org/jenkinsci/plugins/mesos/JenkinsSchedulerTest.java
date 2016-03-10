@@ -305,7 +305,7 @@ public class JenkinsSchedulerTest {
             Boolean useCustomDockerCommandShell,
             String customDockerCommandShell) throws Descriptor.FormException, IOException {
         Mesos.SlaveResult slaveResult = Mockito.mock(Mesos.SlaveResult.class);
-        return jenkinsScheduler.new Request(
+        return new JenkinsScheduler.Request(
             mockSlaveRequest(useDocker, useCustomDockerCommandShell, customDockerCommandShell),
             slaveResult);
     }

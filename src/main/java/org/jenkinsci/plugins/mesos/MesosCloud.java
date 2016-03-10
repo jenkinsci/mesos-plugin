@@ -24,7 +24,7 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -38,8 +38,22 @@ import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.apache.mesos.MesosNativeLibrary;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
+import org.apache.commons.lang.StringUtils;
+import javax.annotation.Nonnull;
+import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -49,22 +63,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-
-import javax.servlet.ServletException;
-
-import hudson.util.ListBoxModel;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.MesosNativeLibrary;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.DoNotUse;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
@@ -108,7 +106,7 @@ public class MesosCloud extends Cloud {
 
   @Initializer(after=InitMilestone.JOB_LOADED)
   public static void init() {
-    Jenkins jenkins = Jenkins.getInstance();
+    Jenkins jenkins = getJenkins();
     List<Node> slaves = jenkins.getNodes();
 
     // Turning the AUTOMATIC_SLAVE_LAUNCH flag off because the below slave removals
@@ -135,6 +133,15 @@ public class MesosCloud extends Cloud {
         }
       }
     }
+  }
+
+  @NonNull
+  private static Jenkins getJenkins() {
+    Jenkins jenkins = Jenkins.getInstance();
+    if (jenkins == null) {
+      throw new IllegalStateException("Jenkins is null");
+    }
+    return jenkins;
   }
 
   @DataBoundConstructor
@@ -308,6 +315,39 @@ public class MesosCloud extends Cloud {
 
   public void restartMesos() {
 
+    initNativeLibrary(nativeLibraryPath);
+
+    // Default to root URL in Jenkins global configuration.
+    String jenkinsRootURL = getJenkins().getRootUrl();
+
+    // If 'jenkinsURL' parameter is provided in mesos plugin configuration, then that should take precedence.
+    if(StringUtils.isNotBlank(jenkinsURL)) {
+      jenkinsRootURL = jenkinsURL;
+    }
+
+    // Restart the scheduler if the master has changed or a scheduler is not up.
+    if (!master.equals(staticMaster) || !Mesos.getInstance(this).isSchedulerRunning()) {
+      if (!master.equals(staticMaster)) {
+        LOGGER.info("Mesos master changed, restarting the scheduler");
+        recordMaster(master);
+      } else {
+        LOGGER.info("Scheduler was down, restarting the scheduler");
+      }
+
+      Mesos.getInstance(this).stopScheduler(true);
+      Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
+    } else {
+      Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
+      LOGGER.info("Mesos master has not changed, leaving the scheduler running");
+    }
+
+  }
+
+  private static void recordMaster(String master) {
+    staticMaster = master;
+  }
+
+  private static void initNativeLibrary(String nativeLibraryPath) {
     if(!nativeLibraryLoaded) {
       // First, we attempt to load the library from the given path.
       // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
@@ -320,31 +360,6 @@ public class MesosCloud extends Cloud {
       }
       nativeLibraryLoaded = true;
     }
-
-    // Default to root URL in Jenkins global configuration.
-    String jenkinsRootURL = Jenkins.getInstance().getRootUrl();
-
-    // If 'jenkinsURL' parameter is provided in mesos plugin configuration, then that should take precedence.
-    if(StringUtils.isNotBlank(jenkinsURL)) {
-      jenkinsRootURL = jenkinsURL;
-    }
-
-    // Restart the scheduler if the master has changed or a scheduler is not up.
-    if (!master.equals(staticMaster) || !Mesos.getInstance(this).isSchedulerRunning()) {
-      if (!master.equals(staticMaster)) {
-        LOGGER.info("Mesos master changed, restarting the scheduler");
-        staticMaster = master;
-      } else {
-        LOGGER.info("Scheduler was down, restarting the scheduler");
-      }
-
-      Mesos.getInstance(this).stopScheduler(true);
-      Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
-    } else {
-      Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
-      LOGGER.info("Mesos master has not changed, leaving the scheduler running");
-    }
-
   }
 
   /**
@@ -359,7 +374,7 @@ public class MesosCloud extends Cloud {
     } else {
       List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
               : URIRequirementBuilder.fromUri(master.trim()).build();
-      Jenkins jenkins = Jenkins.getInstance();
+      Jenkins jenkins = getJenkins();
       return CredentialsMatchers.firstOrNull(CredentialsProvider
                       .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
               CredentialsMatchers.withId(credentialsId)
@@ -371,9 +386,13 @@ public class MesosCloud extends Cloud {
   public Collection<PlannedNode> provision(Label label, int excessWorkload) {
     List<PlannedNode> list = new ArrayList<PlannedNode>();
     final MesosSlaveInfo slaveInfo = getSlaveInfo(slaveInfos, label);
+    if (slaveInfo == null) {
+      return list;
+    }
+    int maxExecutors = slaveInfo.getMaxExecutors();
 
     try {
-      while (excessWorkload > 0 && !Jenkins.getInstance().isQuietingDown()) {
+      while (excessWorkload > 0 && !getJenkins().isQuietingDown()) {
         // Start the scheduler if it's not already running.
         if (onDemandRegistration) {
           JenkinsScheduler.SUPERVISOR_LOCK.lock();
@@ -386,7 +405,7 @@ public class MesosCloud extends Cloud {
             JenkinsScheduler.SUPERVISOR_LOCK.unlock();
           }
         }
-        final int numExecutors = Math.min(excessWorkload, slaveInfo.getMaxExecutors());
+        final int numExecutors = Math.min(excessWorkload, maxExecutors);
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
                     " executors. Remaining excess workload: " + excessWorkload + " executors)");
@@ -405,7 +424,6 @@ public class MesosCloud extends Cloud {
       }
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create instances on Mesos", e);
-      return Collections.emptyList();
     }
 
     return list;
@@ -602,7 +620,7 @@ public class MesosCloud extends Cloud {
     if (principal != null) {
       List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
         : URIRequirementBuilder.fromUri(master.trim()).build();
-      Jenkins jenkins = Jenkins.getInstance();
+      Jenkins jenkins = getJenkins();
       // Look up existing credentials with the same username.
       List<StandardUsernamePasswordCredentials> credentials = CredentialsMatchers.filter(CredentialsProvider
         .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),

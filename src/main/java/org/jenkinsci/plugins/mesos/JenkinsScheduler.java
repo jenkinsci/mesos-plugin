@@ -18,6 +18,7 @@ package org.jenkinsci.plugins.mesos;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.annotations.VisibleForTesting;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.util.Secret;
@@ -136,7 +137,7 @@ public class JenkinsScheduler implements Scheduler {
     // This is important because MesosCloud.provision() starts a new framework whenever isRunning() is false.
     running = true;
     String targetUser = mesosCloud.getSlavesUser();
-    String webUrl = Jenkins.getInstance().getRootUrl();
+    String webUrl = getJenkins().getRootUrl();
     if (webUrl == null) webUrl = System.getenv("JENKINS_URL");
     StandardUsernamePasswordCredentials credentials = mesosCloud.getCredentials();
     String principal = credentials == null ? "jenkins" : credentials.getUsername();
@@ -196,15 +197,18 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   public synchronized void stop() {
-    SUPERVISOR_LOCK.lock();
-    if (driver != null) {
-      LOGGER.info("Stopping Mesos driver.");
-      driver.stop();
-    } else {
-      LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
+    try {
+      SUPERVISOR_LOCK.lock();
+      if (driver != null) {
+        LOGGER.info("Stopping Mesos driver.");
+        driver.stop();
+      } else {
+        LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
+      }
+      running = false;
+    } finally {
+      SUPERVISOR_LOCK.unlock();
     }
-    running = false;
-    SUPERVISOR_LOCK.unlock();
   }
 
   public synchronized boolean isRunning() {
@@ -242,7 +246,7 @@ public class JenkinsScheduler implements Scheduler {
    */
   private String getJnlpSecret(String slaveName) {
     String jnlpSecret = "";
-    if(Jenkins.getInstance().isUseSecurity()) {
+    if(getJenkins().isUseSecurity()) {
       jnlpSecret = String.format(JNLP_SECRET_FORMAT, jenkins.slaves.JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(slaveName));
     }
     return jnlpSecret;
@@ -541,12 +545,14 @@ public class JenkinsScheduler implements Scheduler {
        * We are assured by the offer check that we have enough ports to use
        */
       // Check this port range for ports that we can use
-      for (Value.Range currentPortRange : portRangesList) {
-        // Check each port until we reach the end of the current range
-        long begin = currentPortRange.getBegin();
-        long end = currentPortRange.getEnd();
-        for (long candidatePort = begin; candidatePort <= end && portsToUse.size() < maxCount; candidatePort++) {
+      if (portRangesList != null) {
+        for (Value.Range currentPortRange : portRangesList) {
+          // Check each port until we reach the end of the current range
+          long begin = currentPortRange.getBegin();
+          long end = currentPortRange.getEnd();
+          for (long candidatePort = begin; candidatePort <= end && portsToUse.size() < maxCount; candidatePort++) {
             portsToUse.add(candidatePort);
+          }
         }
       }
 
@@ -565,19 +571,14 @@ public class JenkinsScheduler implements Scheduler {
         return;
     }
 
-    for (final Computer computer : Jenkins.getInstance().getComputers()) {
+    Jenkins jenkins = getJenkins();
+    for (final Computer computer : jenkins.getComputers()) {
         if (!MesosComputer.class.isInstance(computer)) {
             LOGGER.finer("Not a mesos computer, skipping");
             continue;
         }
 
         MesosComputer mesosComputer = (MesosComputer) computer;
-
-        if (mesosComputer == null) {
-            LOGGER.fine("The mesos computer is null, skipping");
-            continue;
-        }
-
         MesosSlave mesosSlave = mesosComputer.getNode();
 
         if (taskId.getValue().equals(computer.getName()) && mesosSlave.isPendingDelete()) {
@@ -601,6 +602,15 @@ public class JenkinsScheduler implements Scheduler {
     results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
         .getValue())));
     finishedTasks.add(taskId);
+  }
+
+  @NonNull
+  private static Jenkins getJenkins() {
+    Jenkins jenkins = Jenkins.getInstance();
+    if (jenkins == null) {
+      throw new IllegalStateException("Jenkins is null");
+    }
+    return jenkins;
   }
 
   private void detectAndAddAdditionalURIs(Request request, CommandInfo.Builder commandBuilder) {
@@ -919,7 +929,7 @@ public class JenkinsScheduler implements Scheduler {
     this.mesosCloud = mesosCloud;
   }
 
-  private class Result {
+  private static class Result {
     private final Mesos.SlaveResult result;
     private final Mesos.JenkinsSlave slave;
 
@@ -930,7 +940,7 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   @VisibleForTesting
-  class Request {
+  static class Request {
     private final Mesos.SlaveRequest request;
     private final Mesos.SlaveResult result;
 
@@ -957,9 +967,9 @@ public class JenkinsScheduler implements Scheduler {
    * sure JenkinsScheduler's request queue is empty.
    */
   public static void supervise() {
-	SUPERVISOR_LOCK.lock();
-    Collection<Mesos> clouds = Mesos.getAllClouds();
     try {
+      SUPERVISOR_LOCK.lock();
+      Collection<Mesos> clouds = Mesos.getAllClouds();
       for (Mesos cloud : clouds) {
         try {
           JenkinsScheduler scheduler = (JenkinsScheduler) cloud.getScheduler();
@@ -967,7 +977,7 @@ public class JenkinsScheduler implements Scheduler {
             boolean pendingTasks = (scheduler.getNumberofPendingTasks() > 0);
             boolean activeSlaves = false;
             boolean activeTasks = (scheduler.getNumberOfActiveTasks() > 0);
-            List<Node> slaveNodes = Jenkins.getInstance().getNodes();
+            List<Node> slaveNodes = getJenkins().getNodes();
             for (Node node : slaveNodes) {
               if (node instanceof MesosSlave) {
                 activeSlaves = true;
