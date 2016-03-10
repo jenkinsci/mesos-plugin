@@ -78,8 +78,6 @@ import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 
-import com.google.protobuf.ByteString;
-
 public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
 
