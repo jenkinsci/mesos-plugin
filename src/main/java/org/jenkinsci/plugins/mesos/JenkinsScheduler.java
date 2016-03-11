@@ -354,10 +354,9 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   /**
-   * Returns the unmatched labels during the last call of resourceOffers
-   * @return the unmatched labels during the last call of resourceOffers
+   * @return the unmatched labels during the last call of resourceOffers.
      */
-  public Set<String> getUnmatchedLabels() {
+  public synchronized Set<String> getUnmatchedLabels() {
     return Collections.unmodifiableSet(unmatchedLabels);
   }
 

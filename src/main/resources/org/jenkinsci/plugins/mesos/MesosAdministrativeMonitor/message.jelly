@@ -5,7 +5,7 @@
         <p>Some Mesos slaves cannot be provisioned on the following labels:</p>
         <ul>
             <j:forEach items="${it.labels}" var="label">
-                <li><b>${label}</b></li>
+                <li><a class="model-link inside" href="${rootURL}/label/${label}">${label}</a></li>
             </j:forEach>
         </ul>
         Please review the Mesos plugin <a href="configure">configuration</a> and check the cluster capacity to make sure the tasks can be launched successfully.
