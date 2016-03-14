@@ -43,24 +43,22 @@ public class MesosItemListener  extends ItemListener {
      * @param item
      */
     private void setLabel(final Item item) {
-        if (item == null) {
-            LOGGER.log(Level.WARNING, "MesosListener.setLabel(), item was null");
-            return ;
-        }
-        LOGGER.fine("MesosListener.setLabel(), setting label");
-        AbstractProject<?, ?> job = (AbstractProject<?, ?>) item;
-        Label label = job.getAssignedLabel();
-        try {
-            if(label == null) { // No label assigned, override now
-                LOGGER.log(Level.FINE, "No label assigned to job - " + item.getDisplayName() + ". Assigning a label now...");
-                label = getLabel();
-                if (label != null) {
-                    LOGGER.log(Level.INFO, "Assigned \"" + label.getName() + "\"  to job \"" + item.getDisplayName() + "\"");
-                    job.setAssignedLabel(label);
+        if (item instanceof AbstractProject) {
+            AbstractProject<?, ?> job = (AbstractProject<?, ?>) item;
+            LOGGER.fine("MesosListener.setLabel(), setting label");
+            Label label = job.getAssignedLabel();
+            try {
+                if (label == null) { // No label assigned, override now
+                    LOGGER.log(Level.FINE, "No label assigned to job - " + job.getDisplayName() + ". Assigning a label now...");
+                    label = getLabel();
+                    if (label != null) {
+                        LOGGER.log(Level.INFO, "Assigned \"" + label.getName() + "\"  to job \"" + job.getDisplayName() + "\"");
+                        job.setAssignedLabel(label);
+                    }
                 }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Failed to assign label \"" + label + "\" to " + job.getDisplayName(), e);
             }
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to assign label \"" + label +"\" to " + item.getDisplayName(), e);
         }
     }
 
