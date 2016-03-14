@@ -5,23 +5,23 @@
     </f:entry>
 
     <f:entry title="${%Mesos Master [hostname:port]}" field="master">
-        <f:textbox field="master" clazz="required"/>
+        <f:textbox clazz="required"/>
     </f:entry>
 
-    <f:entry title="${%Description}">
-        <f:textbox field="description" />
+    <f:entry title="${%Description}" field="description">
+        <f:textbox/>
     </f:entry>
 
-    <f:entry title="${%Framework Name}">
-        <f:textbox field="frameworkName" default="Jenkins Scheduler" clazz="required"/>
+    <f:entry title="${%Framework Name}" field="frameworkName">
+        <f:textbox default="Jenkins Scheduler" clazz="required"/>
     </f:entry>
 
-    <f:entry title="${%Role}">
-        <f:textbox field="role" default="*" clazz="required"/>
+    <f:entry title="${%Role}" field="role">
+        <f:textbox default="*" clazz="required"/>
     </f:entry>
 
-    <f:entry title="${%Slave username}">
-        <f:textbox field="slavesUser" default=""/>
+    <f:entry title="${%Slave username}" field="slavesUser">
+        <f:textbox default=""/>
     </f:entry>
 
     <f:entry field="credentialsId" title="${%Framework credentials}">
@@ -29,80 +29,80 @@
     </f:entry>
 
     <f:entry title="${%Jenkins URL }" field="jenkinsURL">
-      <f:textbox field="jenkinsURL"/>
+      <f:textbox/>
     </f:entry>
 
     <f:advanced>
-        <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}">
+        <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}" field="checkpoint">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
             <st:nbsp/>${%Yes}
-            <f:radio name="checkpoint" value="false" checked="${instance.checkpoint == false}" id="checkpoint.false"/>
+            <f:radio name="checkpoint" value="false" checked="${instance == null || instance.checkpoint == false}" id="checkpoint.false"/>
             <st:nbsp/>${%No}
         </f:entry>
 
-        <f:entry title="${%On-demand framework registration}" description="${%Enable to make this cloud register as a framework when builds need to be performed. And, disconnect otherwise.}">
-            <f:radio name="onDemandRegistration" value="true" checked="${instance.onDemandRegistration == true}" id="onDemandRegistration.true"/>
-                <st:nbsp/>${%Yes}
-                    <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
-                <st:nbsp/>${%No}
+        <f:entry title="${%On-demand framework registration}" field="onDemandRegistration" description="${%Enable to make this cloud register as a framework when builds need to be performed. And, disconnect otherwise.}">
+            <f:radio name="onDemandRegistration" value="true" checked="${instance == null || instance.onDemandRegistration == true}" id="onDemandRegistration.true"/>
+            <st:nbsp/>${%Yes}
+            <f:radio name="onDemandRegistration" value="false" checked="${instance.onDemandRegistration == false}" id="onDemandRegistration.false"/>
+            <st:nbsp/>${%No}
         </f:entry>
 
         <f:entry title="${%Decline offer duration}" field="declineOfferDuration" description="${%Decline offers for specified amount of time in case no slave is queued. The plugin asks for new offers in case a new slave needs to be started. In milliseconds.}">
-          <f:number field="declineOfferDuration" clazz="required positive-number" min="1000" steps="1000" default="600000"/>
+          <f:number clazz="required positive-number" min="1000" steps="1000" default="600000"/>
         </f:entry>
 
         <f:entry>
             <f:repeatable add="${%Add Slave Info}" var="slaveInfo" name="slaveInfos" items="${instance.slaveInfos}" noAddButton="false" minimum="1" >
                 <table width="100%">
-                    <f:entry title="${%Label String}">
-                        <f:textbox field="labelString" default="${slaveInfo == null ? 'mesos' : ''}" value="${slaveInfo.labelString}" />
+                    <f:entry title="${%Label String}" field="labelString">
+                        <f:textbox default="${slaveInfo == null ? 'mesos' : ''}" value="${slaveInfo.labelString}" />
                     </f:entry>
 
                     <f:slave-mode name="mode" node="${slaveInfo}" />
 
-                    <f:entry title="${%Jenkins Slave CPUs}">
-                        <f:textbox field="slaveCpus" clazz="required" default="0.1" value="${slaveInfo.slaveCpus}" />
+                    <f:entry title="${%Jenkins Slave CPUs}" field="slaveCpus">
+                        <f:textbox clazz="required" default="0.1" value="${slaveInfo.slaveCpus}" />
                     </f:entry>
 
-                    <f:entry title="${%Jenkins Slave Memory in MB}">
-                        <f:number field="slaveMem" clazz="required positive-number" default="512" value="${slaveInfo.slaveMem}"/>
+                    <f:entry title="${%Jenkins Slave Memory in MB}" field="slaveMem">
+                        <f:number clazz="required positive-number" default="512" value="${slaveInfo.slaveMem}"/>
                     </f:entry>
 
-                    <f:entry title="${% Maximum number of Executors per Slave}">
-                        <f:number field="maxExecutors" clazz="required number" default="2" value="${slaveInfo.maxExecutors}"/>
+                    <f:entry title="${%Maximum number of Executors per Slave}" field="maxExecutors">
+                        <f:number clazz="required number" default="2" value="${slaveInfo.maxExecutors}"/>
                     </f:entry>
 
-                    <f:entry title="${%Jenkins Executor CPUs}">
-                        <f:textbox field="executorCpus" clazz="required" default="0.1" value="${slaveInfo.executorCpus}"/>
+                    <f:entry title="${%Jenkins Executor CPUs}" field="executorCpus">
+                        <f:textbox clazz="required" default="0.1" value="${slaveInfo.executorCpus}"/>
                     </f:entry>
 
-                    <f:entry title="${%Jenkins Executor Memory in MB}">
-                        <f:number field="executorMem" clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
+                    <f:entry title="${%Jenkins Executor Memory in MB}" field="executorMem">
+                        <f:number clazz="required positive-number" default="128" value="${slaveInfo.executorMem}"/>
                     </f:entry>
 
                     <!--
                         Below option enables the user to specify the JENKINS_HOME directory of the slave. Defaults to "jenkins" if empty.
                     -->
                     <f:entry title="${%Remote FS Root}" field="remoteFSRoot">
-                        <f:textbox field="remoteFSRoot" clazz="required" default="jenkins" value="${slaveInfo.remoteFSRoot}"/>
+                        <f:textbox clazz="required" default="jenkins" value="${slaveInfo.remoteFSRoot}"/>
                     </f:entry>
 
                     <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
-                        <f:number field="idleTerminationMinutes" clazz="required number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
+                        <f:number clazz="required number" default="3" value="${slaveInfo.idleTerminationMinutes}"/>
                     </f:entry>
-                    <f:entry title="${%Mesos Offer Selection Attributes}">
-                        <f:textbox field="slaveAttributes" value="${slaveInfo.slaveAttributes}"/>
+                    <f:entry title="${%Mesos Offer Selection Attributes}" field="slaveAttributes">
+                        <f:textbox value="${slaveInfo.slaveAttributes}"/>
                     </f:entry>
                     <f:entry title="${%Additional Jenkins Slave JVM arguments}" field="jvmArgs">
-                        <f:textbox field="jvmArgs" default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
+                        <f:textbox default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true" value="${slaveInfo.jvmArgs}"/>
                     </f:entry>
 
                     <f:entry title="${%Additional Jenkins Slave Agent JNLP arguments}" field="jnlpArgs">
-                        <f:textbox field="jnlpArgs" default="-noReconnect" value="${slaveInfo.jnlpArgs}"/>
+                        <f:textbox default="-noReconnect" value="${slaveInfo.jnlpArgs}"/>
                     </f:entry>
 
                     <f:entry title="${%Mark this Slave Info as default for all Jobs}" field="defaultSlave">
-                        <f:checkbox field="defaultSlave" checked="${slaveInfo.defaultSlave}" onclick="checkDefaultSlave(this)"/>
+                        <f:checkbox checked="${slaveInfo.defaultSlave}" onclick="checkDefaultSlave(this)"/>
                     </f:entry>
 
                     <f:advanced>
@@ -111,13 +111,13 @@
                             <f:entry title="${%Container Type}" field="type">
                                 <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="true">
                                     <f:entry title="${%Docker Image}" field="dockerImage" description="If using Docker, specify the docker image.">
-                                        <f:textbox field="dockerImage" clazz="required" value="${slaveInfo.containerInfo.dockerImage}" default=""/>
+                                        <f:textbox clazz="required" value="${slaveInfo.containerInfo.dockerImage}" default=""/>
                                     </f:entry>
-                                    <f:entry title="${%Docker Privileged Mode}" description="This will start the image using Docker's privileged mode.">
-                                        <f:checkbox field="dockerPrivilegedMode" value="${slaveInfo.containerInfo.dockerPrivilegedMode}" checked="${slaveInfo.containerInfo.dockerPrivilegedMode}" />
+                                    <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
+                                        <f:checkbox value="${slaveInfo.containerInfo.dockerPrivilegedMode}" checked="${slaveInfo.containerInfo.dockerPrivilegedMode}" />
                                     </f:entry>
-                                    <f:entry title="${%Docker Force Pull Image}" description="This will force a pull of the Docker Image regardless of whether it exists locally.">
-                                        <f:checkbox field="dockerForcePullImage" value="${slaveInfo.containerInfo.dockerForcePullImage}" checked="${slaveInfo.containerInfo.dockerForcePullImage}" />
+                                    <f:entry title="${%Docker Force Pull Image}" field="dockerForcePullImage" description="This will force a pull of the Docker Image regardless of whether it exists locally.">
+                                        <f:checkbox value="${slaveInfo.containerInfo.dockerForcePullImage}" checked="${slaveInfo.containerInfo.dockerForcePullImage}" />
                                     </f:entry>
                                 </f:radioBlock>
                             </f:entry>
@@ -161,16 +161,16 @@
                                 </f:radioBlock>
                             </f:entry>
 
-                            <f:entry title="${%Volumes}">
+                            <f:entry title="${%Volumes}" field="volumes">
                                 <f:repeatable add="${%Add Volume}" var="volume" name="volumes" items="${slaveInfo.containerInfo.volumes}" noAddButton="false" minimum="0">
                                     <fieldset>
                                         <table width="100%">
-                                            <f:entry title="${%Container Path}">
-                                                <f:textbox field="containerPath" clazz="required" default="" value="${volume.containerPath}" />
+                                            <f:entry title="${%Container Path}" field="containerPath">
+                                                <f:textbox clazz="required" default="" value="${volume.containerPath}" />
                                             </f:entry>
 
-                                            <f:entry title="${%Host Path}">
-                                                <f:textbox field="hostPath" default="" value="${volume.hostPath}" />
+                                            <f:entry title="${%Host Path}" field="hostPath">
+                                                <f:textbox default="" value="${volume.hostPath}" />
                                             </f:entry>
 
                                             <f:entry title="${%Read-Only}" field="volume.readOnly">
