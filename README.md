@@ -125,7 +125,7 @@ By default, the Jenkins slaves are run in the default Mesos container. To run th
 	1) "Use Native Docker Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=docker" (recommended).
 
 	2) "Use External Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=external".
-	
+
 ### Docker Configuration ###
 
 #### Volumes ####
@@ -145,4 +145,4 @@ If you want to override this behvaiour and spawn an executor for each build in q
 Thats it!
 
 
-_Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list for discussions/questions!_
+_Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list or #jenkins-mesos on irc.freenode.net for discussions/questions!_
