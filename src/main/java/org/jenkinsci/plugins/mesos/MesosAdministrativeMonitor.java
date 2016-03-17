@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AdministrativeMonitor;
 import org.apache.mesos.Scheduler;
@@ -13,6 +14,7 @@ import java.util.Set;
 @Extension
 public class MesosAdministrativeMonitor extends AdministrativeMonitor {
 
+    @NonNull
     public Set<String> getLabels() {
         Set<String> result = new HashSet<String>();
         for (Mesos mesos : Mesos.getAllClouds()) {
