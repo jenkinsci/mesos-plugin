@@ -1,6 +1,9 @@
 package org.jenkinsci.plugins.mesos;
 
+import hudson.Extension;
 import hudson.Util;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 
 import java.util.Collections;
@@ -19,7 +22,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class MesosSlaveInfo {
+public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
+  @Extension
+  public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
+    public String getDisplayName() { return ""; }
+  }
+
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
   private final double slaveCpus;
@@ -266,7 +274,12 @@ public class MesosSlaveInfo {
     }
   }
 
-  public static class ContainerInfo {
+  public static class ContainerInfo extends AbstractDescribableImpl<ContainerInfo> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<ContainerInfo> {
+      public String getDisplayName() { return ""; }
+    }
+
     private final String type;
     private final String dockerImage;
     private final List<Volume> volumes;
@@ -398,7 +411,12 @@ public class MesosSlaveInfo {
     }
   }
 
-  public static class Parameter {
+  public static class Parameter extends AbstractDescribableImpl<Parameter> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<Parameter> {
+      public String getDisplayName() { return ""; }
+    }
+
     private final String key;
     private final String value;
 
@@ -436,7 +454,11 @@ public class MesosSlaveInfo {
     }
   }
 
-  public static class PortMapping {
+  public static class PortMapping extends AbstractDescribableImpl<PortMapping> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<PortMapping> {
+      public String getDisplayName() { return ""; }
+    }
 
     // TODO validate 1 to 65535
     private final Integer containerPort;
@@ -489,7 +511,12 @@ public class MesosSlaveInfo {
     }
   }
 
-  public static class Volume {
+  public static class Volume extends AbstractDescribableImpl<Volume> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<Volume> {
+      public String getDisplayName() { return ""; }
+    }
+
     private final String containerPath;
     private final String hostPath;
     private final boolean readOnly;
@@ -536,7 +563,12 @@ public class MesosSlaveInfo {
     }
   }
 
-  public static class URI {
+  public static class URI extends AbstractDescribableImpl<URI> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<URI> {
+      public String getDisplayName() { return ""; }
+    }
+
     private final String value;
     private final boolean executable;
     private final boolean extract;

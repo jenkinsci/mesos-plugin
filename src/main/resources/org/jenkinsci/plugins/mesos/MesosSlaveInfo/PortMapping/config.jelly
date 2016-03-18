@@ -1,0 +1,15 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <f:entry title="${%Container Port}" field="containerPort">
+        <f:textbox clazz="required positive-number"/>
+    </f:entry>
+    <f:entry title="${%Host Port}" field="hostPort">
+        <f:textbox clazz="positive-number"/>
+    </f:entry>
+    <f:entry title="${%Protocol}" field="protocol">
+        <select name="protocol" value="${instance.protocol}" class="setting-input select">
+            <f:option value="tcp" selected="${instance.protocol == 'tcp'}">tcp</f:option>
+            <f:option value="udp" selected="${instance.protocol == 'udp'}">udp</f:option>
+        </select>
+    </f:entry>
+</j:jelly>
