@@ -20,12 +20,9 @@ import hudson.model.Computer;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Hudson;
 import hudson.model.Slave;
-import hudson.slaves.NodeProperty;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,13 +48,11 @@ public class MesosSlave extends Slave {
           slaveInfo.getLabelString(), // Label.
           new MesosComputerLauncher(cloud, name),
           new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),
-          Collections.<NodeProperty<?>> emptyList());
+          slaveInfo.getNodeProperties());
     this.cloud = cloud;
     this.slaveInfo = slaveInfo;
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
-    EnvironmentVariablesNodeProperty.Entry entry = new EnvironmentVariablesNodeProperty.Entry("_JAVA_OPTIONS", "-Xmx"+slaveInfo.getExecutorMem()+"m");
-    getNodeProperties().add(new EnvironmentVariablesNodeProperty(entry));
     LOGGER.info("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 

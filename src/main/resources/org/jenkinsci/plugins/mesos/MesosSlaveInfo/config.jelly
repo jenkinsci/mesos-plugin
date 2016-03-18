@@ -6,6 +6,14 @@
 
     <f:slave-mode name="mode" node="${instance}" />
 
+    <f:entry title="Node Properties">
+        <f:hetero-list name="nodeProperties" hasHeader="true"
+                       descriptors="${h.getNodePropertyDescriptors(descriptor.nodeClass)}"
+                       items="${instance.nodeProperties}"
+                       addCaption="${%Add Node Property}"
+                       oneEach="true"/>
+    </f:entry>
+
     <f:entry title="${%Jenkins Slave CPUs}" field="slaveCpus">
         <f:textbox clazz="required" default="0.1"/>
     </f:entry>

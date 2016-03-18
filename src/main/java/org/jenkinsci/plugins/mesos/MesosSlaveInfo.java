@@ -6,6 +6,8 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -13,7 +15,12 @@ import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 
 import hudson.model.Label;
+import hudson.model.Node;
 import hudson.model.Node.Mode;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.NodePropertyDescriptor;
+import hudson.util.DescribableList;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -26,6 +33,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
   public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
     public String getDisplayName() { return ""; }
+
+    public Class<? extends Node> getNodeClass() {
+      return MesosSlave.class;
+    }
   }
 
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
@@ -45,6 +56,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
+  private /*almost final*/ DescribableList<NodeProperty<?>,NodePropertyDescriptor> nodeProperties = new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance());
 
   @CheckForNull
   private String labelString;
@@ -74,6 +86,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (additionalURIs != null ? !additionalURIs.equals(that.additionalURIs) : that.additionalURIs != null)
       return false;
     if (mode != that.mode) return false;
+    if (nodeProperties != null ? !nodeProperties.equals(that.nodeProperties) : that.nodeProperties != null) return false;
     return labelString != null ? labelString.equals(that.labelString) : that.labelString == null;
 
   }
@@ -97,6 +110,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + (containerInfo != null ? containerInfo.hashCode() : 0);
     result = 31 * result + (additionalURIs != null ? additionalURIs.hashCode() : 0);
     result = 31 * result + (mode != null ? mode.hashCode() : 0);
+    result = 31 * result + (nodeProperties != null ? nodeProperties.hashCode() : 0);
     result = 31 * result + (labelString != null ? labelString.hashCode() : 0);
     return result;
   }
@@ -117,8 +131,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       String jnlpArgs,
       String defaultSlave,
       ContainerInfo containerInfo,
-      List<URI> additionalURIs)
-      throws NumberFormatException {
+      List<URI> additionalURIs,
+      List<? extends NodeProperty<?>> nodeProperties)
+      throws IOException, NumberFormatException {
     this.slaveCpus = Double.parseDouble(slaveCpus);
     this.slaveMem = Integer.parseInt(slaveMem);
     this.maxExecutors = Integer.parseInt(maxExecutors);
@@ -135,6 +150,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     this.defaultSlave = Boolean.valueOf(defaultSlave);
     this.containerInfo = containerInfo;
     this.additionalURIs = additionalURIs;
+    this.nodeProperties.replaceBy(nodeProperties == null ? new ArrayList<NodeProperty<?>>() : nodeProperties);
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
@@ -210,6 +226,11 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     return additionalURIs;
   }
 
+  public DescribableList<NodeProperty<?>, NodePropertyDescriptor> getNodeProperties() {
+    assert nodeProperties != null;
+    return nodeProperties;
+  }
+
   /**
    * Removes any additional {@code -Xmx} JVM args from the provided JVM
    * arguments. This is to ensure that the logic that sets the maximum heap
@@ -234,6 +255,13 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   public boolean matchesLabel(@CheckForNull Label label) {
     return ((label == null) && (getLabelString() == null))
       || (getLabelString() != null && label != null && label.matches(Label.parse(getLabelString())));
+  }
+
+  public Object readResolve() {
+    if (nodeProperties == null) {
+      nodeProperties = new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance());
+    }
+    return this;
   }
 
   public static class ExternalContainerInfo {

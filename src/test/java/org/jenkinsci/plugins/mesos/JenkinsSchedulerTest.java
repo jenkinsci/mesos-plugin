@@ -15,6 +15,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -261,7 +262,7 @@ public class JenkinsSchedulerTest {
     private Mesos.SlaveRequest mockSlaveRequest(
         Boolean useDocker,
         Boolean useCustomDockerCommandShell,
-        String customDockerCommandShell) throws Descriptor.FormException {
+        String customDockerCommandShell) throws Descriptor.FormException, IOException {
         MesosSlaveInfo.ContainerInfo containerInfo = null;
         if (useDocker) {
             containerInfo = new MesosSlaveInfo.ContainerInfo(
@@ -292,7 +293,9 @@ public class JenkinsSchedulerTest {
                 null,               // jnlpArgs,
                 null,               // defaultSlave,
                 containerInfo,      // containerInfo,
-                null);              //additionalURIs
+                null,              // additionalURIs
+                null              // nodeProperties
+                );
         return new Mesos.SlaveRequest(
             new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo);
     }
@@ -300,7 +303,7 @@ public class JenkinsSchedulerTest {
     private JenkinsScheduler.Request mockMesosRequest(
             Boolean useDocker,
             Boolean useCustomDockerCommandShell,
-            String customDockerCommandShell) throws Descriptor.FormException {
+            String customDockerCommandShell) throws Descriptor.FormException, IOException {
         Mesos.SlaveResult slaveResult = Mockito.mock(Mesos.SlaveResult.class);
         return jenkinsScheduler.new Request(
             mockSlaveRequest(useDocker, useCustomDockerCommandShell, customDockerCommandShell),
