@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -96,6 +97,7 @@ public class JenkinsScheduler implements Scheduler {
   public static final String PORT_RESOURCE_NAME = "ports";
 
   private Queue<Request> requests;
+  private Set<String> unmatchedLabels;
   private Map<TaskID, Result> results;
   private Set<TaskID> finishedTasks;
   private volatile SchedulerDriver driver;
@@ -123,6 +125,7 @@ public class JenkinsScheduler implements Scheduler {
     this.mesosCloud = mesosCloud;
 
     requests = new LinkedList<Request>();
+    unmatchedLabels = new HashSet<String>();
     results = new HashMap<TaskID, Result>();
     finishedTasks = Collections.newSetFromMap(new ConcurrentHashMap<TaskID, Boolean>());
   }
@@ -312,6 +315,7 @@ public class JenkinsScheduler implements Scheduler {
     reArrangeOffersBasedOnAffinity(offers);
     for (Offer offer : offers) {
       if (requests.isEmpty()) {
+        unmatchedLabels.clear();
         // Decline offer for a longer period if no slave is waiting to get spawned.
         // This prevents unnecessarily getting offers every few seconds and causing
         // starvation when running a lot of frameworks.
@@ -329,6 +333,7 @@ public class JenkinsScheduler implements Scheduler {
 
           try {
             createMesosTask(offer, request);
+            unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
             taskCreated = true;
             recentlyAcceptedOffers.put(offer.getSlaveId().getValue(), IGNORE);
           } catch (Exception e) {
@@ -343,6 +348,16 @@ public class JenkinsScheduler implements Scheduler {
         driver.declineOffer(offer.getId());
       }
     }
+    for (Request request: requests) {
+      unmatchedLabels.add(request.request.slaveInfo.getLabelString());
+    }
+  }
+
+  /**
+   * @return the unmatched labels during the last call of resourceOffers.
+     */
+  public synchronized Set<String> getUnmatchedLabels() {
+    return Collections.unmodifiableSet(unmatchedLabels);
   }
 
   /**
