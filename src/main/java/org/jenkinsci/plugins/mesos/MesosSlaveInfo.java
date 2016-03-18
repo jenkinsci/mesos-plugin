@@ -415,6 +415,25 @@ public class MesosSlaveInfo {
     public String getValue() {
       return value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Parameter parameter = (Parameter) o;
+
+      if (key != null ? !key.equals(parameter.key) : parameter.key != null) return false;
+      return value != null ? value.equals(parameter.value) : parameter.value == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = key != null ? key.hashCode() : 0;
+      result = 31 * result + (value != null ? value.hashCode() : 0);
+      return result;
+    }
   }
 
   public static class PortMapping {
@@ -448,6 +467,26 @@ public class MesosSlaveInfo {
         return (hostPort == null ? 0 : hostPort) + ":" + containerPort;
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      PortMapping that = (PortMapping) o;
+
+      if (containerPort != null ? !containerPort.equals(that.containerPort) : that.containerPort != null) return false;
+      if (hostPort != null ? !hostPort.equals(that.hostPort) : that.hostPort != null) return false;
+      return protocol != null ? protocol.equals(that.protocol) : that.protocol == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = containerPort != null ? containerPort.hashCode() : 0;
+      result = 31 * result + (hostPort != null ? hostPort.hashCode() : 0);
+      result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
+      return result;
+    }
   }
 
   public static class Volume {
@@ -473,6 +512,28 @@ public class MesosSlaveInfo {
     public boolean isReadOnly() {
       return readOnly;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Volume volume = (Volume) o;
+
+      if (readOnly != volume.readOnly) return false;
+      if (containerPath != null ? !containerPath.equals(volume.containerPath) : volume.containerPath != null)
+        return false;
+      return hostPath != null ? hostPath.equals(volume.hostPath) : volume.hostPath == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = containerPath != null ? containerPath.hashCode() : 0;
+      result = 31 * result + (hostPath != null ? hostPath.hashCode() : 0);
+      result = 31 * result + (readOnly ? 1 : 0);
+      return result;
+    }
   }
 
   public static class URI {
@@ -497,6 +558,27 @@ public class MesosSlaveInfo {
 
     public boolean isExtract() {
       return extract;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      URI uri = (URI) o;
+
+      if (executable != uri.executable) return false;
+      if (extract != uri.extract) return false;
+      return value != null ? value.equals(uri.value) : uri.value == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = value != null ? value.hashCode() : 0;
+      result = 31 * result + (executable ? 1 : 0);
+      result = 31 * result + (extract ? 1 : 0);
+      return result;
     }
   }
 }
