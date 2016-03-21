@@ -55,7 +55,7 @@ $script = <<SCRIPT
  # Build mesos-jenkins plugin.
  echo "Building mesos-jenkins plugin"
  # TODO(vinod): Update the mesos version in pom.xml.
- su - vagrant -c "cd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION} && mvn package"
+ su - vagrant -c "cd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION} && mvn package -DskipTests"
  echo "Done"
 
  echo "****************************************************************"
