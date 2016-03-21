@@ -110,6 +110,11 @@ public class MesosSlave extends Slave {
     public String getDisplayName() {
       return "Mesos Slave";
     }
+
+    @Override
+    public boolean isInstantiable() {
+      return false;
+    }
   }
 
   private String getInstanceId() {
