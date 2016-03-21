@@ -677,19 +677,6 @@ public void setJenkinsURL(String jenkinsURL) {
 
 @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
-    private String nativeLibraryPath;
-    private String master;
-    private String description;
-    private String frameworkName;
-    private String role;
-    private String slavesUser;
-    private String principal;
-    private String secret;
-    private String slaveAttributes;
-    private boolean checkpoint;
-    private String jenkinsURL;
-    private List<MesosSlaveInfo> slaveInfos;
-
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
@@ -704,118 +691,6 @@ public void setJenkinsURL(String jenkinsURL) {
         CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class),
         CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, item, null, domainRequirements)
       );
-    }
-
-    @Override
-    public boolean configure(StaplerRequest request, JSONObject object)
-        throws FormException {
-      LOGGER.info(object.toString());
-      nativeLibraryPath = object.getString("nativeLibraryPath");
-      master = object.getString("master");
-      description = object.getString("description");
-      frameworkName = object.getString("frameworkName");
-      role = object.getString("role");
-      principal = object.getString("principal");
-      secret = object.getString("secret");
-      slaveAttributes = object.getString("slaveAttributes");
-      checkpoint = object.getBoolean("checkpoint");
-      jenkinsURL = object.getString("jenkinsURL");
-      slavesUser = object.getString("slavesUser");
-      slaveInfos = new ArrayList<MesosSlaveInfo>();
-      JSONArray labels = object.getJSONArray("slaveInfos");
-      if (labels != null) {
-        for (int i = 0; i < labels.size(); i++) {
-          JSONObject label = labels.getJSONObject(i);
-          if (label != null) {
-            MesosSlaveInfo.ContainerInfo containerInfo = null;
-            if (label.has("containerInfo")) {
-              JSONObject containerInfoJson = label
-                  .getJSONObject("containerInfo");
-              List<MesosSlaveInfo.Volume> volumes = new ArrayList<MesosSlaveInfo.Volume>();
-              if (containerInfoJson.has("volumes")) {
-                JSONArray volumesJson = containerInfoJson
-                    .getJSONArray("volumes");
-                for (Object obj : volumesJson) {
-                  JSONObject volumeJson = (JSONObject) obj;
-                  volumes
-                      .add(new MesosSlaveInfo.Volume(volumeJson
-                          .getString("containerPath"), volumeJson
-                          .getString("hostPath"), volumeJson
-                          .getBoolean("readOnly")));
-                }
-              }
-
-              List<MesosSlaveInfo.Parameter> parameters = new ArrayList<MesosSlaveInfo.Parameter>();
-
-              if (containerInfoJson.has("parameters")) {
-                JSONArray parametersJson = containerInfoJson.getJSONArray("parameters");
-                for (Object obj : parametersJson) {
-                  JSONObject parameterJson = (JSONObject) obj;
-                  parameters.add(new MesosSlaveInfo.Parameter(parameterJson.getString("key"), parameterJson.getString("value")));
-                }
-              }
-
-              List<MesosSlaveInfo.PortMapping> portMappings = new ArrayList<MesosSlaveInfo.PortMapping>();
-
-              final String networking = containerInfoJson.getString("networking");
-              if (Network.BRIDGE.equals(Network.valueOf(networking)) && containerInfoJson.has("portMappings")) {
-                JSONArray portMappingsJson = containerInfoJson
-                    .getJSONArray("portMappings");
-                for (Object obj : portMappingsJson) {
-                  JSONObject portMappingJson = (JSONObject) obj;
-                  portMappings.add(new MesosSlaveInfo.PortMapping(
-                          portMappingJson.getInt("containerPort"),
-                          portMappingJson.getInt("hostPort"),
-                          portMappingJson.getString("protocol")));
-                }
-              }
-
-              containerInfo = new MesosSlaveInfo.ContainerInfo(
-                  containerInfoJson.getString("type"),
-                  containerInfoJson.getString("dockerImage"),
-                  containerInfoJson.getBoolean("dockerPrivilegedMode"),
-                  containerInfoJson.getBoolean("dockerForcePullImage"),
-                  containerInfoJson.getBoolean("useCustomDockerCommandShell"),
-                  containerInfoJson.getString ("customDockerCommandShell"),
-                  volumes,
-                  parameters,
-                  networking,
-                  portMappings);
-            }
-
-            List<MesosSlaveInfo.URI> additionalURIs = new ArrayList<MesosSlaveInfo.URI>();
-            if (label.has("additionalURIs")) {
-              JSONArray additionalURIsJson = label.getJSONArray("additionalURIs");
-              for (Object obj : additionalURIsJson) {
-                JSONObject URIJson = (JSONObject) obj;
-                additionalURIs.add(new MesosSlaveInfo.URI(
-                    URIJson.getString("value"),
-                    URIJson.getBoolean("executable"),
-                    URIJson.getBoolean("extract")));
-              }
-            }
-            MesosSlaveInfo slaveInfo = new MesosSlaveInfo(
-                object.getString("labelString"),
-                (Mode) object.get("mode"),
-                object.getString("slaveCpus"),
-                object.getString("slaveMem"),
-                object.getString("maxExecutors"),
-                object.getString("executorCpus"),
-                object.getString("executorMem"),
-                object.getString("remoteFSRoot"),
-                object.getString("idleTerminationMinutes"),
-                object.getString("slaveAttributes"),
-                object.getString("jvmArgs"),
-                object.getString("jnlpArgs"),
-                object.getString("defaultSlave"),
-                containerInfo,
-                additionalURIs);
-            slaveInfos.add(slaveInfo);
-          }
-        }
-      }
-      save();
-      return super.configure(request, object);
     }
 
     /**
