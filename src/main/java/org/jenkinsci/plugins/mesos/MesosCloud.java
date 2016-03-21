@@ -34,7 +34,6 @@ import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
-import hudson.model.Node.Mode;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
@@ -57,19 +56,15 @@ import javax.servlet.ServletException;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
-import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
