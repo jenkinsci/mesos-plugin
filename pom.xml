@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>mesos</artifactId>
-  <version>0.12.0-SNAPSHOT</version>
+  <version>0.12.0</version>
   <packaging>hpi</packaging>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
 
@@ -15,7 +15,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/mesos-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/mesos-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/mesos-plugin</url>
-    <tag>HEAD</tag>
+    <tag>mesos-0.12.0</tag>
   </scm>
 
   <developers>
