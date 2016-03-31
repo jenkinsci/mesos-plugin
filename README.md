@@ -10,74 +10,24 @@ immediately scheduled! Similarly, when a Jenkins slave is idle for a long time i
 is automatically shut down.
 
 
-### Prerequisite ###
+## Prerequisite ##
 
 You need to have access to a running Mesos cluster. For instructions on setting up a Mesos cluster, please refer to the [Mesos website](http://mesos.apache.org).
 
+## Installing the plugin ##
 
-### Building the plugin ###
+* Go to 'Manage Plugins' page in the Jenkins Web UI, you'll find the plugin in the 'Available' tab under the name 'mesos'.
 
-Build the plugin as follows:
-
-        $ mvn package
-
-This should build the Mesos plugin (mesos.hpi) in the `target` folder.
-
-> NOTE: If you want to build against a different version of Mesos than
-> the default you'll need to update the `mesos` version in `pom.xml`.
-> You should use the same (**recommended**) or compatible version as the
-> one your Mesos cluster is running on.
-
-
-### Installing the plugin ###
-
-Go to 'Manage Plugins' page in the Jenkins Web UI and manually upload and
-install the plugin.
-
-Alternatively, you can just copy the plugin to your Jenkins plugins directory
-(this might need a restart of Jenkins).
-
-        $ cp target/mesos.hpi ${JENKINS_HOME}/plugins
-
-If you simply want to play with the `mesos-jenkins` plugin, you can also bring up a local Jenkins instance with the plugin pre-installed as follows:
-
-		$ mvn hpi:run
-
-
-### Building the Mesos native library ##
-
-First, [download](http://mesos.apache.org/downloads/) Mesos.
-
-> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in `pom.xml`.
-
-Now, build it as follows:
-
-		$ cd mesos
-		$ mkdir build && cd build
-		$ ../configure
-		$ make
-
-This should build the Mesos native library in the `build/src/.libs` folder.
-
-
-### Vagrant ###
-
-If you are just looking to play with Mesos and this plugin in a single self contained VM, you could do so with the included Vagrantfile.
-
-		$ vagrant up
-		$ vagrant ssh
-
+* (Optional) Install the metrics plugin which is an optional dependency of this plugin, used for additional but not essential features.
 
 ### Configuring the plugin ###
 
 Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
 you should see an option to 'Add a new cloud' at the bottom of the page. Add the
 'Mesos Cloud' and give the path to the Mesos native library (e.g., libmesos.so on Linux or libmesos.dylib on OSX) (see the above section)
-and the address (HOST:PORT) of a running Mesos master. Click 'Save' for the plugin
-to connect to Mesos.
+and the address (HOST:PORT) of a running Mesos master.
 
-Login to the Mesos master's Web UI to verify that the plugin is registered as
-'Jenkins Framework'.
+If you want to test immediately connectivity to Mesos, you can set 'On-demand framework registration' to 'no' and the framework will appear in Mesos as soon as you save. Otherwise it will register and unregister automatically when a build is scheduled on Mesos.
 
 ### Mesos slave setup ###
 
@@ -101,7 +51,7 @@ Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"j
 
 By default the plugin (a Mesos framework) registers with Mesos master without authentication. To enable authentication:
 
-  1. Set the `Framework principal` and `Framework Secret` fields in the plugin configuration page.
+  1. Click on the Add button next Set the `Framework principal` and `Framework Secret` fields in the plugin configuration page.
 
   2. Ensure the same credentials (`principal` and `secret`) are setup on the Mesos master via `"--credentials"` command line flag (See `./mesos-master.sh --help` for details).
 
@@ -139,10 +89,46 @@ Additional parameters are available for the `docker run` command, but there are 
 ### Over provisioning flags ###
 
 By default, Jenkins spawns slaves conservatively. Say, if there are 2 builds in queue, it won't spawn 2 executors immediately. It will spawn one executor and wait for sometime for the first executor to be freed before deciding to spawn the second executor. Jenkins makes sure every executor it spawns is utilized to the maximum.
-If you want to override this behvaiour and spawn an executor for each build in queue immediately without waiting, you can use these flags during Jenkins startup:
+If you want to override this behaviour and spawn an executor for each build in queue immediately without waiting, you can use these flags during Jenkins startup:
 `-Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85`
 
-Thats it!
+## Plugin Development
 
+### Building the plugin ###
+
+Build the plugin as follows:
+
+        $ mvn package
+
+This should build the Mesos plugin (mesos.hpi) in the `target` folder.
+
+> NOTE: If you want to build against a different version of Mesos than
+> the default you'll need to update the `mesos` version in `pom.xml`.
+> You should use the same (**recommended**) or compatible version as the
+> one your Mesos cluster is running on.
+
+
+### Building the Mesos native library ##
+
+First, [download](http://mesos.apache.org/downloads/) Mesos.
+
+> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in `pom.xml`.
+
+Now, build it as follows:
+
+		$ cd mesos
+		$ mkdir build && cd build
+		$ ../configure
+		$ make
+
+This should build the Mesos native library in the `build/src/.libs` folder.
+
+
+### Vagrant ###
+
+If you are just looking to play with Mesos and this plugin in a single self contained VM, you could do so with the included Vagrantfile.
+
+		$ vagrant up
+		$ vagrant ssh
 
 _Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list or #jenkins-mesos on irc.freenode.net for discussions/questions!_
