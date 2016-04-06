@@ -579,11 +579,11 @@ public class MesosCloud extends Cloud {
     return checkpoint;
   }
 
-  private MesosSlaveInfo getSlaveInfo(List<MesosSlaveInfo> slaveInfos,
-      Label label) {
+  private MesosSlaveInfo getSlaveInfo(List<MesosSlaveInfo> slaveInfos, Label label) {
     for (MesosSlaveInfo slaveInfo : slaveInfos) {
-      if (slaveInfo.matchesLabel(label)) {
-        return slaveInfo;
+      MesosSlaveInfo slaveInfoForLabel = slaveInfo.getMesosSlaveInfoForLabel(label);
+      if (slaveInfoForLabel != null) {
+        return slaveInfoForLabel;
       }
     }
     return null;

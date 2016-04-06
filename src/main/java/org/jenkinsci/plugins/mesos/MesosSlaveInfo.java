@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
 import hudson.Util;
+
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 
@@ -41,6 +44,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
 
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
+  private static final String CUSTOM_IMAGE_SEPARATOR = ":";
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
@@ -134,35 +138,101 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       List<URI> additionalURIs,
       List<? extends NodeProperty<?>> nodeProperties)
       throws IOException, NumberFormatException {
-    this.slaveCpus = Double.parseDouble(slaveCpus);
-    this.slaveMem = Integer.parseInt(slaveMem);
-    this.maxExecutors = Integer.parseInt(maxExecutors);
-    this.executorCpus = Double.parseDouble(executorCpus);
-    this.executorMem = Integer.parseInt(executorMem);
-    this.remoteFSRoot = StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot
-        .trim() : "jenkins";
-    this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
-    this.labelString = Util.fixEmptyAndTrim(labelString);
-    this.mode = mode != null ? mode : Mode.NORMAL;
-    this.jvmArgs = StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs)
-        : DEFAULT_JVM_ARGS;
-    this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
-    this.defaultSlave = Boolean.valueOf(defaultSlave);
-    this.containerInfo = containerInfo;
-    this.additionalURIs = additionalURIs;
-    this.nodeProperties.replaceBy(nodeProperties == null ? new ArrayList<NodeProperty<?>>() : nodeProperties);
-
     // Parse the attributes provided from the cloud config
-    JSONObject jsonObject = null;
+    this(
+              Util.fixEmptyAndTrim(labelString),
+              mode != null ? mode : Mode.NORMAL,
+              Double.parseDouble(slaveCpus),
+              Integer.parseInt(slaveMem),
+              Integer.parseInt(maxExecutors),
+              Double.parseDouble(executorCpus),
+              Integer.parseInt(executorMem),
+              StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot.trim() : "jenkins",
+              Integer.parseInt(idleTerminationMinutes),
+              parseSlaveAttributes(slaveAttributes),
+              StringUtils.isNotBlank(jvmArgs) ? cleanseJvmArgs(jvmArgs) : DEFAULT_JVM_ARGS,
+              StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "",
+              Boolean.valueOf(defaultSlave),
+              containerInfo,
+              additionalURIs,
+              nodeProperties);
+  }
+
+  public MesosSlaveInfo(
+      String labelString,
+      Mode mode,
+      double slaveCpus,
+      int slaveMem,
+      int maxExecutors,
+      double executorCpus,
+      int executorMem,
+      String remoteFSRoot,
+      int idleTerminationMinutes,
+      JSONObject slaveAttributes,
+      String jvmArgs,
+      String jnlpArgs,
+      Boolean defaultSlave,
+      ContainerInfo containerInfo,
+      List<URI> additionalURIs,
+      List<? extends NodeProperty<?>> nodeProperties)
+      throws IOException, NumberFormatException {
+      this.labelString = labelString;
+      this.mode = mode;
+      this.slaveCpus = slaveCpus;
+      this.slaveMem = slaveMem;
+      this.maxExecutors = maxExecutors;
+      this.executorCpus = executorCpus;
+      this.executorMem = executorMem;
+      this.remoteFSRoot = remoteFSRoot;
+      this.idleTerminationMinutes = idleTerminationMinutes;
+      this.slaveAttributes = slaveAttributes;
+      this.jvmArgs = jvmArgs;
+      this.jnlpArgs = jnlpArgs;
+      this.defaultSlave = defaultSlave;
+      this.containerInfo = containerInfo;
+      this.additionalURIs = additionalURIs;
+      this.nodeProperties.replaceBy(nodeProperties == null ? new ArrayList<NodeProperty<?>>() : nodeProperties);
+  }
+
+  private static JSONObject parseSlaveAttributes(String slaveAttributes) {
     if (StringUtils.isNotBlank(slaveAttributes)) {
         try {
-            jsonObject = (JSONObject) JSONSerializer.toJSON(slaveAttributes);
+            return (JSONObject) JSONSerializer.toJSON(slaveAttributes);
         } catch (JSONException e) {
-            LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : "
-                           + slaveAttributes);
+            LOGGER.warning("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
         }
     }
-    this.slaveAttributes = jsonObject;
+
+    return null;
+  }
+
+  public MesosSlaveInfo copyWithDockerImage(String label, String dockerImage) {
+    LOGGER.fine(String.format("Customize mesos slave %s using docker image %s", this.getLabelString(), dockerImage));
+
+    try {
+      return new MesosSlaveInfo(
+              label,
+              mode,
+              slaveCpus,
+              slaveMem,
+              maxExecutors,
+              executorCpus,
+              executorMem,
+              remoteFSRoot,
+              idleTerminationMinutes,
+              slaveAttributes,
+              jvmArgs,
+              jnlpArgs,
+              defaultSlave,
+              containerInfo.copyWithDockerImage(dockerImage),
+              additionalURIs,
+              nodeProperties
+      );
+    } catch (Descriptor.FormException e) {
+      return null;
+    } catch (IOException e) {
+      return null;
+    }
   }
 
   @CheckForNull
@@ -242,7 +312,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
    *          the string of JVM arguments.
    * @return The cleansed JVM argument string.
    */
-  private String cleanseJvmArgs(final String jvmArgs) {
+  private static String cleanseJvmArgs(final String jvmArgs) {
     return jvmArgs.replaceAll(JVM_ARGS_PATTERN, "");
   }
 
@@ -253,8 +323,20 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
    * @return Whether the slave label matches.
    */
   public boolean matchesLabel(@CheckForNull Label label) {
-    return ((label == null) && (getLabelString() == null))
-      || (getLabelString() != null && label != null && label.matches(Label.parse(getLabelString())));
+    if (label == null || getLabelString() == null) {
+      return label == null && getLabelString() == null;
+    }
+
+    if (label.matches(Label.parse(getLabelString()))) {
+      return true;
+    }
+
+    if (!containerInfo.getDockerImageCustomizable()) {
+      return false;
+    }
+
+    String customImage = getCustomImage(label);
+    return customImage != null && getLabelWithoutCustomImage(label, customImage).matches(Label.parse(getLabelString()));
   }
 
   public Object readResolve() {
@@ -262,6 +344,42 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       nodeProperties = new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance());
     }
     return this;
+  }
+
+  private static String getCustomImage(Label label) {
+    Pattern r = Pattern.compile(CUSTOM_IMAGE_SEPARATOR + "([\\w\\.\\-/:]+[\\w])");
+    Matcher m = r.matcher(label.toString());
+
+    if (m.find()) {
+      return m.group(1);
+    }
+
+    return null;
+  }
+
+  private static Label getLabelWithoutCustomImage(Label label, String customDockerImage) {
+    return Label.get(label.toString().replace(CUSTOM_IMAGE_SEPARATOR + customDockerImage, ""));
+  }
+
+  public MesosSlaveInfo getMesosSlaveInfoForLabel(Label label) {
+    if (!matchesLabel(label)) {
+      return null;
+    }
+
+    if (label.matches(Label.parse(getLabelString()))) {
+      return this;
+    }
+
+    if (!containerInfo.getDockerImageCustomizable()) {
+      return null;
+    }
+
+    String customImage = getCustomImage(label);
+    if (customImage == null) {
+      return null;
+    }
+
+    return copyWithDockerImage(label.toString(), customImage);
   }
 
   public static class ExternalContainerInfo {
@@ -319,12 +437,14 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     private final String customDockerCommandShell;
     private final Boolean dockerPrivilegedMode;
     private final Boolean dockerForcePullImage;
+    private final Boolean dockerImageCustomizable;
 
     @DataBoundConstructor
     public ContainerInfo(String type,
                          String dockerImage,
                          Boolean dockerPrivilegedMode,
                          Boolean dockerForcePullImage,
+                         Boolean dockerImageCustomizable,
                          boolean useCustomDockerCommandShell,
                          String customDockerCommandShell,
                          List<Volume> volumes,
@@ -335,6 +455,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.dockerForcePullImage = dockerForcePullImage;
+      this.dockerImageCustomizable = dockerImageCustomizable;
       this.useCustomDockerCommandShell = useCustomDockerCommandShell;
       this.customDockerCommandShell = customDockerCommandShell;
       this.volumes = volumes;
@@ -351,6 +472,22 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       } else {
           this.portMappings = portMappings;
       }
+    }
+
+    public ContainerInfo copyWithDockerImage(String dockerImage) throws FormException {
+        return new ContainerInfo(
+                type,
+                dockerImage,  // custom docker image
+                dockerPrivilegedMode,
+                dockerForcePullImage,
+                dockerImageCustomizable,
+                useCustomDockerCommandShell,
+                customDockerCommandShell,
+                volumes,
+                parameters,
+                networking,
+                portMappings
+        );
     }
 
     public String getType() {
@@ -397,6 +534,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return dockerForcePullImage;
     }
 
+    public Boolean getDockerImageCustomizable() {
+      return dockerImageCustomizable;
+    }
+
     public boolean getUseCustomDockerCommandShell() {  return useCustomDockerCommandShell; }
 
     public String getCustomDockerCommandShell() {  return customDockerCommandShell; }
@@ -419,7 +560,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
         return false;
       if (dockerPrivilegedMode != null ? !dockerPrivilegedMode.equals(that.dockerPrivilegedMode) : that.dockerPrivilegedMode != null)
         return false;
-      return dockerForcePullImage != null ? dockerForcePullImage.equals(that.dockerForcePullImage) : that.dockerForcePullImage == null;
+      if (dockerForcePullImage != null ? !dockerForcePullImage.equals(that.dockerForcePullImage) : that.dockerForcePullImage != null)
+        return false;
+      return dockerImageCustomizable != null ? dockerImageCustomizable.equals(that.dockerImageCustomizable) : that.dockerImageCustomizable == null;
 
     }
 
@@ -435,6 +578,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       result = 31 * result + (customDockerCommandShell != null ? customDockerCommandShell.hashCode() : 0);
       result = 31 * result + (dockerPrivilegedMode != null ? dockerPrivilegedMode.hashCode() : 0);
       result = 31 * result + (dockerForcePullImage != null ? dockerForcePullImage.hashCode() : 0);
+      result = 31 * result + (dockerImageCustomizable != null ? dockerImageCustomizable.hashCode() : 0);
       return result;
     }
   }
