@@ -389,6 +389,7 @@ public class MesosCloud extends Cloud {
     if (slaveInfo == null) {
       return list;
     }
+    int minExecutors = slaveInfo.getMinExecutors();
     int maxExecutors = slaveInfo.getMaxExecutors();
 
     try {
@@ -405,7 +406,7 @@ public class MesosCloud extends Cloud {
             JenkinsScheduler.SUPERVISOR_LOCK.unlock();
           }
         }
-        final int numExecutors = Math.min(excessWorkload, maxExecutors);
+        final int numExecutors = Math.max(minExecutors, Math.min(excessWorkload, maxExecutors));
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
                     " executors. Remaining excess workload: " + excessWorkload + " executors)");
