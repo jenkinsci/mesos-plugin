@@ -22,6 +22,10 @@
         <f:number clazz="required positive-number" default="512"/>
     </f:entry>
 
+    <f:entry title="${%Minimum number of Executors per Slave}" field="minExecutors">
+        <f:number clazz="required number" default="1"/>
+    </f:entry>
+
     <f:entry title="${%Maximum number of Executors per Slave}" field="maxExecutors">
         <f:number clazz="required number" default="2"/>
     </f:entry>
