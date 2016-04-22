@@ -20,6 +20,7 @@ import hudson.model.Node.Mode;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
 import hudson.util.DescribableList;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
@@ -28,10 +29,41 @@ import net.sf.json.JSONSerializer;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
   public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
+    public FormValidation doCheckMinExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      int minExecutorsVal = Integer.parseInt(minExecutors);
+      int maxExecutorsVal = Integer.parseInt(maxExecutors);
+
+      if(minExecutorsVal < 1) {
+        return FormValidation.error("minExecutors must at least be equal to 1.");
+      }
+      else if(minExecutorsVal > maxExecutorsVal) {
+        return FormValidation.error("minExecutors must be lower than maxExecutors.");
+      }
+      else {
+        return FormValidation.ok();
+      }
+    }
+
+    public FormValidation doCheckMaxExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      int minExecutorsVal = Integer.parseInt(minExecutors);
+      int maxExecutorsVal = Integer.parseInt(maxExecutors);
+
+      if(maxExecutorsVal < 1) {
+        return FormValidation.error("maxExecutors must at least be equal to 1.");
+      }
+      else if(maxExecutorsVal < minExecutorsVal) {
+        return FormValidation.error("maxExecutors must be higher than minExecutors.");
+      }
+      else {
+        return FormValidation.ok();
+      }
+    }
+
     public String getDisplayName() { return ""; }
 
     public Class<? extends Node> getNodeClass() {
@@ -156,9 +188,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     this.additionalURIs = additionalURIs;
     this.nodeProperties.replaceBy(nodeProperties == null ? new ArrayList<NodeProperty<?>>() : nodeProperties);
 
-    // Ensure minExecutors is at least equal to 1 and prevent case where minExecutors > maxExecutors.
+    // Ensure minExecutors is at least equal to 1
     int minExecutorsVal = Integer.parseInt(minExecutors);
-    this.minExecutors = minExecutorsVal < 1 || minExecutorsVal > this.maxExecutors ? 1 : minExecutorsVal;
+    this.minExecutors = minExecutorsVal < 1 ? 1 : minExecutorsVal;
 
     // Parse the attributes provided from the cloud config
     JSONObject jsonObject = null;
