@@ -23,6 +23,7 @@ import hudson.model.Node.Mode;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
 import hudson.util.DescribableList;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
@@ -31,10 +32,41 @@ import net.sf.json.JSONSerializer;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
   public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
+    public FormValidation doCheckMinExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      int minExecutorsVal = Integer.parseInt(minExecutors);
+      int maxExecutorsVal = Integer.parseInt(maxExecutors);
+
+      if(minExecutorsVal < 1) {
+        return FormValidation.error("minExecutors must at least be equal to 1.");
+      }
+      else if(minExecutorsVal > maxExecutorsVal) {
+        return FormValidation.error("minExecutors must be lower than maxExecutors.");
+      }
+      else {
+        return FormValidation.ok();
+      }
+    }
+
+    public FormValidation doCheckMaxExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      int minExecutorsVal = Integer.parseInt(minExecutors);
+      int maxExecutorsVal = Integer.parseInt(maxExecutors);
+
+      if(maxExecutorsVal < 1) {
+        return FormValidation.error("maxExecutors must at least be equal to 1.");
+      }
+      else if(maxExecutorsVal < minExecutorsVal) {
+        return FormValidation.error("maxExecutors must be higher than minExecutors.");
+      }
+      else {
+        return FormValidation.ok();
+      }
+    }
+
     public String getDisplayName() { return ""; }
 
     public Class<? extends Node> getNodeClass() {
@@ -48,6 +80,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
+  private final int minExecutors;
   private final int maxExecutors;
   private final int executorMem; // MB.
   private final String remoteFSRoot;
@@ -78,6 +111,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (Double.compare(that.slaveCpus, slaveCpus) != 0) return false;
     if (slaveMem != that.slaveMem) return false;
     if (Double.compare(that.executorCpus, executorCpus) != 0) return false;
+    if (minExecutors != that.minExecutors) return false;
     if (maxExecutors != that.maxExecutors) return false;
     if (executorMem != that.executorMem) return false;
     if (idleTerminationMinutes != that.idleTerminationMinutes) return false;
@@ -104,6 +138,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + slaveMem;
     temp = Double.doubleToLongBits(executorCpus);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
+    result = 31 * result + minExecutors;
     result = 31 * result + maxExecutors;
     result = 31 * result + executorMem;
     result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);
@@ -125,6 +160,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       Mode mode,
       String slaveCpus,
       String slaveMem,
+      String minExecutors,
       String maxExecutors,
       String executorCpus,
       String executorMem,
@@ -144,6 +180,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               mode != null ? mode : Mode.NORMAL,
               Double.parseDouble(slaveCpus),
               Integer.parseInt(slaveMem),
+              Integer.parseInt(minExecutors),
               Integer.parseInt(maxExecutors),
               Double.parseDouble(executorCpus),
               Integer.parseInt(executorMem),
@@ -163,6 +200,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       Mode mode,
       double slaveCpus,
       int slaveMem,
+      int minExecutors,
       int maxExecutors,
       double executorCpus,
       int executorMem,
@@ -180,6 +218,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.mode = mode;
       this.slaveCpus = slaveCpus;
       this.slaveMem = slaveMem;
+      this.minExecutors = minExecutors < 1 ? 1 : minExecutors; // Ensure minExecutors is at least equal to 1
       this.maxExecutors = maxExecutors;
       this.executorCpus = executorCpus;
       this.executorMem = executorMem;
@@ -215,6 +254,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               mode,
               slaveCpus,
               slaveMem,
+              minExecutors,
               maxExecutors,
               executorCpus,
               executorMem,
@@ -254,6 +294,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
 
   public int getSlaveMem() {
     return slaveMem;
+  }
+
+  public int getMinExecutors() {
+    return minExecutors;
   }
 
   public int getMaxExecutors() {

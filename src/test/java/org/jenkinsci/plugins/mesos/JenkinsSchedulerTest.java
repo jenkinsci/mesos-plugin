@@ -284,6 +284,7 @@ public class JenkinsSchedulerTest {
                 Node.Mode.NORMAL,
                 "0.2",              // slaveCpus,
                 "512",              // slaveMem,
+                "1",                // minExecutors,
                 "2",                // maxExecutors,
                 "0.2",              // executorCpus,
                 "512",              // executorMem,

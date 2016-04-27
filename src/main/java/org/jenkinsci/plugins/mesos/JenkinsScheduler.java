@@ -776,7 +776,7 @@ public class JenkinsScheduler implements Scheduler {
 
         CommandInfo.Builder commandBuilder = CommandInfo.newBuilder();
         String jenkinsCommand2Run = generateJenkinsCommand2Run(
-            request.request.mem,
+            request.request.slaveInfo.getSlaveMem(),
             request.request.slaveInfo.getJvmArgs(),
             request.request.slaveInfo.getJnlpArgs(),
             request.request.slave.name);
