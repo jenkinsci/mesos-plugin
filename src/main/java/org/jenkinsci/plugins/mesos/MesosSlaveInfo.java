@@ -3,22 +3,20 @@ package org.jenkinsci.plugins.mesos;
 import hudson.Extension;
 import hudson.Util;
 
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
+import hudson.model.*;
 import hudson.model.Descriptor.FormException;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 
-import hudson.model.Label;
-import hudson.model.Node;
 import hudson.model.Node.Mode;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
@@ -77,6 +75,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private static final String DEFAULT_JVM_ARGS = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
   private static final String JVM_ARGS_PATTERN = "-Xmx.+ ";
   private static final String CUSTOM_IMAGE_SEPARATOR = ":";
+  private static final Pattern CUSTOM_IMAGE_FROM_LABEL_PATTERN = Pattern.compile(CUSTOM_IMAGE_SEPARATOR + "([\\w\\.\\-/:]+[\\w])");
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
@@ -269,8 +268,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               nodeProperties
       );
     } catch (Descriptor.FormException e) {
+      LOGGER.log(Level.WARNING, "Failed to create customized mesos container info", e);
       return null;
     } catch (IOException e) {
+      LOGGER.log(Level.WARNING, "Failed to create customized mesos slave info", e);
       return null;
     }
   }
@@ -391,8 +392,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   }
 
   private static String getCustomImage(Label label) {
-    Pattern r = Pattern.compile(CUSTOM_IMAGE_SEPARATOR + "([\\w\\.\\-/:]+[\\w])");
-    Matcher m = r.matcher(label.toString());
+    Matcher m = CUSTOM_IMAGE_FROM_LABEL_PATTERN.matcher(label.toString());
 
     if (m.find()) {
       return m.group(1);
