@@ -95,7 +95,7 @@ public class MesosSlaveInfoTest {
 
     private static Label getLabel(String name) {
         Iterator<LabelAtom> i = Label.parse(name).iterator();
-        
+
         return i.hasNext() ? i.next() : null;
     }
 
@@ -119,6 +119,15 @@ public class MesosSlaveInfoTest {
         assertTrue(buildMesosSlaveInfo("worker", true).matchesLabel(getLabel("worker:example-domain.com/name-of-1-image")));
         assertTrue(buildMesosSlaveInfo("worker:example-domain.com/name-of-1-image", true).matchesLabel(getLabel("worker:example-domain.com/name-of-1-image")));
         assertTrue(buildMesosSlaveInfo("worker:example-domain.com/name-of-1-image", false).matchesLabel(getLabel("worker:example-domain.com/name-of-1-image")));
+
+
+        assertTrue(buildMesosSlaveInfo(null, false).matchesLabel(null));
+        assertFalse(buildMesosSlaveInfo("label", false).matchesLabel(null));
+        assertFalse(buildMesosSlaveInfo(null, false).matchesLabel(getLabel("label")));
+
+        assertTrue(buildMesosSlaveInfo(null, true).matchesLabel(null));
+        assertFalse(buildMesosSlaveInfo("label", true).matchesLabel(null));
+        assertFalse(buildMesosSlaveInfo(null, true).matchesLabel(getLabel("label")));
     }
 
     @Test
@@ -134,5 +143,14 @@ public class MesosSlaveInfoTest {
 
         assertEquals("worker:a.com/b:1", buildMesosSlaveInfo("worker:a.com/b:1", true).getMesosSlaveInfoForLabel(getLabel("worker:a.com/b:1")).getLabelString());
         assertEquals("worker:a.com/b:1", buildMesosSlaveInfo("worker:a.com/b:1", false).getMesosSlaveInfoForLabel(getLabel("worker:a.com/b:1")).getLabelString());
+
+
+        assertNull(buildMesosSlaveInfo(null, false).getMesosSlaveInfoForLabel(null).getLabelString());
+        assertNull(buildMesosSlaveInfo("label", false).getMesosSlaveInfoForLabel(null));
+        assertNull(buildMesosSlaveInfo(null, false).getMesosSlaveInfoForLabel(getLabel("label")));
+
+        assertNull(buildMesosSlaveInfo(null, true).getMesosSlaveInfoForLabel(null).getLabelString());
+        assertNull(buildMesosSlaveInfo("label", true).getMesosSlaveInfoForLabel(null));
+        assertNull(buildMesosSlaveInfo(null, true).getMesosSlaveInfoForLabel(getLabel("label")));
     }
 }

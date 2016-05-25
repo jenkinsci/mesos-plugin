@@ -410,6 +410,14 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return null;
     }
 
+    if (label == null) {
+      if (getLabelString() == null) {
+        return this;
+      } else {
+        return null;
+      }
+    }
+
     if (label.matches(Label.parse(getLabelString()))) {
       return this;
     }
