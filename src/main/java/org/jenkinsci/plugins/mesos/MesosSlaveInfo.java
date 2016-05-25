@@ -76,7 +76,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final double slaveCpus;
   private final int slaveMem; // MB.
   private final double executorCpus;
-  private final int minExecutors;
+  private /*almost final*/ int minExecutors;
   private final int maxExecutors;
   private final int executorMem; // MB.
   private final String remoteFSRoot;
@@ -304,6 +304,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   public Object readResolve() {
     if (nodeProperties == null) {
       nodeProperties = new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance());
+    }
+    if (minExecutors == 0) {
+      this.minExecutors = 1;
     }
     return this;
   }
