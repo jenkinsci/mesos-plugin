@@ -32,6 +32,10 @@
       <f:textbox/>
     </f:entry>
 
+    <f:entry title="${%Failover Timeout }" field="failoverTimeout">
+      <f:number class ="required positive-number" default="0.0" />
+    </f:entry>
+
     <f:advanced>
         <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}" field="checkpoint">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
@@ -51,6 +55,10 @@
           <f:number clazz="required positive-number" min="1000" steps="1000" default="600000"/>
         </f:entry>
 
+		<f:entry title="${%FrameworkID}">
+			<f:textbox readonly="readonly" field="frameworkID"/>
+		</f:entry>
+        
         <f:entry>
             <f:repeatableProperty field="slaveInfos" minimum="1">
                 <f:entry>
@@ -60,6 +68,7 @@
                 </f:entry>
             </f:repeatableProperty>
         </f:entry>
+        
     </f:advanced>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="master,nativeLibraryPath"/>

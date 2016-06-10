@@ -143,19 +143,27 @@ public class JenkinsScheduler implements Scheduler {
     String principal = credentials == null ? "jenkins" : credentials.getUsername();
     String secret = credentials == null ? "" : Secret.toString(credentials.getPassword());
     // Have Mesos fill in the current user.
-    FrameworkInfo framework = FrameworkInfo.newBuilder()
+    
+    FrameworkInfo.Builder frameworkInfo = FrameworkInfo.newBuilder()
             .setUser(targetUser == null ? "" : targetUser)
             .setName(mesosCloud.getFrameworkName())
             .setRole(mesosCloud.getRole())
             .setPrincipal(principal)
             .setCheckpoint(mesosCloud.isCheckpoint())
             .setWebuiUrl(webUrl != null ? webUrl : "")
-            .build();
-
+            .setFailoverTimeout(mesosCloud.getFailoverTimeoutDouble());
+    		if (mesosCloud.getFrameworkID() != null) 
+    		{
+                frameworkInfo.setId(FrameworkID.newBuilder()
+                		.setValue(mesosCloud.getFrameworkID()).build());
+    		}
     LOGGER.info("Initializing the Mesos driver with options"
-            + "\n" + "Framework Name: " + framework.getName()
+            + "\n" + "Framework Name: " + frameworkInfo.getName()
             + "\n" + "Principal: " + principal
-            + "\n" + "Checkpointing: " + framework.getCheckpoint()
+            + "\n" + "Checkpointing: " + frameworkInfo.getCheckpoint()
+            //REMOVE THIS
+            + "\n" + "Failover Timeout: " + frameworkInfo.getFailoverTimeout()
+            + "\n" + "Framework ID: " + frameworkInfo.getId()
     );
 
     if (StringUtils.isNotBlank(secret)) {
@@ -166,9 +174,9 @@ public class JenkinsScheduler implements Scheduler {
               .build();
 
       LOGGER.info("Authenticating with Mesos master with principal " + credential.getPrincipal());
-      driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
+      driver = new MesosSchedulerDriver(JenkinsScheduler.this, frameworkInfo.build(), mesosCloud.getMaster(), credential);
     } else {
-      driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+      driver = new MesosSchedulerDriver(JenkinsScheduler.this, frameworkInfo.build(), mesosCloud.getMaster());
     }
     // Start the framework.
     new Thread(new Runnable() {
@@ -201,7 +209,7 @@ public class JenkinsScheduler implements Scheduler {
       SUPERVISOR_LOCK.lock();
       if (driver != null) {
         LOGGER.info("Stopping Mesos driver.");
-        driver.stop();
+        driver.stop(true);
       } else {
         LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
       }
@@ -302,6 +310,7 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     LOGGER.info("Framework registered! ID = " + frameworkId.getValue());
+    mesosCloud.setFrameworkID(frameworkId.getValue().toString());
   }
 
   @Override
