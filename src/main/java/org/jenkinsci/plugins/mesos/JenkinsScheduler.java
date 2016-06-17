@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2013 Twitter, Inc. and other contributors.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -151,6 +152,8 @@ public class JenkinsScheduler implements Scheduler {
             .setPrincipal(principal)
             .setCheckpoint(mesosCloud.isCheckpoint())
             .setWebuiUrl(webUrl != null ? webUrl : "")
+            // Set a failover timeout so that tasks are not immediately killed
+            // when the scheduler disconnects.
             .setFailoverTimeout(mesosCloud.getFailoverTimeoutDouble());
     		if (mesosCloud.getFrameworkID() != null) 
     		{
@@ -184,6 +187,7 @@ public class JenkinsScheduler implements Scheduler {
       public void run() {
         try {
           Status runStatus = driver.run();
+          LOGGER.info(runStatus.toString());
           if (runStatus != Status.DRIVER_STOPPED) {
             LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
           } else {
@@ -310,6 +314,9 @@ public class JenkinsScheduler implements Scheduler {
   @Override
   public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
     LOGGER.info("Framework registered! ID = " + frameworkId.getValue());
+    // Set the frameworkId to the auto-id provided by mesos
+    // so the scheduler can reregister later. Does not persist
+    // across Jenkins restarts
     mesosCloud.setFrameworkID(frameworkId.getValue().toString());
   }
 

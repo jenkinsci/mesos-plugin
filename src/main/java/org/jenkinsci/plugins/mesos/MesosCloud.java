@@ -712,14 +712,21 @@ public void setJenkinsURL(String jenkinsURL) {
   }
   
   public String getFailoverTimeout() {
-	  if(failoverTimeout.isEmpty())
+	  if(failoverTimeout.isEmpty() || failoverTimeout == null)
 		  failoverTimeout = DEFAULT_FAILOVER_TIMEOUT;
 		return failoverTimeout;
 	}
 
   public double getFailoverTimeoutDouble() {
-		return Double.parseDouble(getFailoverTimeout());
-	}
+    try {
+      return Double.parseDouble(getFailoverTimeout());
+      } catch (NumberFormatException e) {
+        LOGGER.warning("Unable to parse failoverTimeout: " + failoverTimeout
+               + ". Using default " + DEFAULT_FAILOVER_TIMEOUT + ".");
+        this.failoverTimeout = DEFAULT_FAILOVER_TIMEOUT;
+      }
+        return Double.parseDouble(getFailoverTimeout());
+    }
   
   public void setFailoverTimeout(String failoverTimeout) {
 		this.failoverTimeout = failoverTimeout;
