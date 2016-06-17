@@ -719,7 +719,7 @@ public void setJenkinsURL(String jenkinsURL) {
 
   public double getFailoverTimeoutDouble() {
     try {
-      return Double.parseDouble(getFailoverTimeout());
+        return Double.parseDouble(getFailoverTimeout());
       } catch (NumberFormatException e) {
         LOGGER.warning("Unable to parse failoverTimeout: " + failoverTimeout
                + ". Using default " + DEFAULT_FAILOVER_TIMEOUT + ".");
