@@ -2,7 +2,10 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.model.Descriptor;
 import hudson.model.Node;
+import hudson.model.Queue;
+import hudson.model.Queue.Item;
 import jenkins.model.Jenkins;
+
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.junit.Before;
@@ -37,6 +40,8 @@ public class JenkinsSchedulerTest {
 
     private JenkinsScheduler jenkinsScheduler;
 
+    private Jenkins jenkins;
+
     private static int    TEST_JENKINS_SLAVE_MEM   = 512;
     private static String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
     private static String TEST_JENKINS_JNLP_ARG    = "";
@@ -49,7 +54,7 @@ public class JenkinsSchedulerTest {
         when(mesosCloud.getMaster()).thenReturn("Mesos Cloud Master");
 
         // Simulate basic Jenkins env
-        Jenkins jenkins = Mockito.mock(Jenkins.class);
+        jenkins = Mockito.mock(Jenkins.class);
         when(jenkins.isUseSecurity()).thenReturn(false);
         PowerMockito.mockStatic(Jenkins.class);
         Mockito.when(Jenkins.getInstance()).thenReturn(jenkins);
@@ -157,6 +162,9 @@ public class JenkinsSchedulerTest {
         ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
         offers.add(offer);
 
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
@@ -172,6 +180,27 @@ public class JenkinsSchedulerTest {
         Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
         ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
         offers.add(offer);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver).declineOffer(offer.getId());
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+    }
+
+    @Test
+    public void testDeclineOffersWithBuildsInQueue() throws Exception {
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
+        Item item = Mockito.mock(Item.class);
+        Item [] items = {item};
+        Mockito.when(queue.getItems()).thenReturn(items);
+        Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
