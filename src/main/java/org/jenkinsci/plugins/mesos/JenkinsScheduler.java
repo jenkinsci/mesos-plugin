@@ -22,37 +22,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.util.Secret;
-
-import java.lang.Math;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.collections4.OrderedMapIterator;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosSchedulerDriver;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ContainerInfo;
@@ -80,6 +55,26 @@ import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JenkinsScheduler implements Scheduler {
   private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
@@ -407,6 +402,14 @@ public class JenkinsScheduler implements Scheduler {
     double cpus = -1;
     double mem = -1;
     List<Range> ports = null;
+
+    String hostname = offer.getHostname();
+    for (String declinedHost : mesosCloud.getDeclineHostsList()) {
+      if (hostname.matches(declinedHost)) {
+        LOGGER.info("Offer from " + hostname + " rejected because it matches '" + declinedHost + "'.");
+        return false;
+      }
+    }
 
     for (Resource resource : offer.getResourcesList()) {
       String resourceRole = resource.getRole();

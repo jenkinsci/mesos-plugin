@@ -2,21 +2,11 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
 import hudson.Util;
-
-import hudson.model.*;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.CheckForNull;
-
+import hudson.model.Label;
+import hudson.model.Node;
 import hudson.model.Node.Mode;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
@@ -26,11 +16,20 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+
+import javax.annotation.CheckForNull;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
@@ -363,7 +362,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
 
   /**
    * Check if the label in the slave matches the provided label, either both are null or are the same.
-   * 
+   *
    * @param label
    * @return Whether the slave label matches.
    */
@@ -376,7 +375,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return true;
     }
 
-    if (!containerInfo.getDockerImageCustomizable()) {
+    if (containerInfo == null || !containerInfo.getDockerImageCustomizable()) {
       return false;
     }
 

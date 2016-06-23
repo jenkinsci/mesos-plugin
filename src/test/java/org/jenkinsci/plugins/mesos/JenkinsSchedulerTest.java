@@ -17,6 +17,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -47,6 +48,7 @@ public class JenkinsSchedulerTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         when(mesosCloud.getMaster()).thenReturn("Mesos Cloud Master");
+        when(mesosCloud.getDeclineHostsList()).thenReturn(Arrays.asList("asdf1234.*","asdf2345.*"));
 
         // Simulate basic Jenkins env
         Jenkins jenkins = Mockito.mock(Jenkins.class);
@@ -149,6 +151,32 @@ public class JenkinsSchedulerTest {
         } finally {
             executorService.shutdownNow();
         }
+    }
+
+    @Test
+    public void testDeclineOffersWithDeclineHostsHead() throws Exception {
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000, "asdf1234.jenkins.io");
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+    }
+
+    @Test
+    public void testDeclineOffersWithDeclineHostsTail() throws Exception {
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000, "asdf2345.jenkins.io");
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
     }
 
     @Test
@@ -313,6 +341,10 @@ public class JenkinsSchedulerTest {
     }
 
     private Protos.Offer createOfferWithVariableRanges(long rangeBegin, long rangeEnd) {
+        return createOfferWithVariableRanges(rangeBegin, rangeEnd, "www.jenkins.io"); // doesn't matter what this is
+    }
+
+    private Protos.Offer createOfferWithVariableRanges(long rangeBegin, long rangeEnd, String hostname) {
         Protos.Value.Range range = Protos.Value.Range.newBuilder()
                 .setBegin(rangeBegin)
                 .setEnd(rangeEnd)
@@ -330,6 +362,7 @@ public class JenkinsSchedulerTest {
 
         return Protos.Offer.newBuilder()
                 .addResources(resource)
+                .setHostname(hostname)
                 .setId(Protos.OfferID.newBuilder().setValue("value").build())
                 .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("value").build())
                 .setSlaveId(Protos.SlaveID.newBuilder().setValue("value").build())
