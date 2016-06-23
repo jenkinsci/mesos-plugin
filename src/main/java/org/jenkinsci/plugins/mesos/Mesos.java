@@ -18,16 +18,21 @@ import hudson.Extension;
 import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
+import hudson.model.RestartListener;
 import jenkins.model.Jenkins;
 import org.apache.mesos.Scheduler;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public abstract class Mesos {
   private static Map<MesosCloud, Mesos> clouds = new HashMap<MesosCloud, Mesos>();
+
+  private static final Logger LOGGER = Logger.getLogger(Mesos.class.getName());
 
   public static class JenkinsSlave {
     String name;
@@ -132,8 +137,33 @@ public abstract class Mesos {
             entry.getValue().stopScheduler(true);
             it.remove();
           }
-        }
+          }
       }
     }
   }
-}
+
+  /**
+   * Before Jenkins is restarted, remove the frameworkID associated with the current instance.
+   * Jenkins tears down all frameworks when restarted, so jobs do not survive.
+   */
+  @Extension
+  public static class frameworkIDCleaner extends RestartListener {
+
+    @Override
+    public boolean isReadyToRestart() throws IOException, InterruptedException {
+      return true;
+    }
+
+    @Override
+    public void onRestart() {
+        for (Iterator<Map.Entry<MesosCloud, Mesos>> it = clouds.entrySet().iterator(); it.hasNext();) {
+          Map.Entry<MesosCloud, Mesos> entry = it.next();
+          LOGGER.info(entry.getKey().getFrameworkID());
+          entry.getKey().setFrameworkID(null);
+          entry.getKey().setFailoverTimeout("100.0");
+          LOGGER.info(entry.getKey().getFrameworkID());
+          }
+      }
+    }
+  }
+
