@@ -155,7 +155,7 @@ public class JenkinsScheduler implements Scheduler {
             // Set a failover timeout so that tasks are not immediately killed
             // when the scheduler disconnects.
             .setFailoverTimeout(mesosCloud.getFailoverTimeoutDouble());
-    		if (mesosCloud.getFrameworkID() != null) 
+    		if (mesosCloud.getFrameworkID() != null || !mesosCloud.getFrameworkID().isEmpty())
     		{
                 frameworkInfo.setId(FrameworkID.newBuilder()
                 		.setValue(mesosCloud.getFrameworkID()).build());
@@ -164,11 +164,9 @@ public class JenkinsScheduler implements Scheduler {
             + "\n" + "Framework Name: " + frameworkInfo.getName()
             + "\n" + "Principal: " + principal
             + "\n" + "Checkpointing: " + frameworkInfo.getCheckpoint()
-            //REMOVE THIS
             + "\n" + "Failover Timeout: " + frameworkInfo.getFailoverTimeout()
             + "\n" + "Framework ID: " + frameworkInfo.getId()
     );
-
     if (StringUtils.isNotBlank(secret)) {
 
       Credential credential = Credential.newBuilder()
@@ -187,7 +185,6 @@ public class JenkinsScheduler implements Scheduler {
       public void run() {
         try {
           Status runStatus = driver.run();
-          LOGGER.info(runStatus.toString());
           if (runStatus != Status.DRIVER_STOPPED) {
             LOGGER.severe("The Mesos driver was aborted! Status code: " + runStatus.getNumber());
           } else {
@@ -213,6 +210,7 @@ public class JenkinsScheduler implements Scheduler {
       SUPERVISOR_LOCK.lock();
       if (driver != null) {
         LOGGER.info("Stopping Mesos driver.");
+        //It might not be necessary/beneficial to have this set to TRUE -unclear
         driver.stop(true);
       } else {
         LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
