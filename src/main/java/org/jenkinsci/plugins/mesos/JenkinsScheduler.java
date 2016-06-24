@@ -29,6 +29,7 @@ import java.lang.Math;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -335,20 +336,23 @@ public class JenkinsScheduler implements Scheduler {
       }
 
       boolean taskCreated = false;
-      for (Request request : requests) {
-        if (matches(offer, request)) {
-          LOGGER.fine("Offer matched! Creating mesos task " + request.request.slave.name);
-          try {
-            createMesosTask(offer, request);
-            unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
-            taskCreated = true;
-            recentlyAcceptedOffers.put(offer.getSlaveId().getValue(), IGNORE);
-          } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, e.getMessage(), e);
+
+      if (isOfferAvailable(offer)) {
+        for (Request request : requests) {
+          if (matches(offer, request)) {
+            LOGGER.fine("Offer matched! Creating mesos task " + request.request.slave.name);
+            try {
+              createMesosTask(offer, request);
+              unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
+              taskCreated = true;
+              recentlyAcceptedOffers.put(offer.getSlaveId().getValue(), IGNORE);
+            } catch (Exception e) {
+              LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            }
+            requests.remove(request);
+            processedRequests++;
+            break;
           }
-          requests.remove(request);
-          processedRequests++;
-          break;
         }
       }
 
@@ -370,6 +374,30 @@ public class JenkinsScheduler implements Scheduler {
     for (Request request: requests) {
       unmatchedLabels.add(request.request.slaveInfo.getLabelString());
     }
+  }
+
+  /**
+   * Determines whether an offer of a Mesos Agent has an unavailability set and is currently scheduled for maintenance.
+   * <br /><br />
+   * For information on how to use this feature with Mesos refer to
+   * <a href="http://mesos.apache.org/documentation/latest/maintenance/">Maintenance Primitives</a>)
+   *
+   * @param offer The offer to check for availability
+   * @return whether or not the offer is currently available
+   */
+  private boolean isOfferAvailable(Offer offer) {
+    if(offer.hasUnavailability()) {
+      Protos.Unavailability unavailability = offer.getUnavailability();
+
+      Date startTime = new Date(TimeUnit.NANOSECONDS.toMillis(unavailability.getStart().getNanoseconds()));
+      long duration = unavailability.getDuration().getNanoseconds();
+      Date endTime = new Date(startTime.getTime() + TimeUnit.NANOSECONDS.toMillis(duration));
+      Date currentTime = new Date();
+
+      return !(startTime.before(currentTime) && endTime.after(currentTime));
+    }
+
+    return true;
   }
 
   /**
@@ -559,7 +587,7 @@ public class JenkinsScheduler implements Scheduler {
       for (Resource resource : offer.getResourcesList()) {
         if (resource.getName().equals(PORT_RESOURCE_NAME)) {
             role = resource.getRole();
-          
+
         }
       }
       return role;
