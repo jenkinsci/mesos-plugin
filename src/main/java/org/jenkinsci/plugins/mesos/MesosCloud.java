@@ -34,6 +34,7 @@ import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.model.listeners.SaveableListener;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
@@ -56,10 +57,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,6 +71,8 @@ public class MesosCloud extends Cloud {
   private String role;
   private String slavesUser;
   private String credentialsId;
+  private String cloudID;
+
   /**
    * @deprecated Create credentials then use credentialsId instead.
    */
@@ -106,6 +106,7 @@ public class MesosCloud extends Cloud {
 
   @Initializer(after=InitMilestone.JOB_LOADED)
   public static void init() {
+
     Jenkins jenkins = getJenkins();
     List<Node> slaves = jenkins.getNodes();
 
@@ -159,10 +160,11 @@ public class MesosCloud extends Cloud {
       boolean checkpoint,
       boolean onDemandRegistration,
       String jenkinsURL,
-      String declineOfferDuration) throws NumberFormatException {
+      String declineOfferDuration,
+      String cloudID) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
          slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-         jenkinsURL, declineOfferDuration);
+         jenkinsURL, declineOfferDuration, cloudID);
   }
 
   /**
@@ -185,7 +187,8 @@ public class MesosCloud extends Cloud {
       boolean checkpoint,
       boolean onDemandRegistration,
       String jenkinsURL,
-      String declineOfferDuration) throws NumberFormatException {
+      String declineOfferDuration,
+      String cloudID) throws NumberFormatException {
     super(cloudName);
 
     this.nativeLibraryPath = nativeLibraryPath;
@@ -203,7 +206,8 @@ public class MesosCloud extends Cloud {
     this.onDemandRegistration = onDemandRegistration;
     this.setJenkinsURL(jenkinsURL);
     this.setDeclineOfferDuration(declineOfferDuration);
-    if(!onDemandRegistration) {
+    this.setCloudID(cloudID);
+    if(!onDemandRegistration || Mesos.getInstance(this).isSchedulerRunning()) {
 	    JenkinsScheduler.SUPERVISOR_LOCK.lock();
 	    try {
 	      restartMesos();
@@ -224,7 +228,7 @@ public class MesosCloud extends Cloud {
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration);
+           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration, source.cloudID);
   }
 
   @Override
@@ -338,7 +342,12 @@ public class MesosCloud extends Cloud {
       Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
     } else {
       Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
-      LOGGER.info("Mesos master has not changed, leaving the scheduler running");
+      if(onDemandRegistration) {
+        LOGGER.info("On-demand framework registration is enabled for future builds");
+      }
+      else {
+        LOGGER.info("Mesos master has not changed, leaving the scheduler running");
+      }
     }
 
   }
@@ -490,6 +499,16 @@ public class MesosCloud extends Cloud {
   public void setFrameworkName(String frameworkName) {
     this.frameworkName = frameworkName;
   }
+
+  public String getCloudID() {
+    if(this.cloudID == null || this.cloudID.isEmpty()) {
+      //Give each cloud a unique ID so it can be looked up after config changes
+      this.cloudID = UUID.randomUUID().toString();
+    }
+    return this.cloudID;
+  }
+
+  public void setCloudID(String cloudID) { this.cloudID = cloudID; }
 
   public String getRole() {
     return role;
@@ -691,6 +710,7 @@ public void setJenkinsURL(String jenkinsURL) {
 
 @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
+
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";

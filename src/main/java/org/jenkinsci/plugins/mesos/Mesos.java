@@ -19,15 +19,17 @@ import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
 import jenkins.model.Jenkins;
+import hudson.slaves.Cloud;
 import org.apache.mesos.Scheduler;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 
 public abstract class Mesos {
-  private static Map<MesosCloud, Mesos> clouds = new HashMap<MesosCloud, Mesos>();
+
+  private static Map<String, Mesos> clouds = new HashMap<String, Mesos>();
+
+  private static final Logger LOGGER = Logger.getLogger(Mesos.class.getName());
 
   public static class JenkinsSlave {
     String name;
@@ -105,10 +107,11 @@ public abstract class Mesos {
    * @return the mesos implementation instance for the cloud instances (since there might be more than one
    */
   public static synchronized Mesos getInstance(MesosCloud key) {
-    if (!clouds.containsKey(key)) {
-      clouds.put(key, new MesosImpl());
+    if (!clouds.containsKey(key.getCloudID())) {
+      LOGGER.info("Adding a new cloud with unique cloud ID:  " + key.getCloudID());
+      clouds.put(key.getCloudID(), new MesosImpl());
     }
-    return clouds.get(key);
+    return clouds.get(key.getCloudID());
   }
 
   public static Collection<Mesos> getAllClouds() {
@@ -126,14 +129,21 @@ public abstract class Mesos {
     public void onChange(Saveable o, XmlFile file) {
       if (o instanceof Jenkins) {
         Jenkins j = (Jenkins) o;
-        for (Iterator<Map.Entry<MesosCloud, Mesos>> it = clouds.entrySet().iterator(); it.hasNext();) {
-          Map.Entry<MesosCloud, Mesos> entry = it.next();
-          if (!j.clouds.contains(entry.getKey())) {
+        Set<String> jenkinsClouds = new HashSet<String>();
+        for (Cloud c : j.clouds){
+          if (c instanceof MesosCloud) {
+            jenkinsClouds.add(((MesosCloud) c).getCloudID());
+          }
+        }
+        for (Iterator<Map.Entry<String, Mesos>> it = clouds.entrySet().iterator(); it.hasNext();) {
+          Map.Entry<String, Mesos> entry = it.next();
+          if(!jenkinsClouds.contains(entry.getKey())) {
+            LOGGER.info("Removing active scheduler because cloud was removed");
             entry.getValue().stopScheduler(true);
             it.remove();
           }
-        }
+          }
+          }
       }
     }
   }
-}

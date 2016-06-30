@@ -29,7 +29,11 @@
     </f:entry>
 
     <f:entry title="${%Jenkins URL }" field="jenkinsURL">
-      <f:textbox/>
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="${%Cloud ID}" field ="cloudID">
+ 	 <f:textbox readonly="readonly" />
     </f:entry>
 
     <f:advanced>
@@ -50,7 +54,7 @@
         <f:entry title="${%Decline offer duration}" field="declineOfferDuration" description="${%Decline offers for specified amount of time in case no slave is queued. The plugin asks for new offers in case a new slave needs to be started. In milliseconds.}">
           <f:number clazz="required positive-number" min="1000" steps="1000" default="600000"/>
         </f:entry>
-
+        
         <f:entry>
             <f:repeatableProperty field="slaveInfos" minimum="1">
                 <f:entry>
