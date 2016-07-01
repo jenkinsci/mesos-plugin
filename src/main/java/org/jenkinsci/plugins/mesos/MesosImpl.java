@@ -10,6 +10,9 @@ public class MesosImpl extends Mesos {
 
   @Override
   public void startScheduler(String jenkinsMaster, MesosCloud mesosCloud) {
+    if (jenkinsMaster == null) {
+      throw new IllegalArgumentException("Cannot start scheduler if jenkinsMaster is null");
+    }
     lock();
     try {
       scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
