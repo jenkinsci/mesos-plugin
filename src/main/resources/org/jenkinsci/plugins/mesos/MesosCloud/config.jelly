@@ -28,6 +28,10 @@
         <c:select/>
     </f:entry>
 
+    <f:entry title="${%Decline Hosts }" description="${%Regex-match Hostnames to decline offers}" field="declineHosts">
+      <f:textbox/>
+    </f:entry>
+
     <f:entry title="${%Jenkins URL }" field="jenkinsURL">
       <f:textbox/>
     </f:entry>

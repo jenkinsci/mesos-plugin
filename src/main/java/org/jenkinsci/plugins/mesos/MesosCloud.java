@@ -42,6 +42,7 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
@@ -49,14 +50,13 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import org.apache.commons.lang.StringUtils;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -73,6 +73,8 @@ public class MesosCloud extends Cloud {
   private String role;
   private String slavesUser;
   private String credentialsId;
+  private String declineHosts;
+
   /**
    * @deprecated Create credentials then use credentialsId instead.
    */
@@ -158,11 +160,12 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
+      String declineHosts,
       String jenkinsURL,
       String declineOfferDuration) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
          slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-         jenkinsURL, declineOfferDuration);
+         declineHosts, jenkinsURL, declineOfferDuration);
   }
 
   /**
@@ -184,6 +187,7 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
+      String declineHosts,
       String jenkinsURL,
       String declineOfferDuration) throws NumberFormatException {
     super(cloudName);
@@ -201,6 +205,7 @@ public class MesosCloud extends Cloud {
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
+    this.declineHosts =declineHosts;
     this.setJenkinsURL(jenkinsURL);
     this.setDeclineOfferDuration(declineOfferDuration);
     if(!onDemandRegistration) {
@@ -224,7 +229,7 @@ public class MesosCloud extends Cloud {
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration);
+           source.checkpoint, source.onDemandRegistration, source.declineHosts, source.jenkinsURL, source.declineOfferDuration);
   }
 
   @Override
@@ -257,6 +262,11 @@ public class MesosCloud extends Cloud {
       if (other.frameworkName != null)
         return false;
     } else if (!frameworkName.equals(other.frameworkName))
+      return false;
+    if (declineHosts == null) {
+      if (other.declineHosts != null)
+        return false;
+    } else if (!declineHosts.equals(other.declineHosts))
       return false;
     if (jenkinsURL == null) {
       if (other.jenkinsURL != null)
@@ -303,6 +313,7 @@ public class MesosCloud extends Cloud {
         prime * result + ((declineOfferDuration == null) ? 0 : declineOfferDuration.hashCode());
     result = prime * result + ((description == null) ? 0 : description.hashCode());
     result = prime * result + ((frameworkName == null) ? 0 : frameworkName.hashCode());
+    result = prime * result + ((declineHosts == null) ? 0 : declineHosts.hashCode());
     result = prime * result + ((jenkinsURL == null) ? 0 : jenkinsURL.hashCode());
     result = prime * result + ((master == null) ? 0 : master.hashCode());
     result = prime * result + ((nativeLibraryPath == null) ? 0 : nativeLibraryPath.hashCode());
@@ -645,6 +656,26 @@ public class MesosCloud extends Cloud {
       principal = null;
       secret = null;
     }
+  }
+
+  public String getDeclineHosts() {
+    return declineHosts;
+  }
+
+  public List<String> getDeclineHostsList() {
+    if (StringUtils.isNotBlank(declineHosts)) {
+      try {
+        return Arrays.asList(declineHosts.split(","));
+      } catch (Exception e) {
+        LOGGER.warning("Ignoring Mesos declineHostsdue to parsing error : " + declineHosts);
+      }
+    }
+
+    return Collections.emptyList();
+  }
+
+  public void setDeclineHosts(String declineHosts) {
+    this.declineHosts = declineHosts;
   }
 
   public String getJenkinsURL() {
