@@ -33,7 +33,7 @@ public class MesosSlave extends Slave {
 
   private static final long serialVersionUID = 1L;
 
-  private final String cloudId;
+  private final String cloudName;
   private transient MesosCloud cloud;
   private final MesosSlaveInfo slaveInfo;
   private final int idleTerminationMinutes;
@@ -55,7 +55,7 @@ public class MesosSlave extends Slave {
           new MesosRetentionStrategy(slaveInfo.getIdleTerminationMinutes()),
           slaveInfo.getNodeProperties());
     this.cloud = cloud;
-    this.cloudId = cloud.getDisplayName();
+    this.cloudName = cloud.getDisplayName();
     this.slaveInfo = slaveInfo;
     this.idleTerminationMinutes = slaveInfo.getIdleTerminationMinutes();
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
@@ -65,7 +65,7 @@ public class MesosSlave extends Slave {
 
   public MesosCloud getCloud() {
     if (cloud == null) {
-      cloud = (MesosCloud) getJenkins().getCloud(cloudId);
+      cloud = (MesosCloud) getJenkins().getCloud(cloudName);
     }
     return cloud;
   }
