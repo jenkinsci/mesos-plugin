@@ -28,6 +28,8 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.NetworkInfo.Protocol;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -489,6 +491,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     private final String networking;
     private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
     private final List<PortMapping> portMappings;
+    private final List<NetworkInfo> networkInfos;
     private final boolean useCustomDockerCommandShell;
     private final String customDockerCommandShell;
     private final boolean dockerPrivilegedMode;
@@ -506,7 +509,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
                          List<Volume> volumes,
                          List<Parameter> parameters,
                          String networking,
-                         List<PortMapping> portMappings) throws FormException {
+                         List<PortMapping> portMappings,
+                         List<NetworkInfo> networkInfos) throws FormException {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
@@ -516,6 +520,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.customDockerCommandShell = customDockerCommandShell;
       this.volumes = volumes;
       this.parameters = parameters;
+      this.networkInfos = networkInfos;
 
       if (networking == null) {
           this.networking = DEFAULT_NETWORKING;
@@ -542,7 +547,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
                 volumes,
                 parameters,
                 networking,
-                portMappings
+                portMappings,
+                networkInfos
         );
     }
 
@@ -560,6 +566,14 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
 
     public List<Parameter> getParameters() {
       return parameters;
+    }
+
+    public List<NetworkInfo> getNetworkInfos() {
+          return networkInfos;
+      }
+
+    public boolean hasNetworkInfos() {
+      return networkInfos != null && !networkInfos.isEmpty();
     }
 
     public String getNetworking() {
@@ -612,6 +626,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
       if (networking != null ? !networking.equals(that.networking) : that.networking != null) return false;
       if (portMappings != null ? !portMappings.equals(that.portMappings) : that.portMappings != null) return false;
+      if (networkInfos != null ? !networkInfos.equals(that.networkInfos) : that.networkInfos != null) return false;
       if (customDockerCommandShell != null ? !customDockerCommandShell.equals(that.customDockerCommandShell) : that.customDockerCommandShell != null)
         return false;
       if (dockerPrivilegedMode != that.dockerPrivilegedMode) return false;
@@ -626,6 +641,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
       result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
       result = 31 * result + (networking != null ? networking.hashCode() : 0);
+      result = 31 * result + (networkInfos != null ? networkInfos.hashCode() : 0);
       result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
       result = 31 * result + (useCustomDockerCommandShell ? 1 : 0);
       result = 31 * result + (customDockerCommandShell != null ? customDockerCommandShell.hashCode() : 0);
@@ -838,4 +854,44 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return result;
     }
   }
+
+  public static class NetworkInfo extends AbstractDescribableImpl<NetworkInfo> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<NetworkInfo> {
+        public String getDisplayName() { return ""; }
+    }
+
+    private final String networkName;
+
+    @DataBoundConstructor
+    public NetworkInfo(String networkName) {
+        this.networkName = networkName;
+    }
+
+    public String getNetworkName() {
+        return networkName;
+    }
+
+    public boolean hasNetworkName() {
+      return networkName != null && !networkName.isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NetworkInfo networkInfo = (NetworkInfo) o;
+
+        return networkName != null ? networkName.equals(networkInfo.networkName) : networkInfo.networkName == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = networkName != null ? networkName.hashCode() : 0;
+        return result;
+    }
+}
+
 }

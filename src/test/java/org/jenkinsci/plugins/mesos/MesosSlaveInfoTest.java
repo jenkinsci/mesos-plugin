@@ -70,7 +70,8 @@ public class MesosSlaveInfoTest {
                 new LinkedList<MesosSlaveInfo.Volume>(),
                 new LinkedList<MesosSlaveInfo.Parameter>(),
                 Protos.ContainerInfo.DockerInfo.Network.BRIDGE.name(),
-                null
+                null,
+                new LinkedList<MesosSlaveInfo.NetworkInfo>()
         );
         return new MesosSlaveInfo(
                 label,
@@ -152,5 +153,13 @@ public class MesosSlaveInfoTest {
         assertNull(buildMesosSlaveInfo(null, true).getMesosSlaveInfoForLabel(null).getLabelString());
         assertNull(buildMesosSlaveInfo("label", true).getMesosSlaveInfoForLabel(null));
         assertNull(buildMesosSlaveInfo(null, true).getMesosSlaveInfoForLabel(getLabel("label")));
+    }
+
+    @Test
+    public void getNetworkNameTest() throws IOException, Descriptor.FormException, ANTLRException {
+        MesosSlaveInfo info = buildMesosSlaveInfo("label", false);
+        MesosSlaveInfo.NetworkInfo networkInfo = new MesosSlaveInfo.NetworkInfo("exampleNetwork");
+        info.getContainerInfo().getNetworkInfos().add(networkInfo);
+        assertEquals(info.getContainerInfo().getNetworkInfos().get(0).getNetworkName(), "exampleNetwork");
     }
 }
