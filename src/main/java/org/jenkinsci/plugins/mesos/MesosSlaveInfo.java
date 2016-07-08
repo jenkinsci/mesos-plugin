@@ -368,6 +368,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
    * @return Whether the slave label matches.
    */
   public boolean matchesLabel(@CheckForNull Label label) {
+
     if (label == null || getLabelString() == null) {
       return label == null && getLabelString() == null;
     }
@@ -376,7 +377,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return true;
     }
 
-    if (!containerInfo.getDockerImageCustomizable()) {
+    if (containerInfo == null || !containerInfo.getDockerImageCustomizable()) {
       return false;
     }
 
