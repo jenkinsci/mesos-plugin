@@ -20,40 +20,47 @@ RUN /usr/local/bin/install-plugins.sh mesos metrics credentials jackson2-api
 
 # Other useful plugins: pipeline, git and their dependencies
 RUN /usr/local/bin/install-plugins.sh \
-  jquery-detached:1.2.1 \
-  script-security:1.21 \
-  structs:1.2 \
-  workflow-step-api:2.2 \
-  workflow-api:2.1 \
-  workflow-support:2.2 \
-  workflow-job:2.3 \
-  pipeline-rest-api:1.5 \
-  handlebars:1.1.1 \
-  momentjs:1.1.1 \
-  pipeline-stage-view:1.5 \
-  pipeline-build-step:2.2 \
   ace-editor:1.1 \
-  workflow-scm-step:2.2 \
-  scm-api:1.2 \
-  workflow-cps:2.9 \
-  junit:1.15 \
-  matrix-project:1.7.1 \
-  windows-slaves:1.1 \
-  ssh-credentials:1.12 \
-  icon-shim:2.0.3 \
-  matrix-auth:1.4 \
   antisamy-markup-formatter:1.5 \
+  authentication-tokens:1.3 \
+  branch-api:1.10 \
+  cloudbees-folder:5.12 \
+  credentials:2.1.4 \
+  docker-commons:1.4.0 \
+  docker-workflow:1.6 \
+  durable-task:1.11 \
   git-client:1.19.7 \
   git-server:1.7 \
-  workflow-cps-global-lib:2.1 \
-  cloudbees-folder:5.12 \
-  branch-api:1.10 \
-  workflow-multibranch:2.8 \
-  durable-task:1.11 \
-  workflow-durable-task-step:2.3 \
-  pipeline-input-step:2.0 \
-  pipeline-stage-step:2.1 \
+  git:2.5.2 \
+  handlebars:1.1.1 \
+  icon-shim:2.0.3 \
+  jackson2-api:2.7.3 \
+  jquery-detached:1.2.1 \
+  junit:1.15 \
   mailer:1.17 \
-  workflow-basic-steps:2.0 \
+  matrix-auth:1.4 \
+  matrix-project:1.7.1 \
+  mesos:0.13.0 \
+  metrics:3.1.2.8 \
+  momentjs:1.1.1 \
+  pipeline-build-step:2.2 \
+  pipeline-input-step:2.0 \
+  pipeline-rest-api:1.5 \
+  pipeline-stage-step:2.1 \
+  pipeline-stage-view:1.5 \
+  scm-api:1.2 \
+  script-security:1.21 \
+  ssh-credentials:1.12 \
+  structs:1.2 \
+  windows-slaves:1.1 \
   workflow-aggregator:2.2 \
-  git:2.5.2
+  workflow-api:2.1 \
+  workflow-basic-steps:2.0 \
+  workflow-cps-global-lib:2.1 \
+  workflow-cps:2.9 \
+  workflow-durable-task-step:2.3 \
+  workflow-job:2.3 \
+  workflow-multibranch:2.8 \
+  workflow-scm-step:2.2 \
+  workflow-step-api:2.2 \
+  workflow-support:2.2
