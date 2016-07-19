@@ -678,8 +678,8 @@ public class JenkinsScheduler implements Scheduler {
           LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
           DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder() //
               .setImage(containerInfo.getDockerImage())
-              .setPrivileged(containerInfo.getDockerPrivilegedMode() != null ? containerInfo.getDockerPrivilegedMode() : false)
-              .setForcePullImage(containerInfo.getDockerForcePullImage() != null ? containerInfo.getDockerForcePullImage() : false);
+              .setPrivileged(containerInfo.getDockerPrivilegedMode())
+              .setForcePullImage(containerInfo.getDockerForcePullImage());
 
           if (containerInfo.getParameters() != null) {
             for (MesosSlaveInfo.Parameter parameter : containerInfo.getParameters()) {

@@ -491,16 +491,16 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     private final List<PortMapping> portMappings;
     private final boolean useCustomDockerCommandShell;
     private final String customDockerCommandShell;
-    private final Boolean dockerPrivilegedMode;
-    private final Boolean dockerForcePullImage;
-    private final Boolean dockerImageCustomizable;
+    private final boolean dockerPrivilegedMode;
+    private final boolean dockerForcePullImage;
+    private final boolean dockerImageCustomizable;
 
     @DataBoundConstructor
     public ContainerInfo(String type,
                          String dockerImage,
-                         Boolean dockerPrivilegedMode,
-                         Boolean dockerForcePullImage,
-                         Boolean dockerImageCustomizable,
+                         boolean dockerPrivilegedMode,
+                         boolean dockerForcePullImage,
+                         boolean dockerImageCustomizable,
                          boolean useCustomDockerCommandShell,
                          String customDockerCommandShell,
                          List<Volume> volumes,
@@ -582,15 +582,15 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       return portMappings != null && !portMappings.isEmpty();
     }
 
-    public Boolean getDockerPrivilegedMode() {
+    public boolean getDockerPrivilegedMode() {
       return dockerPrivilegedMode;
     }
 
-    public Boolean getDockerForcePullImage() {
+    public boolean getDockerForcePullImage() {
       return dockerForcePullImage;
     }
 
-    public Boolean getDockerImageCustomizable() {
+    public boolean getDockerImageCustomizable() {
       return dockerImageCustomizable;
     }
 
@@ -614,12 +614,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       if (portMappings != null ? !portMappings.equals(that.portMappings) : that.portMappings != null) return false;
       if (customDockerCommandShell != null ? !customDockerCommandShell.equals(that.customDockerCommandShell) : that.customDockerCommandShell != null)
         return false;
-      if (dockerPrivilegedMode != null ? !dockerPrivilegedMode.equals(that.dockerPrivilegedMode) : that.dockerPrivilegedMode != null)
-        return false;
-      if (dockerForcePullImage != null ? !dockerForcePullImage.equals(that.dockerForcePullImage) : that.dockerForcePullImage != null)
-        return false;
-      return dockerImageCustomizable != null ? dockerImageCustomizable.equals(that.dockerImageCustomizable) : that.dockerImageCustomizable == null;
-
+      if (dockerPrivilegedMode != that.dockerPrivilegedMode) return false;
+      if (dockerForcePullImage != that.dockerForcePullImage) return false;
+      return dockerImageCustomizable == that.dockerImageCustomizable;
     }
 
     @Override
@@ -632,9 +629,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
       result = 31 * result + (useCustomDockerCommandShell ? 1 : 0);
       result = 31 * result + (customDockerCommandShell != null ? customDockerCommandShell.hashCode() : 0);
-      result = 31 * result + (dockerPrivilegedMode != null ? dockerPrivilegedMode.hashCode() : 0);
-      result = 31 * result + (dockerForcePullImage != null ? dockerForcePullImage.hashCode() : 0);
-      result = 31 * result + (dockerImageCustomizable != null ? dockerImageCustomizable.hashCode() : 0);
+      result = 31 * result + (dockerPrivilegedMode ? 1 : 0);
+      result = 31 * result + (dockerForcePullImage ? 1 : 0);
+      result = 31 * result + (dockerImageCustomizable ? 1 : 0);
       return result;
     }
   }
