@@ -64,3 +64,6 @@ RUN /usr/local/bin/install-plugins.sh \
   workflow-scm-step:2.2 \
   workflow-step-api:2.2 \
   workflow-support:2.2
+
+ENTRYPOINT ["/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
+
