@@ -34,7 +34,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
 
   public MesosComputerLauncher(MesosCloud cloud, String _name) {
     super();
-    LOGGER.info("Constructing MesosComputerLauncher");
+    LOGGER.finer("Constructing MesosComputerLauncher");
     this.cloud = cloud;
     this.state = State.INIT;
     this.name = _name;
@@ -50,7 +50,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
    */
   @Override
   public void launch(SlaveComputer _computer, TaskListener listener) throws InterruptedException {
-    LOGGER.info("Launching slave computer " + name);
+    LOGGER.fine("Launching slave computer " + name);
 
     MesosComputer computer = (MesosComputer) _computer;
     PrintStream logger = listener.getLogger();

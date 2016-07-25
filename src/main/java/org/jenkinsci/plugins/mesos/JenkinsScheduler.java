@@ -216,7 +216,7 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   public synchronized void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
-    LOGGER.info("Enqueuing jenkins slave request");
+    LOGGER.fine("Enqueuing jenkins slave request");
     requests.add(new Request(request, result));
     if (driver != null) {
       // Ask mesos to send all offers, even the those we declined earlier.
@@ -318,6 +318,7 @@ public class JenkinsScheduler implements Scheduler {
   public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
     LOGGER.fine("Received offers " + offers.size());
     reArrangeOffersBasedOnAffinity(offers);
+    int processedRequests = 0;
     for (Offer offer : offers) {
       if (requests.isEmpty()) {
         unmatchedLabels.clear();
@@ -334,8 +335,7 @@ public class JenkinsScheduler implements Scheduler {
       boolean taskCreated = false;
       for (Request request : requests) {
         if (matches(offer, request)) {
-          LOGGER.fine("Offer matched! Creating mesos task");
-
+          LOGGER.fine("Offer matched! Creating mesos task " + request.request.slave.name);
           try {
             createMesosTask(offer, request);
             unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
@@ -345,12 +345,24 @@ public class JenkinsScheduler implements Scheduler {
             LOGGER.log(Level.SEVERE, e.getMessage(), e);
           }
           requests.remove(request);
+          processedRequests++;
           break;
         }
       }
 
       if (!taskCreated) {
         driver.declineOffer(offer.getId());
+      }
+    }
+    if (processedRequests > 0) {
+      if (!requests.isEmpty()) {
+        LOGGER.info("Created " + processedRequests + " tasks from " + offers.size() + " offers (" + requests.size() + " pending requests).");
+      } else {
+        LOGGER.info("Created " + processedRequests + " tasks from " + offers.size() + " offers.");
+      }
+    } else {
+      if (!requests.isEmpty()) {
+        LOGGER.info("Did not match any of the " + offers.size() + " offers (" + requests.size() + " pending requests)");
       }
     }
     for (Request request: requests) {
@@ -563,7 +575,7 @@ public class JenkinsScheduler implements Scheduler {
     final String slaveName = request.request.slave.name;
     TaskID taskId = TaskID.newBuilder().setValue(slaveName).build();
 
-    LOGGER.info("Launching task " + taskId.getValue() + " with URI " +
+    LOGGER.fine("Launching task " + taskId.getValue() + " with URI " +
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
 
     if (isExistingTask(taskId)) {
@@ -791,7 +803,7 @@ public class JenkinsScheduler implements Scheduler {
                 throw new IllegalArgumentException("Invalid custom shell argument supplied  ");
             }
 
-            LOGGER.info( String.format( "About to use custom shell: %s " , customShell));
+            LOGGER.fine( String.format( "About to use custom shell: %s " , customShell));
             commandBuilder.setShell(false);
             commandBuilder.setValue(customShell);
             List args = new ArrayList();
@@ -799,7 +811,7 @@ public class JenkinsScheduler implements Scheduler {
             commandBuilder.addAllArguments( args );
 
     } else {
-        LOGGER.info("About to use default shell ....");
+        LOGGER.fine("About to use default shell ....");
         commandBuilder.setValue(jenkinsCommand2Run);
     }
 

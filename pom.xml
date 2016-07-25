@@ -170,6 +170,16 @@
                   <source>1.6</source>
               </configuration>
           </plugin>
+          <plugin>
+              <groupId>org.jenkins-ci.tools</groupId>
+              <artifactId>maven-hpi-plugin</artifactId>
+              <version>1.117</version>
+              <configuration>
+                  <systemProperties>
+                      <hudson.slaves.NodeProvisioner.initialDelay>0</hudson.slaves.NodeProvisioner.initialDelay>
+                  </systemProperties>
+              </configuration>
+          </plugin>
       </plugins>
   </build>
 </project>

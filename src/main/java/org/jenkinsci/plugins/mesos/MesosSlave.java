@@ -60,7 +60,7 @@ public class MesosSlave extends Slave {
     this.idleTerminationMinutes = slaveInfo.getIdleTerminationMinutes();
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
-    LOGGER.info("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
+    LOGGER.fine("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 
   public MesosCloud getCloud() {
