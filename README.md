@@ -60,7 +60,7 @@ By default the plugin (a Mesos framework) registers with Mesos master without au
 
 Checkpointing can now be enabled by setting the "Checkpointing" option to yes in the cloud config. This will allow the Jenkins
 master to finish running its slave jobs even if the Mesos slave process temporarily goes down. Note that Mesos slave(s) should
-have checkpointing enabled for this to work. See [slave-recovery](http://mesos.apache.org/documentation/latest/slave-recovery/)
+have checkpointing enabled for this to work. See [agent-recovery](http://mesos.apache.org/documentation/latest/agent-recovery/)
 for more details.
 
 ### Configuring Jenkins jobs ###
