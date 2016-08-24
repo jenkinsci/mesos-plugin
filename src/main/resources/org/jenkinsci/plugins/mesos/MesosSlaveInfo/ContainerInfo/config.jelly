@@ -40,6 +40,16 @@
         </f:radioBlock>
     </f:entry>
 
+    <f:entry title="${%Network Info}">
+        <f:repeatableProperty field="networkInfos" add="${%Add Network Info}" minimum="0">
+            <f:entry>
+                <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                    <f:repeatableDeleteButton value="${%Delete Network Info}" /><br/>
+                </div>
+            </f:entry>
+        </f:repeatableProperty>
+        </f:entry>
+
     <f:entry title="${%Volumes}">
         <f:repeatableProperty field="volumes" add="${%Add Volume}" minimum="0">
             <f:entry>

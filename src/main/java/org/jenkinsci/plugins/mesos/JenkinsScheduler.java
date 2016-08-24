@@ -47,12 +47,12 @@ import java.util.logging.Logger;
 
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.collections4.OrderedMapIterator;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.NetworkInfo;
 import org.apache.mesos.Protos.Attribute;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.ContainerInfo;
@@ -761,6 +761,21 @@ public class JenkinsScheduler implements Scheduler {
             volumeBuilder.setHostPath(volume.getHostPath());
           }
           containerInfoBuilder.addVolumes(volumeBuilder.build());
+        }
+      }
+
+      if (containerInfo.hasNetworkInfos()) {
+        for (MesosSlaveInfo.NetworkInfo networkInfo : containerInfo.getNetworkInfos()) {
+
+          NetworkInfo.Builder networkInfoBuilder = NetworkInfo.newBuilder();
+
+          if (networkInfo.hasNetworkName()) {
+            //Add the virtual network specified, trimming edges for whitespace
+            networkInfoBuilder.setName(networkInfo.getNetworkName().trim());
+            LOGGER.info("Launching container on network " + networkInfo.getNetworkName() );
+          }
+
+          containerInfoBuilder.addNetworkInfos(networkInfoBuilder.build());
         }
       }
 

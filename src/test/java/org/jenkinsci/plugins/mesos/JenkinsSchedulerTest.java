@@ -276,7 +276,8 @@ public class JenkinsSchedulerTest {
                     Collections.<MesosSlaveInfo.Volume>emptyList(),
                     Collections.<MesosSlaveInfo.Parameter>emptyList(),
                     Protos.ContainerInfo.DockerInfo.Network.HOST.name(),
-                    Collections.<MesosSlaveInfo.PortMapping>emptyList());
+                    Collections.<MesosSlaveInfo.PortMapping>emptyList(),
+                    Collections.<MesosSlaveInfo.NetworkInfo>emptyList());
         }
 
         MesosSlaveInfo mesosSlaveInfo = new MesosSlaveInfo(
