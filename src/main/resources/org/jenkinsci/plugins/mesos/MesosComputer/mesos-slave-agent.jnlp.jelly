@@ -46,6 +46,8 @@
 
         <argument>-url</argument>
         <argument>${app.rootUrlFromRequest}</argument>
+        <argument>-url</argument>
+        <argument>${rootURL}</argument>
       </application-desc>
     </jnlp>
 </j:jelly>
