@@ -16,6 +16,7 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.model.TaskListener;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
 
 import java.io.PrintStream;
@@ -24,7 +25,7 @@ import java.util.logging.Logger;
 
 import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
-public class MesosComputerLauncher extends ComputerLauncher {
+public class MesosComputerLauncher extends JNLPLauncher {
 
   private final MesosCloud cloud;
 
@@ -49,7 +50,7 @@ public class MesosComputerLauncher extends ComputerLauncher {
    *      hudson.model.TaskListener)
    */
   @Override
-  public void launch(SlaveComputer _computer, TaskListener listener) throws InterruptedException {
+  public void launch(SlaveComputer _computer, TaskListener listener)  {
     LOGGER.fine("Launching slave computer " + name);
 
     MesosComputer computer = (MesosComputer) _computer;
@@ -107,14 +108,21 @@ public class MesosComputerLauncher extends ComputerLauncher {
 
     // Block until we know the status of the slave.
     // TODO(vinod): What happens if the callback is called again!
-    latch.await();
+    try {
+      latch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+      LOGGER.severe("Error while launching slave " + name);
+      node.setPendingDelete(true);
+      return;
+    }
 
     if (state == State.RUNNING) {
       // Since we just launched a slave, remove it from pending deletion in case it was marked previously while
       // we were waiting for resources to be available
       node.setPendingDelete(false);
       waitForSlaveConnection(computer, logger);
-      logger.println("Successfully launched slave" + name);
+      logger.println("Successfully launched slave " + name);
     }
 
     LOGGER.info("Finished launching slave computer " + name);
