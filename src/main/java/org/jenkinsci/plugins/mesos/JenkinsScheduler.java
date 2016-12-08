@@ -18,13 +18,14 @@ package org.jenkinsci.plugins.mesos;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.annotations.VisibleForTesting;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.Item;
 import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.util.Secret;
 
 import java.lang.Math;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -320,7 +321,7 @@ public class JenkinsScheduler implements Scheduler {
     reArrangeOffersBasedOnAffinity(offers);
     int processedRequests = 0;
     for (Offer offer : offers) {
-      if (requests.isEmpty()) {
+      if (requests.isEmpty() && !buildsInQueue(Jenkins.getInstance().getQueue())) {
         unmatchedLabels.clear();
         // Decline offer for a longer period if no slave is waiting to get spawned.
         // This prevents unnecessarily getting offers every few seconds and causing
@@ -493,6 +494,19 @@ public class JenkinsScheduler implements Scheduler {
           "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
       return false;
     }
+  }
+
+  private boolean buildsInQueue(hudson.model.Queue queue) {
+   hudson.model.Queue.Item[] items =  queue.getItems();
+   if(items != null) {
+     for(hudson.model.Queue.Item item: items) {
+       // Check and return if there is an item in jenkins queue for which this MesosCloud can provsion a slave
+       if(mesosCloud.canProvision(item.getAssignedLabel())) {
+         return true;
+       }
+     }
+   }
+    return false;
   }
 
   /**
