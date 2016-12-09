@@ -54,6 +54,13 @@
         <f:entry title="${%Decline offer duration}" field="declineOfferDuration" description="${%Decline offers for specified amount of time in case no slave is queued. The plugin asks for new offers in case a new slave needs to be started. In milliseconds.}">
           <f:number clazz="required positive-number" min="1000" steps="1000" default="600000"/>
         </f:entry>
+
+        <f:entry title="${%Configure Mesos Single Use Slave as default for all jobs}" field="mesosSingleUseSlave" description="${%Enable to make Mesos Single Use slave option as default for all new jobs created/updated.}">
+          <f:radio name="mesosSingleUseSlave" value="true" checked="${instance == null || instance.mesosSingleUseSlave == true}" id="mesosSingleUseSlave.true"/>
+            <st:nbsp/>${%Yes}
+            <f:radio name="mesosSingleUseSlave" value="false" checked="${instance.mesosSingleUseSlave == false}" id="mesosSingleUseSlave.false"/>
+            <st:nbsp/>${%No}
+        </f:entry>
         
         <f:entry>
             <f:repeatableProperty field="slaveInfos" minimum="1">
