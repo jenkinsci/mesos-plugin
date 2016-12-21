@@ -92,6 +92,23 @@ By default, Jenkins spawns slaves conservatively. Say, if there are 2 builds in 
 If you want to override this behaviour and spawn an executor for each build in queue immediately without waiting, you can use these flags during Jenkins startup:
 `-Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85`
 
+## Single-Use Slave ##
+
+### Freestyle jobs ###
+
+In the Build Environment settings, you may select "Mesos Single-Use Slave" to schedule disposal of the slave after the build finishes.
+
+### Pipeline jobs ###
+
+To schedule slave disposal from a Pipeline job:
+
+    node('mylabel') {
+        wrap([$class: 'MesosSingleUseSlave']) {
+            // build actions
+        }
+    }
+
+
 ## Plugin Development
 
 ### Building the plugin ###

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>2.5</version>
+    <version>2.19</version>
   </parent>
 
   <artifactId>mesos</artifactId>
@@ -82,8 +82,8 @@
   </pluginRepositories>
 
   <properties>
-    <jenkins.version>1.565.3</jenkins.version>
-    <jenkins-test-harness.version>1.565.3</jenkins-test-harness.version>
+    <jenkins.version>1.599</jenkins.version>
+    <jenkins-test-harness.version>1.599</jenkins-test-harness.version>
     <findbugs.failOnError>false</findbugs.failOnError>
     <mesos.version>1.0.0</mesos.version>
     <protobuf.version>2.6.1</protobuf.version>
