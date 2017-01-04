@@ -1,16 +1,16 @@
 package org.jenkinsci.plugins.mesos;
 
-
+import hudson.EnvVars;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.BuildListener;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Computer;
-import hudson.model.Executor;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.slaves.OfflineCause;
-import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import jenkins.tasks.SimpleBuildWrapper;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -47,7 +47,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  */
-public class MesosSingleUseSlave extends BuildWrapper {
+public class MesosSingleUseSlave extends SimpleBuildWrapper {
     private static final Logger LOGGER = Logger.getLogger(MesosSingleUseSlave.class.getName());
 
     @DataBoundConstructor
@@ -55,36 +55,8 @@ public class MesosSingleUseSlave extends BuildWrapper {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Environment setUp(AbstractBuild build, Launcher launcher, final BuildListener listener) {
-        Executor executor = build.getExecutor();
-        if (executor == null) {
-            throw new IllegalStateException("Executor is null");
-        }
-        final Computer owner = executor.getOwner();
-        if (owner == null) {
-            throw new IllegalStateException("Computer is null");
-        }
-        if (MesosComputer.class.isInstance(owner)) {
-            final MesosComputer c = (MesosComputer) owner;
-            return new Environment() {
-                @Override
-                public boolean tearDown(AbstractBuild build, final BuildListener listener) throws IOException, InterruptedException {
-                    LOGGER.warning("Single-use slave " + c.getName() + " getting torn down.");
-                    c.setTemporarilyOffline(true, OfflineCause.create(Messages._MesosSingleUseSlave_OfflineCause()));
-                    return true;
-                }
-            };
-        } else {
-            return new Environment() {
-                @Override
-                public boolean tearDown(AbstractBuild build, final BuildListener listener) throws IOException, InterruptedException {
-                    LOGGER.fine("Not a single use slave, this is a " + owner.getClass());
-                    return true;
-                }
-            };
-        }
-
+    public void setUp(Context context, Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
+        context.setDisposer(new MesosSingleUseSlaveDisposer());
     }
 
     @Extension
@@ -99,6 +71,23 @@ public class MesosSingleUseSlave extends BuildWrapper {
         public boolean isApplicable(AbstractProject item) {
             return true;
         }
+    }
 
+    private static class MesosSingleUseSlaveDisposer extends Disposer {
+        @Override
+        public void tearDown(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
+            Computer computer = workspace.toComputer();
+            if (computer == null) {
+                throw new IllegalStateException("Computer is null");
+            }
+            if (MesosComputer.class.isInstance(computer)) {
+                String msg = "Taking single-use slave " + computer.getName() + " offline.";
+                LOGGER.warning(msg);
+                listener.getLogger().println(msg);
+                computer.setTemporarilyOffline(true, OfflineCause.create(Messages._MesosSingleUseSlave_OfflineCause()));
+            } else {
+                listener.getLogger().println("Not a single-use slave, this is a " + computer.getClass());
+            }
+        }
     }
 }
