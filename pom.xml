@@ -10,7 +10,7 @@
   <version>0.14.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
-  <description>Allows dynamically launch Jenkins slaves on a Mesos cluster depending on the workload</description>
+  <description>Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload</description>
 
   <scm>
     <connection>scm:git:ssh://github.com/jenkinsci/mesos-plugin.git</connection>
