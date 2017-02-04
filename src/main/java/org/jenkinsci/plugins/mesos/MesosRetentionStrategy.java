@@ -69,7 +69,7 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
    */
   private long checkInternal(MesosComputer c) {
     MesosSlave node = c.getNode();
-    if (node == null) {
+    if (node == null || node.isPendingDelete()) {
       return 1;
     }
 
