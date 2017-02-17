@@ -75,4 +75,27 @@ public class MesosRetentionStrategyTest {
     verify(mesosSlave, never()).terminate();
   }
 
+  @Test
+  public void should_never_proceed_if_slave_is_already_marked_for_deletion() {
+    // Given
+    int idleTerminationMinutes = 2;
+
+    MesosRetentionStrategy mesosRetentionStrategy = new MesosRetentionStrategy(idleTerminationMinutes);
+
+    MesosComputer mesosComputer = PowerMockito.mock(MesosComputer.class);
+    MesosSlave mesosSlave = mock(MesosSlave.class);
+
+    when(mesosSlave.isPendingDelete()).thenReturn(true);
+    when(mesosComputer.getNode()).thenReturn(mesosSlave);
+    when(mesosComputer.getConnectTime()).thenReturn(new DateTime().minusMinutes(10).getMillis());
+    when(mesosComputer.isOffline()).thenReturn(false);
+    when(mesosComputer.isIdle()).thenReturn(true);
+
+    // When
+    mesosRetentionStrategy.check(mesosComputer);
+
+    // Then
+    verify(mesosComputer, never()).isOffline();
+  }
+
 }
