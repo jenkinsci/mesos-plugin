@@ -83,8 +83,6 @@
   </pluginRepositories>
 
   <properties>
-    <jenkins.version>1.599</jenkins.version>
-    <jenkins-test-harness.version>1.599</jenkins-test-harness.version>
     <findbugs.failOnError>false</findbugs.failOnError>
     <mesos.version>1.0.0</mesos.version>
     <protobuf.version>2.6.1</protobuf.version>
@@ -99,7 +97,7 @@
       <dependency>
           <groupId>org.jenkins-ci.plugins</groupId>
           <artifactId>credentials</artifactId>
-          <version>1.22</version>
+          <version>1.28</version>
       </dependency>
       <dependency>
           <groupId>org.apache.mesos</groupId>
@@ -153,7 +151,7 @@
       <dependency>
           <groupId>org.jenkins-ci.plugins</groupId>
           <artifactId>metrics</artifactId>
-          <version>3.1.2.6</version>
+          <version>3.1.2.9</version>
           <optional>true</optional>
       </dependency>
   </dependencies>
@@ -174,7 +172,7 @@
           <plugin>
               <groupId>org.jenkins-ci.tools</groupId>
               <artifactId>maven-hpi-plugin</artifactId>
-              <version>1.117</version>
+              <version>1.121</version>
               <configuration>
                   <systemProperties>
                       <hudson.slaves.NodeProvisioner.initialDelay>0</hudson.slaves.NodeProvisioner.initialDelay>
