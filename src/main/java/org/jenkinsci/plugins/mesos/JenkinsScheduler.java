@@ -98,6 +98,7 @@ public class JenkinsScheduler implements Scheduler {
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/slave.jar %s %s -jnlpUrl %s";
   private static final String JNLP_SECRET_FORMAT = "-secret %s";
   public static final String PORT_RESOURCE_NAME = "ports";
+  public static final String MESOS_DEFAULT_ROLE = "*";
 
   private Queue<Request> requests;
   private Set<String> unmatchedLabels;
@@ -551,6 +552,20 @@ public class JenkinsScheduler implements Scheduler {
   }
 
   @VisibleForTesting
+  String findRoleForPorts(Offer offer) {
+
+      String role = MESOS_DEFAULT_ROLE;
+      // Locate the port resource in the offer
+      for (Resource resource : offer.getResourcesList()) {
+        if (resource.getName().equals(PORT_RESOURCE_NAME)) {
+            role = resource.getRole();
+          
+        }
+      }
+      return role;
+  }
+
+  @VisibleForTesting
   SortedSet<Long> findPortsToUse(Offer offer, int maxCount) {
       SortedSet<Long> portsToUse = new TreeSet<Long>();
       List<Value.Range> portRangesList = null;
@@ -725,6 +740,7 @@ public class JenkinsScheduler implements Scheduler {
           if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
               List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
               Set<Long> portsToUse = findPortsToUse(offer, portMappings.size());
+              String roleToUse = findRoleForPorts(offer);
               Iterator<Long> iterator = portsToUse.iterator();
               Value.Ranges.Builder portRangesBuilder = Value.Ranges.newBuilder();
 
@@ -753,6 +769,7 @@ public class JenkinsScheduler implements Scheduler {
                   .newBuilder()
                   .setName("ports")
                   .setType(Value.Type.RANGES)
+                  .setRole(roleToUse)
                   .setRanges(portRangesBuilder)
                   );
           } else {

@@ -46,6 +46,7 @@ public class JenkinsSchedulerTest {
     private static String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
     private static String TEST_JENKINS_JNLP_ARG    = "";
     private static String TEST_JENKINS_SLAVE_NAME  = "testSlave1";
+    private static String TEST_MESOS_ROLE_NAME     = "test_role";
 
 
     @Before
@@ -61,6 +62,13 @@ public class JenkinsSchedulerTest {
 
         jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud);
 
+    }
+
+    @Test
+    public void testFindRoleForPorts() {
+        Protos.Offer offer = createOfferWithRoleForPorts();
+        String role = jenkinsScheduler.findRoleForPorts(offer);
+        assertEquals(TEST_MESOS_ROLE_NAME, role);
     }
 
     @Test
@@ -355,6 +363,32 @@ public class JenkinsSchedulerTest {
         Protos.Resource resource = Protos.Resource.newBuilder()
                 .setName("ports")
                 .setRanges(ranges)
+                .setType(Protos.Value.Type.RANGES)
+                .build();
+
+        return Protos.Offer.newBuilder()
+                .addResources(resource)
+                .setId(Protos.OfferID.newBuilder().setValue("value").build())
+                .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("value").build())
+                .setSlaveId(Protos.SlaveID.newBuilder().setValue("value").build())
+                .setHostname("hostname")
+                .build();
+    }
+
+    private Protos.Offer createOfferWithRoleForPorts() {
+        Protos.Value.Range range = Protos.Value.Range.newBuilder()
+                .setBegin(31000)
+                .setEnd(32000)
+                .build();
+
+        Protos.Value.Ranges ranges = Protos.Value.Ranges.newBuilder()
+                .addRange(range)
+                .build();
+
+        Protos.Resource resource = Protos.Resource.newBuilder()
+                .setName("ports")
+                .setRanges(ranges)
+                .setRole(TEST_MESOS_ROLE_NAME)
                 .setType(Protos.Value.Type.RANGES)
                 .build();
 
