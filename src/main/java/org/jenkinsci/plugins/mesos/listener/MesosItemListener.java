@@ -1,12 +1,10 @@
 package org.jenkinsci.plugins.mesos.listener;
 
 import hudson.Extension;
-import hudson.model.AbstractProject;
-import hudson.model.Hudson;
-import hudson.model.Item;
-import hudson.model.Label;
+import hudson.model.*;
 import hudson.model.listeners.ItemListener;
 import org.jenkinsci.plugins.mesos.MesosCloud;
+import org.jenkinsci.plugins.mesos.MesosSingleUseSlave;
 import org.jenkinsci.plugins.mesos.MesosSlaveInfo;
 
 import java.lang.Exception;
@@ -22,24 +20,29 @@ public class MesosItemListener  extends ItemListener {
 
     /**
      * Listener for {@link Item} create
+     *
      * @param item
      */
     @Override
     public void onCreated(final Item item) {
         setLabel(item);
+        singleUseSlave(item);
     }
 
     /**
      * Listener for {@link Item} update
+     *
      * @param item
      */
     @Override
     public void onUpdated(Item item) {
         setLabel(item);
+        singleUseSlave(item);
     }
 
     /**
      * Set the default Slave Info Label if no Label is assigned to the {@link Item}
+     *
      * @param item
      */
     private void setLabel(final Item item) {
@@ -64,17 +67,18 @@ public class MesosItemListener  extends ItemListener {
 
     /**
      * Get the default Slave Info Label as Hudson {@link hudson.model.Label}
+     *
      * @return
      */
     private Label getLabel() {
         Label label = null;
         // get mesos cloud
         MesosCloud cloud = MesosCloud.get();
-        if(cloud != null) {
+        if (cloud != null) {
             // get all label associate  with cloud
             List<MesosSlaveInfo> list = cloud.getSlaveInfos();
-            if(list != null && list.size() > 0) {
-                for (MesosSlaveInfo slaveInfo: list) {
+            if (list != null && list.size() > 0) {
+                for (MesosSlaveInfo slaveInfo : list) {
                     if (slaveInfo.isDefaultSlave()) {
                         label = Hudson.getInstance().getLabel(slaveInfo.getLabelString());
                         break;
@@ -85,4 +89,19 @@ public class MesosItemListener  extends ItemListener {
         return label;
     }
 
+    /**
+     * Set the single use slave for all jobs by default if option is selected {@link Item}
+     *
+     * @param item
+     */
+    private void singleUseSlave(final Item item) {
+        if (item instanceof Project) {
+            Project<?, ?> job = (Project<?, ?>) item;
+            if (MesosCloud.get().isMesosSingleUseSlave()) {
+                if(job.getBuildWrappersList().get(MesosSingleUseSlave.class) == null) {
+                    job.getBuildWrappersList().add(new MesosSingleUseSlave());
+                }
+            }
+        }
+    }
 }

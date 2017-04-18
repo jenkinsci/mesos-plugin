@@ -87,6 +87,7 @@ public class MesosCloud extends Cloud {
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
   private String jenkinsURL;
   private String declineOfferDuration;
+  private boolean mesosSingleUseSlave; // If set true, all jobs that are created in this Jenkins instance will be set to use Mesos Single Use slave option
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -159,12 +160,13 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
+      boolean mesosSingleUseSlave,
       String jenkinsURL,
       String declineOfferDuration,
       String cloudID) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
          slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-         jenkinsURL, declineOfferDuration, cloudID);
+         mesosSingleUseSlave, jenkinsURL, declineOfferDuration, cloudID);
   }
 
   /**
@@ -186,6 +188,7 @@ public class MesosCloud extends Cloud {
       List<MesosSlaveInfo> slaveInfos,
       boolean checkpoint,
       boolean onDemandRegistration,
+      boolean mesosSingleUseSlave,
       String jenkinsURL,
       String declineOfferDuration,
       String cloudID) throws NumberFormatException {
@@ -204,6 +207,7 @@ public class MesosCloud extends Cloud {
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
+    this.mesosSingleUseSlave = mesosSingleUseSlave;
     this.setJenkinsURL(jenkinsURL);
     this.setDeclineOfferDuration(declineOfferDuration);
     this.setCloudID(cloudID);
@@ -228,7 +232,7 @@ public class MesosCloud extends Cloud {
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration, source.cloudID);
+           source.checkpoint, source.onDemandRegistration, source.mesosSingleUseSlave, source.jenkinsURL, source.declineOfferDuration, source.cloudID);
   }
 
   @Override
@@ -279,6 +283,8 @@ public class MesosCloud extends Cloud {
       return false;
     if (onDemandRegistration != other.onDemandRegistration)
       return false;
+    if(mesosSingleUseSlave != other.mesosSingleUseSlave)
+      return false;
     if (role == null) {
       if (other.role != null)
         return false;
@@ -311,6 +317,7 @@ public class MesosCloud extends Cloud {
     result = prime * result + ((master == null) ? 0 : master.hashCode());
     result = prime * result + ((nativeLibraryPath == null) ? 0 : nativeLibraryPath.hashCode());
     result = prime * result + (onDemandRegistration ? 1231 : 1237);
+    result = prime * result + (mesosSingleUseSlave ? 1231 : 1237);
     result = prime * result + ((role == null) ? 0 : role.hashCode());
     result = prime * result + ((slaveInfos == null) ? 0 : slaveInfos.hashCode());
     result = prime * result + ((slavesUser == null) ? 0 : slavesUser.hashCode());
@@ -450,6 +457,8 @@ public class MesosCloud extends Cloud {
   public List<MesosSlaveInfo> getSlaveInfos() {
     return slaveInfos;
   }
+
+  public boolean isMesosSingleUseSlave() { return mesosSingleUseSlave; }
 
   public void setSlaveInfos(List<MesosSlaveInfo> slaveInfos) {
     this.slaveInfos = slaveInfos;
