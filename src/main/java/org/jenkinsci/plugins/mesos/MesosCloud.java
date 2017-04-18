@@ -92,7 +92,7 @@ public class MesosCloud extends Cloud {
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
   private List<MesosSlaveInfo> slaveInfos;
 
-  private static String staticMaster;
+  private static Map<String, String> staticMasters = new HashMap<String, String>();
 
   private static final Logger LOGGER = Logger.getLogger(MesosCloud.class.getName());
 
@@ -330,10 +330,10 @@ public class MesosCloud extends Cloud {
     }
 
     // Restart the scheduler if the master has changed or a scheduler is not up.
-    if (!master.equals(staticMaster) || !Mesos.getInstance(this).isSchedulerRunning()) {
-      if (!master.equals(staticMaster)) {
-        LOGGER.info("Mesos master changed, restarting the scheduler");
-        recordMaster(master);
+    if (!master.equals(getStaticMaster(getCloudID())) || !Mesos.getInstance(this).isSchedulerRunning()) {
+      if (!master.equals(getStaticMaster(getCloudID()))) {
+        LOGGER.info("Mesos master changed from '" + getStaticMaster(getCloudID()) + "' to '" + master + "'");
+        recordStaticMaster(getCloudID(), master);
       } else {
         LOGGER.info("Scheduler was down, restarting the scheduler");
       }
@@ -352,8 +352,12 @@ public class MesosCloud extends Cloud {
 
   }
 
-  private static void recordMaster(String master) {
-    staticMaster = master;
+  private static void recordStaticMaster(String cloudID, String master) {
+    staticMasters.put(cloudID, master);
+  }
+
+  private static String getStaticMaster(String cloudID) {
+    return staticMasters.get(cloudID);
   }
 
   private static void initNativeLibrary(String nativeLibraryPath) {
