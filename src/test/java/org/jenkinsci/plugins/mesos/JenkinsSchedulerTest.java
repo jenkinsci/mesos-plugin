@@ -1,11 +1,11 @@
 package org.jenkinsci.plugins.mesos;
 
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.model.Queue.Item;
 import jenkins.model.Jenkins;
-
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.junit.Before;
@@ -19,16 +19,15 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 
@@ -218,6 +217,112 @@ public class JenkinsSchedulerTest {
     }
 
     @Test
+    public void testAcceptOfferAndLaunchTasksWithPastUnavailability() throws Exception {
+        Date now = new Date();
+        Date startDate = new Date(now.getTime() - TimeUnit.HOURS.toMillis(1));
+        Date endDate = new Date(startDate.getTime() + TimeUnit.MINUTES.toMillis(30));
+
+        Protos.Offer matchingOffer = createOfferWithUnavailability(startDate, endDate);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(matchingOffer);
+
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
+        MesosComputer computer = Mockito.mock(MesosComputer.class);
+        Mockito.when(jenkins.getComputers()).thenReturn(new Computer[] { computer });
+
+        Item item = Mockito.mock(Item.class);
+        Item [] items = {item};
+        Mockito.when(queue.getItems()).thenReturn(items);
+        Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        jenkinsScheduler.resourceOffers(driver, offers);
+
+        Mockito.verify(driver, never()).declineOffer(matchingOffer.getId());
+        Mockito.verify(driver).launchTasks(eq(matchingOffer.getId()), anyListOf(Protos.TaskInfo.class), eq(Protos.Filters.newBuilder().setRefuseSeconds(1).build()));
+        assertEquals(0, jenkinsScheduler.getUnmatchedLabels().size());
+    }
+
+    @Test
+    public void testAcceptOfferAndLaunchTasksWithFutureUnavailability() throws Exception {
+        // set it up
+        Date now = new Date();
+        Date startDate = new Date(now.getTime() + TimeUnit.HOURS.toMillis(1));
+        Date endDate = new Date(startDate.getTime() + TimeUnit.MINUTES.toMillis(30));
+
+        Protos.Offer matchingOffer = createOfferWithUnavailability(startDate, endDate);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(matchingOffer);
+
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
+        MesosComputer computer = Mockito.mock(MesosComputer.class);
+        Mockito.when(jenkins.getComputers()).thenReturn(new Computer[] { computer });
+
+        Item item = Mockito.mock(Item.class);
+        Item [] items = { item };
+        Mockito.when(queue.getItems()).thenReturn(items);
+        Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        // test it
+        jenkinsScheduler.resourceOffers(driver, offers);
+
+        // verify it
+        Mockito.verify(driver, never()).declineOffer(matchingOffer.getId());
+        Mockito.verify(driver).launchTasks(eq(matchingOffer.getId()), anyListOf(Protos.TaskInfo.class), eq(Protos.Filters.newBuilder().setRefuseSeconds(1).build()));
+        assertEquals(0, jenkinsScheduler.getUnmatchedLabels().size());
+    }
+
+    @Test
+    public void testDeclineOfferWithCurrentUnavailability() throws Exception {
+        // set it up
+        Date now = new Date();
+        Date startDate = new Date(now.getTime() - TimeUnit.HOURS.toMillis(1));
+        Date endDate = new Date(startDate.getTime() + TimeUnit.HOURS.toMillis(2));
+
+        Protos.Offer matchingOffer = createOfferWithUnavailability(startDate, endDate);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(matchingOffer);
+
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
+        Item item = Mockito.mock(Item.class);
+        Item [] items = { item };
+        Mockito.when(queue.getItems()).thenReturn(items);
+        Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        // test it
+        jenkinsScheduler.resourceOffers(driver, offers);
+
+        // verify it
+        // make sure it does not call "matches()" and gets declined because of a non-matching offer
+        Mockito.verify(mesosCloud, never()).getRole();
+        Mockito.verify(driver).declineOffer(matchingOffer.getId());
+        assertEquals(1, jenkinsScheduler.getUnmatchedLabels().size());
+    }
+
+    @Test
     public void testReviveOffersWhenAddingSlaveRequest() throws Exception {
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         jenkinsScheduler.setDriver(driver);
@@ -294,7 +399,6 @@ public class JenkinsSchedulerTest {
 
         jenkinsScheduler.getCommandInfoBuilder(request);
     }
-
 
     private Mesos.SlaveRequest mockSlaveRequest(
         Boolean useDocker,
@@ -399,5 +503,42 @@ public class JenkinsSchedulerTest {
                 .setSlaveId(Protos.SlaveID.newBuilder().setValue("value").build())
                 .setHostname("hostname")
                 .build();
+    }
+
+    private Protos.Resource createScalarResource(String name, double value) {
+        return Protos.Resource.newBuilder()
+                .setName(name)
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(value))
+                .setType(Protos.Value.Type.SCALAR)
+                .build();
+    }
+
+    private Protos.Resource createCpuResource(double value) {
+        return createScalarResource("cpus", value);
+    }
+
+    private Protos.Resource createMemResource(double value) {
+        return createScalarResource("mem", value);
+    }
+
+    private Protos.Offer createOfferWithUnavailability(Date startDate, Date endDate) {
+        return createOfferWithUnavailability(startDate, endDate, 2.0, 1000.0);
+    }
+
+    private Protos.Offer createOfferWithUnavailability(Date startDate, Date endDate, double valueCpus, double valueMem) {
+
+        long startNanos = TimeUnit.MILLISECONDS.toNanos(startDate.getTime());
+        long durationNanos = TimeUnit.MILLISECONDS.toNanos(endDate.getTime() - startDate.getTime());
+
+        Protos.Unavailability unavailability = Protos.Unavailability.newBuilder()
+                .setStart(Protos.TimeInfo.newBuilder().setNanoseconds(startNanos))
+                .setDuration(Protos.DurationInfo.newBuilder().setNanoseconds(durationNanos))
+                .build();
+
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
+        return Protos.Offer.newBuilder(offer)
+                .addResources(createCpuResource(valueCpus))
+                .addResources(createMemResource(valueMem))
+                .setUnavailability(unavailability).build();
     }
 }
