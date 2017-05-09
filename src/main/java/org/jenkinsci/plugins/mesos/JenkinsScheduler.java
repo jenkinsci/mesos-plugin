@@ -554,6 +554,8 @@ public class JenkinsScheduler implements Scheduler {
       attributesMap.put(attribute.getName(), attribute.getText().getValue());
     }
 
+    attributesMap.put("hostname", offer.getHostname());
+
     if (slaveAttributes != null && slaveAttributes.size() > 0) {
 
       //Iterate over the cloud attributes to see if they exist in the offer attributes list.
@@ -563,7 +565,7 @@ public class JenkinsScheduler implements Scheduler {
         String key = (String) iterator.next();
 
         //If there is a single absent attribute then we should reject this offer.
-        if (!(attributesMap.containsKey(key) && attributesMap.get(key).toString().equals(slaveAttributes.getString(key)))) {
+        if (!(attributesMap.containsKey(key) && attributesMap.get(key).toString().matches(slaveAttributes.getString(key)))) {
           slaveTypeMatch = false;
           break;
         }
