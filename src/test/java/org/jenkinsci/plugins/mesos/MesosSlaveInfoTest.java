@@ -81,6 +81,7 @@ public class MesosSlaveInfoTest {
                 "1",
                 "1",
                 "1",
+                "500",
                 "1",
                 "",
                 "1",

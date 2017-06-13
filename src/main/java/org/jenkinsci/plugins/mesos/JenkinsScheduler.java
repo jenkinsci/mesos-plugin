@@ -20,7 +20,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.google.common.annotations.VisibleForTesting;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.Item;
 import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.util.Secret;
@@ -702,6 +701,7 @@ public class JenkinsScheduler implements Scheduler {
 
     double cpusNeeded = request.request.cpus;
     double memNeeded = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
+    double diskNeeded = request.request.diskNeeded;
 
     for (Resource r : offer.getResourcesList()) {
       if (r.getName().equals("cpus") && cpusNeeded > 0) {
@@ -728,7 +728,20 @@ public class JenkinsScheduler implements Scheduler {
                     Value.Scalar.newBuilder()
                         .setValue(mem).build()).build());
         memNeeded -= mem;
-      } else if (cpusNeeded == 0 && memNeeded == 0) {
+      } else if (r.getName().equals("disk") && diskNeeded > 0) {
+        double disk = Math.min(r.getScalar().getValue(), diskNeeded);
+        builder.addResources(
+            Resource
+                .newBuilder()
+                .setName("disk")
+                .setType(Value.Type.SCALAR)
+                .setRole(r.getRole())
+                .setScalar(
+                        Value.Scalar.newBuilder()
+                        .setValue(disk).build()).build());
+
+      }
+      else if (cpusNeeded == 0 && memNeeded == 0 && diskNeeded == 0) {
         break;
       }
     }
