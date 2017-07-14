@@ -45,6 +45,10 @@
         <f:textbox clazz="required" default="jenkins"/>
     </f:entry>
 
+    <f:entry title="${%Disk Space in MB}" field="diskNeeded">
+        <f:textbox clazz="required" default="0.0"/>
+    </f:entry>
+
     <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
         <f:number clazz="required number" default="3"/>
     </f:entry>

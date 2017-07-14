@@ -784,6 +784,27 @@ public void setJenkinsURL(String jenkinsURL) {
       return doCheckCpus(value);
     }
 
+    public FormValidation doCheckDiskNeeded(@QueryParameter String value) {
+      boolean isValid = true;
+      String errorMessage = "Invalid disk space entered. It should be a positive decimal.";
+
+      if (StringUtils.isBlank(value)){
+        isValid = false;
+      }
+      else {
+        try {
+          if (Double.parseDouble(value) < 0)
+          {
+            isValid = false;
+          }
+        } catch (NumberFormatException e) {
+          isValid = false;
+        }
+      }
+      return isValid ? FormValidation.ok() : FormValidation.error(errorMessage);
+    }
+
+
     private FormValidation doCheckCpus(@QueryParameter String value) {
       boolean valid = true;
       String errorMessage = "Invalid CPUs value, it should be a positive decimal.";

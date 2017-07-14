@@ -15,7 +15,6 @@
 package org.jenkinsci.plugins.mesos;
 
 import hudson.model.TaskListener;
-import hudson.slaves.ComputerLauncher;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
 
@@ -79,10 +78,11 @@ public class MesosComputerLauncher extends JNLPLauncher {
     // Create the request.
     double cpus = node.getCpus();
     int mem = node.getMem();
+    double diskNeeded = node.getDiskNeeded();
     String role = cloud.getRole();
 
     Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name),
-        cpus, mem, role, node.getSlaveInfo());
+            cpus, mem, role, node.getSlaveInfo(), diskNeeded);
 
     // Launch the jenkins slave.
     final CountDownLatch latch = new CountDownLatch(1);

@@ -79,6 +79,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private static final String CUSTOM_IMAGE_SEPARATOR = ":";
   private static final Pattern CUSTOM_IMAGE_FROM_LABEL_PATTERN = Pattern.compile(CUSTOM_IMAGE_SEPARATOR + "([\\w\\.\\-/:]+[\\w])");
   private final double slaveCpus;
+  private final double diskNeeded; //MB
   private final int slaveMem; // MB.
   private final double executorCpus;
   private /*almost final*/ int minExecutors;
@@ -112,6 +113,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (Double.compare(that.slaveCpus, slaveCpus) != 0) return false;
     if (slaveMem != that.slaveMem) return false;
     if (Double.compare(that.executorCpus, executorCpus) != 0) return false;
+    if (Double.compare(that.diskNeeded, diskNeeded) !=0 ) return false;
     if (minExecutors != that.minExecutors) return false;
     if (maxExecutors != that.maxExecutors) return false;
     if (executorMem != that.executorMem) return false;
@@ -139,6 +141,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + slaveMem;
     temp = Double.doubleToLongBits(executorCpus);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(diskNeeded);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + minExecutors;
     result = 31 * result + maxExecutors;
     result = 31 * result + executorMem;
@@ -164,6 +168,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       String minExecutors,
       String maxExecutors,
       String executorCpus,
+      String diskNeeded,
       String executorMem,
       String remoteFSRoot,
       String idleTerminationMinutes,
@@ -184,6 +189,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               Integer.parseInt(minExecutors),
               Integer.parseInt(maxExecutors),
               Double.parseDouble(executorCpus),
+              Double.parseDouble(diskNeeded),
               Integer.parseInt(executorMem),
               StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot.trim() : "jenkins",
               Integer.parseInt(idleTerminationMinutes),
@@ -204,6 +210,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       int minExecutors,
       int maxExecutors,
       double executorCpus,
+      double diskNeeded,
       int executorMem,
       String remoteFSRoot,
       int idleTerminationMinutes,
@@ -222,6 +229,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.minExecutors = minExecutors < 1 ? 1 : minExecutors; // Ensure minExecutors is at least equal to 1
       this.maxExecutors = maxExecutors;
       this.executorCpus = executorCpus;
+      this.diskNeeded = diskNeeded;
       this.executorMem = executorMem;
       this.remoteFSRoot = remoteFSRoot;
       this.idleTerminationMinutes = idleTerminationMinutes;
@@ -246,6 +254,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     return null;
   }
 
+  public double getdiskNeeded() {
+    return diskNeeded;
+  }
+
   public MesosSlaveInfo copyWithDockerImage(String label, String dockerImage) {
     LOGGER.fine(String.format("Customize mesos slave %s using docker image %s", this.getLabelString(), dockerImage));
 
@@ -258,6 +270,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               minExecutors,
               maxExecutors,
               executorCpus,
+              diskNeeded,
               executorMem,
               remoteFSRoot,
               idleTerminationMinutes,
