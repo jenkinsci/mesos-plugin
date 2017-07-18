@@ -38,6 +38,17 @@
                 </f:repeatableProperty>
             </f:entry>
         </f:radioBlock>
+        <f:radioBlock id="networking.USER" name="networking" title="${%User}" value="USER" inline="true" checked="${instance.networking == 'USER'}">
+            <f:entry title="${%Port Mappings}">
+                <f:repeatableProperty add="${%Add Port Mapping}" field="portMappings" noAddButton="false" minimum="0">
+                    <f:entry>
+                        <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                            <f:repeatableDeleteButton value="${%Delete Port Mapping}" /><br/>
+                        </div>
+                    </f:entry>
+                </f:repeatableProperty>
+            </f:entry>
+        </f:radioBlock>
     </f:entry>
 
     <f:entry title="${%Network Info}">
@@ -48,7 +59,7 @@
                 </div>
             </f:entry>
         </f:repeatableProperty>
-        </f:entry>
+    </f:entry>
 
     <f:entry title="${%Volumes}">
         <f:repeatableProperty field="volumes" add="${%Add Volume}" minimum="0">
