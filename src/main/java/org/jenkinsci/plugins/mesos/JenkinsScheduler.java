@@ -548,13 +548,12 @@ public class JenkinsScheduler implements Scheduler {
     //Accept any and all Mesos slave offers by default.
     boolean slaveTypeMatch = true;
 
-    //Collect the list of attributes from the offer as key-value pairs
-    Map<String, String> attributesMap = new HashMap<String, String>();
-    for (Attribute attribute : offer.getAttributesList()) {
-      attributesMap.put(attribute.getName(), attribute.getText().getValue());
-    }
-
     if (slaveAttributes != null && slaveAttributes.size() > 0) {
+      //Collect the list of attributes from the offer as key-value pairs
+      Map<String, String> attributesMap = new HashMap<String, String>();
+      for (Attribute attribute : offer.getAttributesList()) {
+        attributesMap.put(attribute.getName(), attribute.getText().getValue());
+      }
 
       //Iterate over the cloud attributes to see if they exist in the offer attributes list.
       Iterator iterator = slaveAttributes.keys();
