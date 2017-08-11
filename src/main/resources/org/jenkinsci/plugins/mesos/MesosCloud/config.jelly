@@ -44,7 +44,7 @@
             <st:nbsp/>${%No}
         </f:entry>
 
-        <f:entry title="${%Jenkins tunnel }" field="tunnel">
+        <f:entry title="${%Jenkins tunnel }" description="${%HOST:PORT connect to this agent host and port instead of Jenkins server, assuming this one can route TCP traffic to Jenkins master. Useful when when Jenkins runs behind a load balancer, reverse proxy, etc.}" field="tunnel">
             <f:textbox/>
         </f:entry>
 
