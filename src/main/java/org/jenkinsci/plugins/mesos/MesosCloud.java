@@ -14,6 +14,8 @@
  */
 package org.jenkinsci.plugins.mesos;
 
+import com.google.common.net.HostAndPort;
+
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -847,6 +849,21 @@ public void setJenkinsURL(String jenkinsURL) {
       String errorMessage = "Invalid Remote FS Root - should be non-empty. It will be defaulted to \"jenkins\".";
 
       return StringUtils.isNotBlank(value) ? FormValidation.ok() : FormValidation.error(errorMessage);
+    }
+
+    public FormValidation doCheckTunnel(@QueryParameter String value) {
+      final HostAndPort hostAndPort;
+      try {
+        hostAndPort = HostAndPort.fromString(value);
+      } catch (IllegalArgumentException e) {
+        return FormValidation.error(e, e.getMessage());
+      }
+
+      if (!hostAndPort.hasPort()) {
+        return FormValidation.error("Invalid tunnel, port must be specified.");
+      }
+
+      return FormValidation.ok();
     }
   }
 }
