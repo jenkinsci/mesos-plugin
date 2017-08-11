@@ -44,6 +44,10 @@
             <st:nbsp/>${%No}
         </f:entry>
 
+        <f:entry title="${%Jenkins tunnel }" field="tunnel">
+            <f:textbox/>
+        </f:entry>
+
         <f:entry title="${%On-demand framework registration}" field="onDemandRegistration" description="${%Enable to make this cloud register as a framework when builds need to be performed. And, disconnect otherwise.}">
             <f:radio name="onDemandRegistration" value="true" checked="${instance == null || instance.onDemandRegistration == true}" id="onDemandRegistration.true"/>
             <st:nbsp/>${%Yes}

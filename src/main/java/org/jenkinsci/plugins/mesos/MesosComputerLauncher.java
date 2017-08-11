@@ -14,15 +14,15 @@
  */
 package org.jenkinsci.plugins.mesos;
 
-import hudson.model.TaskListener;
-import hudson.slaves.JNLPLauncher;
-import hudson.slaves.SlaveComputer;
+import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
 import java.io.PrintStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
-import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
+import hudson.model.TaskListener;
+import hudson.slaves.JNLPLauncher;
+import hudson.slaves.SlaveComputer;
 
 public class MesosComputerLauncher extends JNLPLauncher {
 
@@ -33,7 +33,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
   private static final Logger LOGGER = Logger.getLogger(MesosComputerLauncher.class.getName());
 
   public MesosComputerLauncher(MesosCloud cloud, String _name) {
-    super();
+    super(cloud.getTunnel(), null);
     LOGGER.finer("Constructing MesosComputerLauncher");
     this.cloud = cloud;
     this.state = State.INIT;

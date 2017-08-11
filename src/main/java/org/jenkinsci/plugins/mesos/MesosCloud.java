@@ -24,6 +24,34 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.mesos.MesosNativeLibrary;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+import javax.servlet.ServletException;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.init.InitMilestone;
@@ -34,7 +62,6 @@ import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
-import hudson.model.listeners.SaveableListener;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
@@ -42,25 +69,6 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.apache.mesos.MesosNativeLibrary;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.DoNotUse;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-import org.apache.commons.lang.StringUtils;
-import javax.annotation.Nonnull;
-import javax.servlet.ServletException;
-import java.io.IOException;
-import java.io.Serializable;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
@@ -87,6 +95,7 @@ public class MesosCloud extends Cloud {
   private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
   private String jenkinsURL;
   private String declineOfferDuration;
+  private String tunnel;
 
   // Find the default values for these variables in
   // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
@@ -161,10 +170,11 @@ public class MesosCloud extends Cloud {
       boolean onDemandRegistration,
       String jenkinsURL,
       String declineOfferDuration,
-      String cloudID) throws NumberFormatException {
+      String cloudID,
+      String tunnel) throws NumberFormatException {
     this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
          slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-         jenkinsURL, declineOfferDuration, cloudID);
+         jenkinsURL, declineOfferDuration, cloudID, tunnel);
   }
 
   /**
@@ -188,7 +198,8 @@ public class MesosCloud extends Cloud {
       boolean onDemandRegistration,
       String jenkinsURL,
       String declineOfferDuration,
-      String cloudID) throws NumberFormatException {
+      String cloudID,
+      String tunnel) throws NumberFormatException {
     super(cloudName);
 
     this.nativeLibraryPath = nativeLibraryPath;
@@ -204,6 +215,7 @@ public class MesosCloud extends Cloud {
     this.slaveInfos = slaveInfos;
     this.checkpoint = checkpoint;
     this.onDemandRegistration = onDemandRegistration;
+    this.tunnel = tunnel;
     this.setJenkinsURL(jenkinsURL);
     this.setDeclineOfferDuration(declineOfferDuration);
     this.setCloudID(cloudID);
@@ -228,7 +240,7 @@ public class MesosCloud extends Cloud {
   public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
       this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
            source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration, source.cloudID);
+           source.checkpoint, source.onDemandRegistration, source.jenkinsURL, source.declineOfferDuration, source.cloudID, source.tunnel);
   }
 
   @Override
@@ -587,6 +599,14 @@ public class MesosCloud extends Cloud {
     this.onDemandRegistration = onDemandRegistration;
   }
 
+  public String getTunnel() {
+    return tunnel;
+  }
+
+  public void setTunnel(String tunnel) {
+    this.tunnel = tunnel;
+  }
+
   @Override
   public DescriptorImpl getDescriptor() {
     return (DescriptorImpl) super.getDescriptor();
@@ -712,7 +732,7 @@ public void setJenkinsURL(String jenkinsURL) {
     }
   }
 
-@Extension
+  @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
 
     @Override
