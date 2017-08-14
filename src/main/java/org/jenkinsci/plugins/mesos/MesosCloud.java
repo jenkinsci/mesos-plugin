@@ -852,6 +852,8 @@ public void setJenkinsURL(String jenkinsURL) {
     }
 
     public FormValidation doCheckTunnel(@QueryParameter String value) {
+      if (StringUtils.isBlank(value)) return FormValidation.ok();
+
       final HostAndPort hostAndPort;
       try {
         hostAndPort = HostAndPort.fromString(value);

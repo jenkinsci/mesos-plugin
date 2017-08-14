@@ -8,6 +8,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MesosCloudDescriptorTest {
   @Test
+  public void tunnelCanBeNull() throws Exception {
+    FormValidation formValidation = new MesosCloud.DescriptorImpl()
+        .doCheckTunnel(null);
+
+    assertThat(formValidation.kind).isEqualByComparingTo(FormValidation.Kind.OK);
+  }
+
+  @Test
+  public void tunnelCanBeBlank() throws Exception {
+    FormValidation formValidation = new MesosCloud.DescriptorImpl()
+        .doCheckTunnel("");
+
+    assertThat(formValidation.kind).isEqualByComparingTo(FormValidation.Kind.OK);
+  }
+
+  @Test
   public void tunnelMustHaveColonSeparator() throws Exception {
     FormValidation formValidation = new MesosCloud.DescriptorImpl()
         .doCheckTunnel("127.0.0.1,3333");
