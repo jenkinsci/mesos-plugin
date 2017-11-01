@@ -12,6 +12,14 @@
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
   <description>Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload</description>
 
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <scm>
     <connection>scm:git:ssh://github.com/jenkinsci/mesos-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/mesos-plugin.git</developerConnection>
