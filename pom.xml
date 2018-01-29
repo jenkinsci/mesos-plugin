@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>mesos</artifactId>
-  <version>0.15.1</version>
+  <version>0.15.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
   <description>Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload</description>
@@ -24,7 +24,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/mesos-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/mesos-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/mesos-plugin</url>
-    <tag>mesos-0.15.1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
