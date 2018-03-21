@@ -21,6 +21,7 @@ import hudson.model.Node;
 import hudson.slaves.NodeProperty;
 import java.io.File;
 import java.util.Collections;
+import java.util.List;
 import jenkins.model.Jenkins;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.LocalData;
 
 public class MesosCloudTest {
 
@@ -54,6 +56,16 @@ public class MesosCloudTest {
         r.configRoundtrip();
         r.assertEqualDataBoundBeans(Collections.singletonList(cloud), r.jenkins.clouds);
         assertThat(new XmlFile(Jenkins.XSTREAM, new File(r.jenkins.root, "config.xml")).asString(), containsString(slaveAttributes.replace("\"", "&quot;")));
+    }
+
+    @Issue("JENKINS-50303")
+    @LocalData
+    @Test
+    public void oldData() throws Exception {
+        assertEquals(1, r.jenkins.clouds.size());
+        List<MesosSlaveInfo> slaveInfos = ((MesosCloud) r.jenkins.clouds.get(0)).getSlaveInfos();
+        assertEquals(1, slaveInfos.size());
+        assertThat(String.valueOf(slaveInfos.get(0).getSlaveAttributes()), anyOf(is("{\"x\":\"y\"}"), is("null")));
     }
 
 }
