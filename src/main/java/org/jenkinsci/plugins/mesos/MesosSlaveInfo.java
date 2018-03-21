@@ -90,6 +90,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final boolean defaultSlave;
   // Slave attributes JSON representation.
   private final String slaveAttributesString;
+  @Deprecated
+  private final JSONObject slaveAttributes;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
@@ -250,6 +252,14 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     }
 
     return null;
+  }
+
+  private Object readResolve() {
+      if (slaveAttributes != null) {
+          slaveAttributesString = slaveAttributes.toString();
+          slaveAttributes = null;
+      }
+      return this;
   }
 
   public double getdiskNeeded() {
