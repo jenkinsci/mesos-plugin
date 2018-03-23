@@ -91,7 +91,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   // Slave attributes JSON representation.
   private String slaveAttributesString;
   @Deprecated
-  private JSONObject slaveAttributes;
+  private transient JSONObject slaveAttributes;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
