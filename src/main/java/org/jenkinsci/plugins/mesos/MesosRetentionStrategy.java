@@ -14,8 +14,7 @@
  */
 package org.jenkinsci.plugins.mesos;
 
-import static hudson.util.TimeUnit2.MINUTES;
-
+import static java.util.concurrent.TimeUnit.MINUTES;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 

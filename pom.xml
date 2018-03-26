@@ -3,11 +3,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.2</version>
+    <version>3.6</version>
+    <relativePath />
   </parent>
 
   <artifactId>mesos</artifactId>
-  <version>0.15.2-SNAPSHOT</version>
+  <version>0.16-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
   <description>Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload</description>
@@ -97,7 +98,7 @@
     <mesos.version>1.0.0</mesos.version>
     <protobuf.version>2.6.1</protobuf.version>
     <mockito.version>1.10.19</mockito.version>
-    <powermock.version>1.6.2</powermock.version>
+    <powermock.version>1.6.6</powermock.version>
     <assertj.version>2.1.0</assertj.version>
     <guava.version>18.0</guava.version>
     <apache-commons-collections.version>4.1</apache-commons-collections.version>
@@ -171,6 +172,15 @@
           <optional>true</optional>
       </dependency>
   </dependencies>
+  <dependencyManagement>
+      <dependencies>
+          <dependency>
+              <groupId>org.objenesis</groupId>
+              <artifactId>objenesis</artifactId>
+              <version>2.4</version>
+          </dependency>
+      </dependencies>
+  </dependencyManagement>
 
   <build>
       <plugins>
@@ -178,6 +188,7 @@
               <groupId>org.jenkins-ci.tools</groupId>
               <artifactId>maven-hpi-plugin</artifactId>
               <configuration>
+                  <compatibleSinceVersion>0.16</compatibleSinceVersion>
                   <systemProperties>
                       <hudson.slaves.NodeProvisioner.initialDelay>0</hudson.slaves.NodeProvisioner.initialDelay>
                   </systemProperties>

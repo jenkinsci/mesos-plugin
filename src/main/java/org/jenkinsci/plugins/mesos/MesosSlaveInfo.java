@@ -28,8 +28,6 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.NetworkInfo.Protocol;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -91,7 +89,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final String jnlpArgs;
   private final boolean defaultSlave;
   // Slave attributes JSON representation.
-  private final JSONObject slaveAttributes;
+  private String slaveAttributesString;
+  @Deprecated
+  private transient JSONObject slaveAttributes;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
@@ -121,7 +121,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) return false;
     if (jvmArgs != null ? !jvmArgs.equals(that.jvmArgs) : that.jvmArgs != null) return false;
     if (jnlpArgs != null ? !jnlpArgs.equals(that.jnlpArgs) : that.jnlpArgs != null) return false;
-    if (slaveAttributes != null ? !slaveAttributes.equals(that.slaveAttributes) : that.slaveAttributes != null)
+    if (slaveAttributesString != null ? !slaveAttributesString.equals(that.slaveAttributesString) : that.slaveAttributesString != null)
       return false;
     if (containerInfo != null ? !containerInfo.equals(that.containerInfo) : that.containerInfo != null) return false;
     if (additionalURIs != null ? !additionalURIs.equals(that.additionalURIs) : that.additionalURIs != null)
@@ -150,7 +150,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + idleTerminationMinutes;
     result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
     result = 31 * result + (jnlpArgs != null ? jnlpArgs.hashCode() : 0);
-    result = 31 * result + (slaveAttributes != null ? slaveAttributes.hashCode() : 0);
+    result = 31 * result + (slaveAttributesString != null ? slaveAttributesString.hashCode() : 0);
     result = 31 * result + (containerInfo != null ? containerInfo.hashCode() : 0);
     result = 31 * result + (additionalURIs != null ? additionalURIs.hashCode() : 0);
     result = 31 * result + (mode != null ? mode.hashCode() : 0);
@@ -233,7 +233,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.executorMem = executorMem;
       this.remoteFSRoot = remoteFSRoot;
       this.idleTerminationMinutes = idleTerminationMinutes;
-      this.slaveAttributes = slaveAttributes;
+      this.slaveAttributesString = slaveAttributes != null ? slaveAttributes.toString() : null;
       this.jvmArgs = jvmArgs;
       this.jnlpArgs = jnlpArgs;
       this.defaultSlave = defaultSlave;
@@ -274,7 +274,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               executorMem,
               remoteFSRoot,
               idleTerminationMinutes,
-              slaveAttributes,
+              parseSlaveAttributes(slaveAttributesString),
               jvmArgs,
               jnlpArgs,
               defaultSlave,
@@ -333,7 +333,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   }
 
   public JSONObject getSlaveAttributes() {
-    return slaveAttributes;
+    return parseSlaveAttributes(slaveAttributesString);
   }
 
   public String getJvmArgs() {
@@ -406,6 +406,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     }
     if (minExecutors == 0) {
       this.minExecutors = 1;
+    }
+    if (slaveAttributes != null) {
+      slaveAttributesString = slaveAttributes.toString();
+      slaveAttributes = null;
     }
     return this;
   }
