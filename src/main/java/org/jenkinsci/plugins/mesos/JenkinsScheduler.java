@@ -92,7 +92,7 @@ public class JenkinsScheduler implements Scheduler {
 
     public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud, boolean multiThreaded) {
         startedTime = System.currentTimeMillis();
-        LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster + " and mesos " + mesosCloud.getMaster());
+        LOGGER.info("JenkinsScheduler instantiated with jenkins " + jenkinsMaster + " and mesos " + mesosCloud.getMaster() + " multithreaded " + multiThreaded);
 
         this.jenkinsMaster = jenkinsMaster;
         this.mesosCloud = mesosCloud;
@@ -104,12 +104,15 @@ public class JenkinsScheduler implements Scheduler {
         this.finishedTasks = Collections.newSetFromMap(new ConcurrentHashMap<TaskID, Boolean>());
 
         if (multiThreaded) {
-            offersService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    processOffers();
+            LOGGER.info("Processing offers on a separate thread.");
+            // Start consumption of the offer queue. This will idle until offers start arriving.
+            offersService.execute(() -> {
+                while (true) {
+                        processOffers();
                 }
             });
+        } else {
+            LOGGER.severe("NOT PROCESSING OFFERS");
         }
     }
 
@@ -304,7 +307,7 @@ public class JenkinsScheduler implements Scheduler {
     @VisibleForTesting
     void processOffers() {
         List<Offer> offers = offerQueue.takeAll();
-        LOGGER.fine("Received offers " + offers.size());
+        LOGGER.info("Processing " + offers.size() + " offers.");
         reArrangeOffersBasedOnAffinity(offers);
         int processedRequests = 0;
         for (Offer offer : offers) {
@@ -313,7 +316,7 @@ public class JenkinsScheduler implements Scheduler {
                 // Decline offer for a longer period if no slave is waiting to get spawned.
                 // This prevents unnecessarily getting offers every few seconds and causing
                 // starvation when running a lot of frameworks.
-                LOGGER.fine("No slave in queue.");
+                LOGGER.info("No slave in queue.");
                 declineOffer(offer, mesosCloud.getDeclineOfferDurationDouble());
                 continue;
             }
@@ -323,7 +326,7 @@ public class JenkinsScheduler implements Scheduler {
             if (isOfferAvailable(offer)) {
                 for (Request request : requests) {
                     if (matches(offer, request)) {
-                        LOGGER.fine("Offer matched! Creating mesos task " + request.request.slave.name);
+                        LOGGER.info("Offer matched! Creating mesos task " + request.request.slave.name);
                         try {
                             createMesosTask(offer, request);
                             unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
@@ -367,6 +370,8 @@ public class JenkinsScheduler implements Scheduler {
                 LOGGER.warning("Offer queue is full.");
                 declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
             }
+
+            LOGGER.info("Queued offer " + offer.getId().getValue());
         }
 
         if (!multiThreaded) {
