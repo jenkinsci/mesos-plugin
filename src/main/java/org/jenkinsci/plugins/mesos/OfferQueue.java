@@ -10,15 +10,17 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
  * This class acts as a buffer of Offers from Mesos.  By default it holds a maximum of 100 Offers.
  */
 public class OfferQueue {
+    private final Logger logger = Logger.getLogger(JenkinsScheduler.class.getName());
+
     private static final int DEFAULT_CAPACITY = 100;
     private static final Duration DEFAULT_OFFER_WAIT = Duration.ofSeconds(5);
-    //private final Logger logger = LoggingUtils.getLogger(getClass());
     private final BlockingQueue<Protos.Offer> queue;
 
     public OfferQueue() {
@@ -50,14 +52,14 @@ public class OfferQueue {
 
             queue.drainTo(offers);
         } catch (InterruptedException e) {
-            //logger.warn("Interrupted while waiting for offer in queue.");
+            logger.warning("Interrupted while waiting for offer in queue.");
         }
 
         return offers;
     }
 
     /**
-     * Calling this method will wait for Offers for a static duration of {@link OfferQueue#DEFAULT_CAPACITY}.
+     * Calling this method will wait for Offers for a static duration of {@link OfferQueue#DEFAULT_OFFER_WAIT}.
      * It returns all Offers currently in the queue if any are present and an empty list if the duration
      * of {@link OfferQueue#DEFAULT_OFFER_WAIT} is reached.
      */
@@ -84,9 +86,12 @@ public class OfferQueue {
 
         boolean removed = queue.removeAll(offers);
         if (!removed) {
-            //logger.warn("Attempted to remove offer: '{}' but it was not present in the queue.", offerID.getValue());
+            logger.warning(
+                    String.format(
+                            "Attempted to remove offer: '%s' but it was not present in the queue.",
+                            offerID.getValue()));
         } else {
-            //logger.info("Removed offer: {}", offerID.getValue());
+            logger.info(String.format("Removed offer: %s", offerID.getValue()));
         }
     }
 
