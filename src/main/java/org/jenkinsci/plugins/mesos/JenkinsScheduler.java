@@ -298,14 +298,17 @@ public class JenkinsScheduler implements Scheduler {
         LOGGER.info("Framework disconnected!");
     }
 
+    private void declineShort(Offer offer) {
+        declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
+    }
+
     private void declineOffer(Offer offer, double duration) {
         LOGGER.fine("Rejecting offer " + offer.getId().getValue() + " for " + duration + " seconds");
         Filters filters = Filters.newBuilder().setRefuseSeconds(duration).build();
         driver.declineOffer(offer.getId(), filters);
     }
 
-    @VisibleForTesting
-    void processOffers() {
+    private void processOffers() {
         List<Offer> offers = offerQueue.takeAll();
         LOGGER.info("Processing " + offers.size() + " offers.");
         reArrangeOffersBasedOnAffinity(offers);
@@ -343,7 +346,8 @@ public class JenkinsScheduler implements Scheduler {
             }
 
             if (!taskCreated) {
-                driver.declineOffer(offer.getId());
+                declineShort(offer);
+                continue;
             }
         }
         if (processedRequests > 0) {
@@ -368,7 +372,7 @@ public class JenkinsScheduler implements Scheduler {
             boolean queued = offerQueue.offer(offer);
             if (!queued) {
                 LOGGER.warning("Offer queue is full.");
-                declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
+                declineShort(offer);
             }
 
             LOGGER.info("Queued offer " + offer.getId().getValue());
@@ -639,7 +643,7 @@ public class JenkinsScheduler implements Scheduler {
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
 
         if (isExistingTask(taskId)) {
-            refuseOffer(offer);
+            declineShort(offer);
             return;
         }
 
@@ -655,7 +659,8 @@ public class JenkinsScheduler implements Scheduler {
 
             if (taskId.getValue().equals(computer.getName()) && mesosSlave.isPendingDelete()) {
                 LOGGER.info("This mesos task " + taskId.getValue() + " is pending deletion. Not launching another task");
-                driver.declineOffer(offer.getId());
+                declineShort(offer);
+                return;
             }
         }
 
@@ -932,15 +937,6 @@ public class JenkinsScheduler implements Scheduler {
         }
 
         return false;
-    }
-
-    /**
-     * Refuses the offer provided by launching no tasks.
-     * @param offer The offer to refuse
-     */
-    @VisibleForTesting
-    void refuseOffer(Offer offer) {
-        driver.declineOffer(offer.getId());
     }
 
     @Override
