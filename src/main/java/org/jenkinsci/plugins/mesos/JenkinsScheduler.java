@@ -941,6 +941,7 @@ public class JenkinsScheduler implements Scheduler {
     @Override
     public void offerRescinded(SchedulerDriver driver, OfferID offerId) {
         LOGGER.info("Rescinded offer " + offerId);
+        offerQueue.remove(offerId);
     }
 
     @Override
