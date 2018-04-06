@@ -59,8 +59,7 @@ public class JenkinsSchedulerTest {
         PowerMockito.mockStatic(Jenkins.class);
         Mockito.when(Jenkins.getInstance()).thenReturn(jenkins);
 
-        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud);
-
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, false);
     }
 
     @Test
@@ -173,6 +172,7 @@ public class JenkinsSchedulerTest {
         Mockito.when(jenkins.getQueue()).thenReturn(queue);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
@@ -189,6 +189,7 @@ public class JenkinsSchedulerTest {
         offers.add(offer);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver).declineOffer(offer.getId());
@@ -210,6 +211,7 @@ public class JenkinsSchedulerTest {
         Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver).declineOffer(offer.getId());

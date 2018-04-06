@@ -28,13 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Item;
-import hudson.model.Label;
-import hudson.model.Node;
-import hudson.model.listeners.SaveableListener;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
@@ -43,6 +37,7 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
@@ -50,11 +45,9 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import org.apache.commons.lang.StringUtils;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -64,6 +57,7 @@ import java.util.logging.Logger;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
+  public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5;
   private String nativeLibraryPath;
   private String master;
   private String description;
