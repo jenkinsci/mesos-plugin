@@ -15,7 +15,7 @@ public class MesosImpl extends Mesos {
     }
     lock();
     try {
-      scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud);
+      scheduler = new JenkinsScheduler(jenkinsMaster, mesosCloud, true);
       scheduler.init();
     } finally {
       unlock();
