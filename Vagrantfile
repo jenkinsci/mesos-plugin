@@ -11,6 +11,12 @@ $script = <<SCRIPT
  DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
  CODENAME=$(lsb_release -cs)
 
+ # Add repo for OpenJDK 8
+ add-apt-repository -y ppa:openjdk-r/ppa
+ 
+ # Add PPA for maven 3.3
+ add-apt-repository -y ppa:andrei-pozolotin/maven3
+ 
  # Add the repository
  echo "deb http://repos.mesosphere.com/${DISTRO} ${CODENAME} main" | \
    sudo tee /etc/apt/sources.list.d/mesosphere.list
@@ -32,8 +38,15 @@ $script = <<SCRIPT
  service mesos-slave restart
 
  echo "Installing prerequisite packages for mesos-jenkins plugin..."
- apt-get -y --force-yes install openjdk-7-jdk maven
+ apt-get -y --force-yes install maven3 openjdk-8-jdk
 
+ JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+ 
+ echo "Setting default JDK binaries to 8"
+ sudo update-alternatives --set java ${JAVA_HOME}/jre/bin/java
+ # Apparently the below will be set by default on this VM after installing JDK 8
+ # sudo update-alternatives --set javac ${JAVA_HOME}/jre/bin/javac
+ 
  # Acquire latest code (either from local source on host, or latest release download) of mesos-jenkins plugin.
  MESOS_PLUGIN_VERSION="local"
  #MESOS_PLUGIN_VERSION="0.9.0"
@@ -55,9 +68,9 @@ $script = <<SCRIPT
  # Build mesos-jenkins plugin.
  echo "Building mesos-jenkins plugin"
  # TODO(vinod): Update the mesos version in pom.xml.
- su - vagrant -c "cd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION} && mvn package -DskipTests"
+ su - vagrant -c "cd mesos-plugin-mesos-${MESOS_PLUGIN_VERSION} && JAVA_HOME=${JAVA_HOME} mvn package -DskipTests"
  echo "Done"
-
+ echo "export JAVA_HOME=${JAVA_HOME}" >> /home/vagrant/.bashrc 
  echo "****************************************************************"
  echo "Successfully provisioned the machine."
  echo "You can run the Jenkins server with plugin installed as follows:"
