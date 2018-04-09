@@ -8,6 +8,7 @@ import hudson.model.Queue.Item;
 import jenkins.model.Jenkins;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,11 +42,13 @@ public class JenkinsSchedulerTest {
 
     private Jenkins jenkins;
 
-    private static int    TEST_JENKINS_SLAVE_MEM   = 512;
-    private static String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
-    private static String TEST_JENKINS_JNLP_ARG    = "";
-    private static String TEST_JENKINS_SLAVE_NAME  = "testSlave1";
-    private static String TEST_MESOS_ROLE_NAME     = "test_role";
+    private static final int    TEST_JENKINS_SLAVE_MEM   = 512;
+    private static final String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
+    private static final String TEST_JENKINS_JNLP_ARG    = "";
+    private static final String TEST_JENKINS_SLAVE_NAME  = "testSlave1";
+    private static final String TEST_MESOS_ROLE_NAME     = "test_role";
+    private static final Protos.FrameworkID TEST_FRAMEWORK_ID =
+            Protos.FrameworkID.newBuilder().setValue("test-framework-id").build();
 
 
     @Before
@@ -400,6 +403,36 @@ public class JenkinsSchedulerTest {
         JenkinsScheduler.Request request = mockMesosRequest(Boolean.TRUE, true, null);
 
         jenkinsScheduler.getCommandInfoBuilder(request);
+    }
+
+    @Test
+    public void isProcessing() {
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, false);
+        Assert.assertFalse(jenkinsScheduler.isProcessing());
+
+        jenkinsScheduler.startProcessing();
+        Assert.assertTrue(jenkinsScheduler.isProcessing());
+    }
+
+    @Test
+    public void constructMultiThreaded() {
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, true);
+        jenkinsScheduler.setDriver(driver);
+        Assert.assertFalse(jenkinsScheduler.isProcessing());
+
+        jenkinsScheduler.registered(driver, TEST_FRAMEWORK_ID, null);
+        jenkinsScheduler.resourceOffers(driver, Collections.emptyList());
+
+        Assert.assertTrue(jenkinsScheduler.isProcessing());
+    }
+
+    @Test
+    public void getFrameworkId() {
+        Assert.assertEquals(JenkinsScheduler.NULL_FRAMEWORK_ID, jenkinsScheduler.getFrameworkId());
+        jenkinsScheduler.registered(null, TEST_FRAMEWORK_ID, null);
+        Assert.assertEquals(TEST_FRAMEWORK_ID.getValue(), jenkinsScheduler.getFrameworkId());
     }
 
     private Mesos.SlaveRequest mockSlaveRequest(

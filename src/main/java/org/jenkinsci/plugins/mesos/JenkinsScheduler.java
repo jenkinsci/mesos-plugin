@@ -27,6 +27,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.collections4.OrderedMapIterator;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.*;
@@ -40,9 +41,6 @@ import org.apache.mesos.SchedulerDriver;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,6 +64,7 @@ public class JenkinsScheduler implements Scheduler {
     private static final String JNLP_SECRET_FORMAT = "-secret %s";
     public static final String PORT_RESOURCE_NAME = "ports";
     public static final String MESOS_DEFAULT_ROLE = "*";
+    public static final String NULL_FRAMEWORK_ID = "null-framework-id";
     private final boolean multiThreaded;
 
     private Queue<Request> requests;
@@ -88,19 +87,10 @@ public class JenkinsScheduler implements Scheduler {
     private static LRUMap<String, Object> recentlyAcceptedOffers = new LRUMap<String, Object>(lruCacheSize);
 
     private static final Object IGNORE = new Object();
-    private static final ExecutorService offersService = Executors.newSingleThreadExecutor(new ThreadFactory(){
-
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = new Thread(r);
-            thread.setDaemon(true);
-            thread.setName("mesos-offer-processing-thread");
-
-            return thread;
-        }
-    });
 
     private static final OfferQueue offerQueue = new OfferQueue();
+    private Thread offerProcessingThread = null;
+    private volatile FrameworkID frameworkId;
 
     public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud, boolean multiThreaded) {
         startedTime = System.currentTimeMillis();
@@ -114,18 +104,6 @@ public class JenkinsScheduler implements Scheduler {
         this.unmatchedLabels = new HashSet<String>();
         this.results = new HashMap<TaskID, Result>();
         this.finishedTasks = Collections.newSetFromMap(new ConcurrentHashMap<TaskID, Boolean>());
-
-        if (multiThreaded) {
-            LOGGER.info("Processing offers on a separate thread.");
-            // Start consumption of the offer queue. This will idle until offers start arriving.
-            offersService.execute(() -> {
-                while (true) {
-                        processOffers();
-                }
-            });
-        } else {
-            LOGGER.severe("NOT PROCESSING OFFERS");
-        }
     }
 
     public synchronized void init() {
@@ -303,6 +281,7 @@ public class JenkinsScheduler implements Scheduler {
     @Override
     public void registered(SchedulerDriver driver, FrameworkID frameworkId, MasterInfo masterInfo) {
         LOGGER.info("Framework registered! ID = " + frameworkId.getValue());
+        this.frameworkId = frameworkId;
     }
 
     @Override
@@ -385,19 +364,68 @@ public class JenkinsScheduler implements Scheduler {
 
     @Override
     public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
+        if (multiThreaded && !isProcessing()) {
+            startProcessing();
+        }
+
         for (Protos.Offer offer : offers) {
             boolean queued = offerQueue.offer(offer);
             if (!queued) {
                 LOGGER.warning("Offer queue is full.");
                 declineShort(offer);
+            } else {
+                LOGGER.info("Queued offer " + offer.getId().getValue());
             }
-
-            LOGGER.info("Queued offer " + offer.getId().getValue());
         }
 
         if (!multiThreaded) {
             processOffers();
         }
+    }
+
+    @VisibleForTesting
+    String getFrameworkId() {
+        if (frameworkId != null) {
+            return frameworkId.getValue();
+        } else {
+            return NULL_FRAMEWORK_ID;
+        }
+    }
+
+    @VisibleForTesting
+    void startProcessing() {
+        String threadName = "mesos-offer-processor-" + getFrameworkId();
+        LOGGER.info("Starting offer processing thread: " + threadName);
+
+        offerProcessingThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LOGGER.info("Started offer processing thread: " + threadName);
+                try {
+                    while (true) {
+                        processOffers();
+                    }
+                } catch (Throwable t) {
+                    LOGGER.severe("Offer processing thread failed with exception: " + ExceptionUtils.getStackTrace(t));
+                }
+            }
+        }, threadName);
+        offerProcessingThread.start();
+    }
+
+    @VisibleForTesting
+    boolean isProcessing() {
+        if (offerProcessingThread == null) {
+            LOGGER.info("Initializing offer processing thread.");
+            return false;
+        }
+
+        if (!offerProcessingThread.isAlive()) {
+            LOGGER.info("Offer processing thread is not alive.");
+            return false;
+        }
+
+        return true;
     }
 
     /**
