@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -87,7 +88,18 @@ public class JenkinsScheduler implements Scheduler {
     private static LRUMap<String, Object> recentlyAcceptedOffers = new LRUMap<String, Object>(lruCacheSize);
 
     private static final Object IGNORE = new Object();
-    private static final ExecutorService offersService = Executors.newSingleThreadExecutor();
+    private static final ExecutorService offersService = Executors.newSingleThreadExecutor(new ThreadFactory(){
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread thread = new Thread(r);
+            thread.setDaemon(true);
+            thread.setName("mesos-offer-processing-thread");
+
+            return thread;
+        }
+    });
+
     private static final OfferQueue offerQueue = new OfferQueue();
 
     public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud, boolean multiThreaded) {
@@ -155,7 +167,7 @@ public class JenkinsScheduler implements Scheduler {
             driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
         }
         // Start the framework.
-        new Thread(new Runnable() {
+        Thread frameworkThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -177,7 +189,12 @@ public class JenkinsScheduler implements Scheduler {
                     SUPERVISOR_LOCK.unlock();
                 }
             }
-        }).start();
+        });
+
+        frameworkThread.setName("mesos-framework-thread");
+        frameworkThread.setDaemon(true);
+
+        frameworkThread.start();
     }
 
     public synchronized void stop() {
