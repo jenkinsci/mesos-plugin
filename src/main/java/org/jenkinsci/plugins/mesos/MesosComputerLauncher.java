@@ -17,12 +17,11 @@ package org.jenkinsci.plugins.mesos;
 import hudson.model.TaskListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
+import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
 import java.io.PrintStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
-
-import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
 public class MesosComputerLauncher extends JNLPLauncher {
 
@@ -129,7 +128,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
   }
 
   private void waitForSlaveConnection(MesosComputer computer, PrintStream logger) {
-    while (computer.isOffline() && computer.isConnecting()) {
+    while (computer.isOffline() && computer.isConnecting() && !state.equals(State.FAILURE)) {
       try {
         logger.println("Waiting for slave computer connection " + name);
         Thread.sleep(5000);
