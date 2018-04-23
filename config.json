@@ -40,8 +40,12 @@
             "properties": {
                 "host-volume": {
                     "description": "The location of a volume on the host to be used for persisting Jenkins configuration and build data. The final location will be derived from this value plus the name set in `name` (e.g. `/mnt/host_volume/jenkins`). Note that this path must be the same on all DC/OS agents.",
-                    "type": "string",
-                    "default": "/tmp"
+                    "type": "string"
+                },
+                "host-volume-size": {
+                    "description": "Size of the persistent volume",
+                    "type": "number",
+                    "default": 5120
                 },
                 "pinned-hostname": {
                     "description": "An optional DC/OS agent hostname to run this Jenkins instance on (e.g. 10.0.0.1).",

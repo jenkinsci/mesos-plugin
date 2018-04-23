@@ -25,6 +25,9 @@
       {{#networking.virtual-host}}
       "JENKINS_ROOT_URL": "{{#networking.https-redirect}}https://{{/networking.https-redirect}}{{^networking.https-redirect}}http://{{/networking.https-redirect}}{{networking.virtual-host}}/service/{{service.name}}",
       {{/networking.virtual-host}}
+      {{^storage.host-volume}}
+        "JENKINS_HOME":"/mnt/mesos/sandbox/jenkins_home",
+      {{/storage.host-volume}}
       "JVM_OPTS": "{{advanced.jvm-opts}}",
       "JENKINS_OPTS": "{{advanced.jenkins-opts}}",
       "SSH_KNOWN_HOSTS": "{{networking.known-hosts}}"
@@ -34,17 +37,28 @@
       {"port": 0, "protocol": "tcp", "name": "jenkins"}
   ],
   "container": {
-       "type": "MESOS",
-       "docker": {
-           "image": "{{resource.assets.container.docker.jenkins}}"
-       },
-       "volumes": [
-           {
-               "containerPath": "/var/jenkins_home",
-               "hostPath": "{{storage.host-volume}}/{{service.name}}",
-               "mode": "RW"
-           }
-       ]
+        "type": "MESOS",
+        "docker": {
+          "image": "{{resource.assets.container.docker.jenkins}}"
+        },
+        "volumes": [
+          {{#storage.host-volume}}
+            {
+              "containerPath": "/var/jenkins_home",
+              "hostPath": "{{storage.host-volume}}/{{service.name}}",
+              "mode": "RW"
+            }
+          {{/storage.host-volume}}
+          {{^storage.host-volume}}
+            {
+              "persistent": {
+                "size": {{storage.host-volume-size}}
+              },
+              "mode": "RW",
+              "containerPath": "jenkins_home"
+            }
+          {{/storage.host-volume}}
+        ]
    },
    {{#advanced.docker-credentials-uri}}
    "fetch": [
