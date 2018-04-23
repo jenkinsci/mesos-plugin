@@ -3,6 +3,8 @@ package org.jenkinsci.plugins.mesos;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.mesos.Protos;
 
+import jenkins.metrics.api.Metrics;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -73,7 +75,15 @@ public class OfferQueue {
      * @return true if the Offer was successfully put in the queue, false otherwise
      */
     public boolean offer(Protos.Offer offer) {
-        return queue.offer(offer);
+        boolean success = queue.offer(offer);
+
+        if (success) {
+            Metrics.metricRegistry().meter("mesos.offer.queue.added").mark();
+        } else {
+            Metrics.metricRegistry().meter("mesos.offer.queue.dropped").mark();
+        }
+
+        return success;
     }
 
     /**
@@ -92,6 +102,8 @@ public class OfferQueue {
                             offerID.getValue()));
         } else {
             logger.info(String.format("Removed offer: %s", offerID.getValue()));
+
+            Metrics.metricRegistry().meter("mesos.offer.queue.removed").mark();
         }
     }
 
@@ -118,4 +130,3 @@ public class OfferQueue {
         return queue.remainingCapacity();
     }
 }
-

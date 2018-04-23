@@ -1,15 +1,27 @@
 package org.jenkinsci.plugins.mesos;
 
-import org.apache.mesos.Protos;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.UUID;
+
+import com.codahale.metrics.MetricRegistry;
+
+import org.apache.mesos.Protos;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import jenkins.metrics.api.Metrics;
 
 /**
  * This class tests the {@link OfferQueue}.
  */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest( { Metrics.class })
 public class OfferQueueTest {
     private static final int TEST_CAPACITY = 10;
     public static final Protos.OfferID OFFER_ID = Protos.OfferID.newBuilder().setValue("test-offer-id").build();
@@ -20,6 +32,12 @@ public class OfferQueueTest {
             Protos.FrameworkID.newBuilder()
                     .setValue("test-framework-id")
                     .build();
+
+    @Before
+    public void interceptMetricRegistry() {
+        PowerMockito.mockStatic(Metrics.class);
+        Mockito.when(Metrics.metricRegistry()).thenReturn(new MetricRegistry());
+    }
 
     @Test
     public void testEmptyQueue() {
@@ -139,4 +157,3 @@ public class OfferQueueTest {
                 .build();
     }
 }
-

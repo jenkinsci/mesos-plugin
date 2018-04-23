@@ -18,6 +18,7 @@ import hudson.Extension;
 import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
+import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
 import org.apache.mesos.Scheduler;
