@@ -36,13 +36,7 @@
   "container": {
        "type": "MESOS",
        "docker": {
-       {{#advanced.docker-image}}
-           "image": "{{advanced.docker-image}}",
-       {{/advanced.docker-image}}
-       {{^advanced.docker-image}}
-           "image": "{{resource.assets.container.docker.jenkins-350-21072}}",
-       {{/advanced.docker-image}}
-           "network" : "HOST"
+           "image": "{{resource.assets.container.docker.jenkins}}"
        },
        "volumes": [
            {
