@@ -7,7 +7,7 @@
     "assets": {
       "container": {
         "docker": {
-          "jenkins-350-21072": "{{ docker-image }}"
+          "jenkins-350-21072": "{{docker-image}}"
         }
       }
     }
