@@ -742,7 +742,7 @@ public class JenkinsScheduler implements Scheduler {
         List<TaskInfo> tasks = new ArrayList<TaskInfo>();
         tasks.add(taskBuilder.build());
 
-        Metrics.metricRegistry().counter('mesos.scheduler.operation.launch').inc(tasks.size());
+        Metrics.metricRegistry().counter("mesos.scheduler.operation.launch").inc(tasks.size());
         Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
         driver.launchTasks(offer.getId(), tasks, filters);
 
