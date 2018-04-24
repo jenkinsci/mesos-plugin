@@ -135,6 +135,11 @@
                 "docker-credentials-uri": {
                     "description": "An optional URI to be fetched and extracted that contains docker credentials (e.g. file:///etc/docker/docker.tar.gz).",
                     "type": "string"
+                },
+                "prometheus-endpoint": {
+                    "description": "An optional, relative URL path to be used by Prometheus. (e.g. 'prometheus/metrics')",
+                    "type": "string",
+                    "default": "v1/metrics/prometheus"
                 }
             }
         }
