@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.codahale.metrics.Timer;
+
 import org.apache.commons.lang.StringUtils;
 
 public class MesosSlave extends Slave {
@@ -40,6 +42,7 @@ public class MesosSlave extends Slave {
   private final double cpus;
   private final int mem;
   private final double diskNeeded;
+  private transient final Timer.Context provisioningContext;
 
 
   private boolean pendingDelete;
@@ -47,7 +50,7 @@ public class MesosSlave extends Slave {
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
 
-  public MesosSlave(MesosCloud cloud, String name, int numExecutors, MesosSlaveInfo slaveInfo) throws IOException, FormException {
+  public MesosSlave(MesosCloud cloud, String name, int numExecutors, MesosSlaveInfo slaveInfo, Timer.Context provisioningContext) throws IOException, FormException {
     super(name,
           slaveInfo.getLabelString(), // node description.
           StringUtils.isBlank(slaveInfo.getRemoteFSRoot()) ? "jenkins" : slaveInfo.getRemoteFSRoot().trim(),   // remoteFS.
@@ -64,6 +67,7 @@ public class MesosSlave extends Slave {
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
     this.diskNeeded = slaveInfo.getdiskNeeded();
+    this.provisioningContext = provisioningContext;
     LOGGER.fine("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 
@@ -98,9 +102,13 @@ public class MesosSlave extends Slave {
   public MesosSlaveInfo getSlaveInfo() {
     return slaveInfo;
   }
- 
+
   public int getIdleTerminationMinutes() {
     return idleTerminationMinutes;
+  }
+
+  public Timer.Context getProvisioningContext() {
+    return provisioningContext;
   }
 
   public void terminate() {

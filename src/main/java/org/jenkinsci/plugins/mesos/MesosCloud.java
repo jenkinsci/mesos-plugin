@@ -24,25 +24,23 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.codahale.metrics.Timer;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Item;
-import hudson.model.Label;
-import hudson.model.Node;
-import hudson.model.listeners.SaveableListener;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
+import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.MesosNativeLibrary;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
@@ -50,11 +48,11 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import org.apache.commons.lang.StringUtils;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
+import javax.swing.UIDefaults.LazyValue;
+
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -64,6 +62,7 @@ import java.util.logging.Logger;
 
 public class MesosCloud extends Cloud {
   private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
+  public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5;
   private String nativeLibraryPath;
   private String master;
   private String description;
@@ -318,7 +317,6 @@ public class MesosCloud extends Cloud {
   }
 
   public void restartMesos() {
-
     initNativeLibrary(nativeLibraryPath);
 
     // Default to root URL in Jenkins global configuration.
@@ -340,6 +338,8 @@ public class MesosCloud extends Cloud {
 
       Mesos.getInstance(this).stopScheduler(true);
       Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
+
+      Metrics.metricRegistry().counter("mesos.cloud.restartMesos").inc();
     } else {
       Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
       if(onDemandRegistration) {
@@ -395,8 +395,15 @@ public class MesosCloud extends Cloud {
     }
   }
 
+  private String getMetricName(Label label, String method, String metric) {
+    String labelText = (label == null) ? "nolabel" : label.getDisplayName();
+    return String.format("mesos.cloud.%s.%s.%s", labelText, method, metric);
+  }
+
   @Override
   public Collection<PlannedNode> provision(Label label, int excessWorkload) {
+    Metrics.metricRegistry().meter(getMetricName(label, "provision", "request")).mark(excessWorkload);
+
     List<PlannedNode> list = new ArrayList<PlannedNode>();
     final MesosSlaveInfo slaveInfo = getSlaveInfo(slaveInfos, label);
     if (slaveInfo == null) {
@@ -423,10 +430,15 @@ public class MesosCloud extends Cloud {
         excessWorkload -= numExecutors;
         LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
                     " executors. Remaining excess workload: " + excessWorkload + " executors)");
+
+        // Create a context that can be passed down through the provisioning process and finalized when
+        // the request is completely fulfilled.
+        Timer.Context context = Metrics.metricRegistry().timer(getMetricName(label, "provision", "submit")).time();
         list.add(new PlannedNode(this.getDisplayName(), Computer.threadPoolForRemoting
             .submit(new Callable<Node>() {
               public Node call() throws Exception {
-                MesosSlave s = doProvision(numExecutors, slaveInfo);
+                MesosSlave s = doProvision(numExecutors, slaveInfo, context);
+
                 // We do not need to explicitly add the Node here because that is handled by
                 // hudson.slaves.NodeProvisioner::update() that checks the result from the
                 // Future and adds the node. Though there is duplicate node addition check
@@ -443,8 +455,8 @@ public class MesosCloud extends Cloud {
     return list;
   }
 
-  private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo) throws Descriptor.FormException, IOException {
-    return new MesosSlave(this, MesosUtils.buildNodeName(slaveInfo.getLabelString()), numExecutors, slaveInfo);
+  private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo, Timer.Context provisioningContext) throws Descriptor.FormException, IOException {
+    return new MesosSlave(this, MesosUtils.buildNodeName(slaveInfo.getLabelString()), numExecutors, slaveInfo, provisioningContext);
   }
 
   public List<MesosSlaveInfo> getSlaveInfos() {
