@@ -480,7 +480,7 @@ public class JenkinsSchedulerTest {
                 null              // nodeProperties
                 );
         return new Mesos.SlaveRequest(
-            new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo, 500);
+            new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), Mockito.mock(MesosSlave.class), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo, 500);
     }
 
     private JenkinsScheduler.Request mockMesosRequest(

@@ -301,6 +301,11 @@ public class JenkinsScheduler implements Scheduler {
 
     private void declineShort(Offer offer) {
         Metrics.metricRegistry().meter("mesos.scheduler.decline.short").mark();
+
+        if (offer.hasSlaveId()) {
+            Metrics.metricRegistry().meter("mesos.scheduler.decline.short."+offer.getSlaveId().getValue());
+        }
+
         declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
     }
 
@@ -317,6 +322,10 @@ public class JenkinsScheduler implements Scheduler {
         int processedRequests = 0;
         for (Offer offer : offers) {
             Metrics.metricRegistry().meter("mesos.scheduler.offer.processed").mark();
+            if (offer.hasSlaveId()) {
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.processed."+offer.getSlaveId().getValue());
+            }
+
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
             try {
                 if (requests.isEmpty() && !buildsInQueue(Jenkins.getInstance().getQueue())) {
@@ -326,6 +335,10 @@ public class JenkinsScheduler implements Scheduler {
                     // starvation when running a lot of frameworks.
                     Metrics.metricRegistry().meter("mesos.scheduler.decline.long").mark();
                     LOGGER.info("No slave in queue.");
+
+                    if (offer.hasSlaveId()) {
+                        Metrics.metricRegistry().meter("mesos.scheduler.decline.long."+offer.getSlaveId().getValue());
+                    }
                     declineOffer(offer, mesosCloud.getDeclineOfferDurationDouble());
                     continue;
                 }
@@ -394,7 +407,7 @@ public class JenkinsScheduler implements Scheduler {
 
             // Track offers received per agent
             if (offer.hasSlaveId()) {
-                Metrics.metricRegistry().meter("mesos.scheduler.offers.received"+offer.getSlaveId().getValue());
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.received."+offer.getSlaveId().getValue());
             }
 
             if (!queued) {
@@ -750,6 +763,9 @@ public class JenkinsScheduler implements Scheduler {
 
         Metrics.metricRegistry().counter("mesos.scheduler.operation.launch").inc(tasks.size());
         Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
+
+
+        request.request.mesosSlave.provisionedToMesos();
         driver.launchTasks(offer.getId(), tasks, filters);
 
         results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
