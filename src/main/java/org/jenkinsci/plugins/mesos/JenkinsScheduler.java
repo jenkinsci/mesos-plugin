@@ -391,6 +391,12 @@ public class JenkinsScheduler implements Scheduler {
 
         for (Protos.Offer offer : offers) {
             boolean queued = offerQueue.offer(offer);
+
+            // Track offers received per agent
+            if (offer.hasSlaveId()) {
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.received"+offer.getSlaveId().getValue());
+            }
+
             if (!queued) {
                 LOGGER.warning("Offer queue is full.");
                 declineShort(offer);
