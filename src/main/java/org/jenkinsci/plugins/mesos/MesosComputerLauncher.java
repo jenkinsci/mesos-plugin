@@ -17,12 +17,15 @@ package org.jenkinsci.plugins.mesos;
 import hudson.model.TaskListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
+import jenkins.metrics.api.Metrics;
+
+import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
 
 import java.io.PrintStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
-import org.jenkinsci.plugins.mesos.Mesos.JenkinsSlave;
+import com.codahale.metrics.Timer;
 
 public class MesosComputerLauncher extends JNLPLauncher {
 
@@ -64,6 +67,8 @@ public class MesosComputerLauncher extends JNLPLauncher {
     // it restarts.
     MesosSlave node = computer.getNode();
     if (!mesos.isSchedulerRunning()) {
+      Metrics.metricRegistry().counter("mesos.computer.launcher.launch.fail").inc();
+
       LOGGER.warning("Not launching " + name +
                      " because the Mesos Jenkins scheduler is not running");
       if (node != null) {
@@ -81,7 +86,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
     double diskNeeded = node.getDiskNeeded();
     String role = cloud.getRole();
 
-    Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name),
+    Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name), node,
             cpus, mem, role, node.getSlaveInfo(), diskNeeded);
 
     // Launch the jenkins slave.
@@ -89,6 +94,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
 
     logger.println("Starting mesos slave " + name);
     LOGGER.info("Sending a request to start jenkins slave " + name);
+
     mesos.startJenkinsSlave(request, new Mesos.SlaveResult() {
       public void running(JenkinsSlave slave) {
         state = State.RUNNING;
@@ -122,6 +128,8 @@ public class MesosComputerLauncher extends JNLPLauncher {
       // we were waiting for resources to be available
       node.setPendingDelete(false);
       waitForSlaveConnection(computer, logger);
+
+      computer.getNode().provisionedAndReady();
       logger.println("Successfully launched slave " + name);
     }
 
@@ -129,7 +137,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
   }
 
   private void waitForSlaveConnection(MesosComputer computer, PrintStream logger) {
-    while (computer.isOffline() && computer.isConnecting()) {
+    while (computer.isOffline() && computer.isConnecting() && !state.equals(State.FAILURE)) {
       try {
         logger.println("Waiting for slave computer connection " + name);
         Thread.sleep(5000);

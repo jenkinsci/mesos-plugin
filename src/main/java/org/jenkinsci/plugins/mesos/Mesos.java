@@ -18,6 +18,7 @@ import hudson.Extension;
 import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
+import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
 import org.apache.mesos.Scheduler;
@@ -41,15 +42,18 @@ public abstract class Mesos {
 
   public static class SlaveRequest {
     JenkinsSlave slave;
+    MesosSlave mesosSlave;
+
     final double cpus;
     final int mem;
     final double diskNeeded;
     final String role;
     final MesosSlaveInfo slaveInfo;
 
-    public SlaveRequest(JenkinsSlave slave, double cpus, int mem, String role,
+    public SlaveRequest(JenkinsSlave slave, MesosSlave mesosSlave, double cpus, int mem, String role,
         MesosSlaveInfo slaveInfo, double diskNeeded) {
       this.slave = slave;
+      this.mesosSlave = mesosSlave;
       this.cpus = cpus;
       this.mem = mem;
       this.role = role;
