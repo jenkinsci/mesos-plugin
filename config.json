@@ -19,7 +19,7 @@
                 "mem": {
                     "description": "Memory (in MB) to allocate to each Jenkins master.",
                     "type": "number",
-                    "default": 2048.0,
+                    "default": 4096.0,
                     "minimum": 2048.0
                 },
                 "user": {
