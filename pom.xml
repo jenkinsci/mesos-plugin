@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>mesos</artifactId>
-  <version>0.17-SNAPSHOT</version>
+  <version>0.16.101</version>
   <packaging>hpi</packaging>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin</url>
   <description>Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload</description>
@@ -93,7 +93,7 @@
 
   <properties>
     <jenkins.version>2.7.3</jenkins.version>
-    <java.level>7</java.level>
+    <java.level>8</java.level>
     <findbugs.failOnError>false</findbugs.failOnError>
     <mesos.version>1.0.0</mesos.version>
     <protobuf.version>2.6.1</protobuf.version>
