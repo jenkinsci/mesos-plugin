@@ -86,7 +86,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
     double diskNeeded = node.getDiskNeeded();
     String role = cloud.getRole();
 
-    Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name),
+    Mesos.SlaveRequest request = new Mesos.SlaveRequest(new JenkinsSlave(name), node,
             cpus, mem, role, node.getSlaveInfo(), diskNeeded);
 
     // Launch the jenkins slave.
@@ -95,7 +95,6 @@ public class MesosComputerLauncher extends JNLPLauncher {
     logger.println("Starting mesos slave " + name);
     LOGGER.info("Sending a request to start jenkins slave " + name);
 
-    final Timer.Context context = Metrics.metricRegistry().timer("mesos.computer.launcher.launch").time();
     mesos.startJenkinsSlave(request, new Mesos.SlaveResult() {
       public void running(JenkinsSlave slave) {
         state = State.RUNNING;
@@ -129,8 +128,8 @@ public class MesosComputerLauncher extends JNLPLauncher {
       // we were waiting for resources to be available
       node.setPendingDelete(false);
       waitForSlaveConnection(computer, logger);
-      computer.getNode().getProvisioningContext().stop();
-      context.stop();
+
+      computer.getNode().provisionedAndReady();
       logger.println("Successfully launched slave " + name);
     }
 
@@ -146,6 +145,7 @@ public class MesosComputerLauncher extends JNLPLauncher {
     }
     if (computer.isOnline()) {
       logger.println("Slave computer connected " + name);
+      LOGGER.info(String.format("Slave %s connected", computer.getNode().getUuid()));
     } else {
       LOGGER.warning("Slave computer offline " + name);
     }
