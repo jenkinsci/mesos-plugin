@@ -79,6 +79,15 @@
       "intervalSeconds": 60,
       "timeoutSeconds": 20,
       "maxConsecutiveFailures": 3
+    },
+    {
+      "path": "/service/{{service.name}}/tcpSlaveAgentListener",
+      "portIndex": 0,
+      "protocol": "HTTP",
+      "gracePeriodSeconds": 120,
+      "intervalSeconds": 60,
+      "timeoutSeconds": 20,
+      "maxConsecutiveFailures": 0
     }
   ],
   "labels": {
