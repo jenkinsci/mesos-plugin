@@ -73,6 +73,13 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
       return 1;
     }
 
+    // Terminate if the computer is idle and a single-use agent.
+    if (c.isIdle() && c.isOffline() && node.isSingleUse()) {
+      LOGGER.info("Disconnecting single-use computer " + c.getName());
+      node.setPendingDelete(true);
+      return 1;
+    }
+
     // If we just launched this computer, check back after 1 min.
     // NOTE: 'c.getConnectTime()' refers to when the Jenkins slave was launched.
     if ((DateTimeUtils.currentTimeMillis() - c.getConnectTime()) <

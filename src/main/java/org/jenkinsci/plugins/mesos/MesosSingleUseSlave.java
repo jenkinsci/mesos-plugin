@@ -57,6 +57,22 @@ public class MesosSingleUseSlave extends SimpleBuildWrapper {
     @Override
     public void setUp(Context context, Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
         context.setDisposer(new MesosSingleUseSlaveDisposer());
+
+        Computer computer = workspace.toComputer();
+        if (computer != null) {
+            if (MesosComputer.class.isInstance(computer)) {
+                String msg = "Marking " + computer.getName() + " as single-use.";
+                LOGGER.warning(msg);
+                listener.getLogger().println(msg);
+
+                MesosSlave mesosSlave = (MesosSlave) computer.getNode();
+                if (mesosSlave != null) {
+                    mesosSlave.setSingleUse(true);
+                }
+            } else {
+                listener.getLogger().println("Not able to set single-use slave, this is a " + computer.getClass());
+            }
+        }
     }
 
     @Extension
