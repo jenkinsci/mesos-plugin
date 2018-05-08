@@ -19,6 +19,7 @@ package org.jenkinsci.plugins.mesos;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.TextFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Computer;
 import hudson.model.Node;
@@ -310,7 +311,7 @@ public class JenkinsScheduler implements Scheduler {
     }
 
     private void declineOffer(Offer offer, double duration) {
-        LOGGER.fine("Rejecting offer " + offer.getId().getValue() + " for " + duration + " seconds");
+        LOGGER.info(String.format("Declining offer %s for %s seconds", offer.getId().getValue(), duration));
         Filters filters = Filters.newBuilder().setRefuseSeconds(duration).build();
         driver.declineOffer(offer.getId(), filters);
     }
@@ -414,7 +415,11 @@ public class JenkinsScheduler implements Scheduler {
                 LOGGER.warning("Offer queue is full.");
                 declineShort(offer);
             } else {
-                LOGGER.info("Queued offer " + offer.getId().getValue());
+                LOGGER.info(
+                        String.format(
+                                "Queued offer %s from %s",
+                                offer.getId().getValue(),
+                                offer.getSlaveId().getValue()));
             }
         }
 
@@ -604,7 +609,7 @@ public class JenkinsScheduler implements Scheduler {
                     ? StringUtils.join(containerInfo.getPortMappings().toArray(), "/")
                     : "";
 
-            LOGGER.fine(
+            LOGGER.info(
                     "Offer not sufficient for slave request:\n" +
                             offer.getResourcesList().toString() +
                             "\n" + offer.getAttributesList().toString() +
@@ -754,6 +759,8 @@ public class JenkinsScheduler implements Scheduler {
         CommandInfo.Builder commandBuilder = getCommandInfoBuilder(request);
         TaskInfo.Builder taskBuilder = getTaskInfoBuilder(offer, request, taskId, commandBuilder);
 
+        LOGGER.info(String.format("ContainerInfo: %s", request.request.slaveInfo.getContainerInfo()));
+
         if (request.request.slaveInfo.getContainerInfo() != null) {
             getContainerInfoBuilder(offer, request, slaveName, taskBuilder);
         }
@@ -764,10 +771,13 @@ public class JenkinsScheduler implements Scheduler {
         Metrics.metricRegistry().counter("mesos.scheduler.operation.launch").inc(tasks.size());
         Filters filters = Filters.newBuilder().setRefuseSeconds(1).build();
 
+        for (TaskInfo taskInfo : tasks) {
+            LOGGER.info(String.format("Launching TaskInfo: %s", TextFormat.shortDebugString(taskInfo)));
+        }
 
         request.request.mesosSlave.provisionedToMesos();
-
         LOGGER.info(String.format("Slave %s now being provisioned by Mesos", request.request.mesosSlave.getUuid()));
+
         driver.launchTasks(offer.getId(), tasks, filters);
 
         results.put(taskId, new Result(request.result, new Mesos.JenkinsSlave(offer.getSlaveId()
@@ -855,8 +865,7 @@ public class JenkinsScheduler implements Scheduler {
         MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
         ContainerInfo.Type containerType = ContainerInfo.Type.valueOf(containerInfo.getType());
 
-        ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder() //
-                .setType(containerType); //
+        ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder().setType(containerType);
 
         switch(containerType) {
             case DOCKER:
