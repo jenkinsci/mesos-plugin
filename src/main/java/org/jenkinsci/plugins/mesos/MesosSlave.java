@@ -33,6 +33,8 @@ public class MesosSlave extends Slave {
 
   private static final long serialVersionUID = 1L;
 
+  private final Object lock = new Object();
+
   private final String cloudName;
   private transient MesosCloud cloud;
   private final MesosSlaveInfo slaveInfo;
@@ -40,7 +42,12 @@ public class MesosSlave extends Slave {
   private final double cpus;
   private final int mem;
   private final double diskNeeded;
-  private transient final Timer.Context provisioningContext;
+  private final UUID uuid = UUID.randomUUID();
+  private transient final Timer.Context provisionToReady;
+  private transient final Timer.Context provisionToMesos;
+  private transient final Timer mesosToReady;
+  private transient long mesosHandoffTime;
+  private boolean singleUse;
 
 
   private boolean pendingDelete;
@@ -65,7 +72,10 @@ public class MesosSlave extends Slave {
     this.cpus = slaveInfo.getSlaveCpus() + (numExecutors * slaveInfo.getExecutorCpus());
     this.mem = slaveInfo.getSlaveMem() + (numExecutors * slaveInfo.getExecutorMem());
     this.diskNeeded = slaveInfo.getdiskNeeded();
-    this.provisioningContext = provisioningContext;
+    this.provisionToReady = provisionToReadyContext;
+    this.provisionToMesos = provisionToMesosContext;
+    this.mesosToReady = mesosToReady;
+    this.singleUse = false;
     LOGGER.fine("Constructing Mesos slave " + name + " from cloud " + cloud.getDescription());
   }
 
@@ -150,11 +160,27 @@ public class MesosSlave extends Slave {
   }
 
   public boolean isPendingDelete() {
+    synchronized (lock) {
       return pendingDelete;
+    }
   }
 
   public void setPendingDelete(boolean pendingDelete) {
+    synchronized (lock) {
       this.pendingDelete = pendingDelete;
+    }
+  }
+
+  public boolean isSingleUse() {
+    synchronized (lock) {
+      return singleUse;
+    }
+  }
+
+  public void setSingleUse(boolean singleUse) {
+    synchronized (lock) {
+      this.singleUse = singleUse;
+    }
   }
 
   public void idleTimeout() {
