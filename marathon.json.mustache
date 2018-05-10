@@ -50,15 +50,27 @@
               "mode": "RW"
             }
           {{/storage.host-volume}}
-          {{^storage.host-volume}}
+          {{^storage.external-persistent-volume-name}}
             {
               "persistent": {
-                "size": {{storage.persistent-volume-size}}
+                "size": {{storage.local-persistent-volume-size}}
               },
               "mode": "RW",
               "containerPath": "jenkins_home"
             }
-          {{/storage.host-volume}}
+          {{/storage.external-persistent-volume-name}}
+          {{#storage.external-persistent-volume-name}}
+            {
+              "external": {
+                "size": {{storage.external-persistent-volume-size}},
+                "name": "{{storage.external-persistent-volume-name}}",
+                "provider": "dvdi",
+                "options": { "dvdi/driver": "rexray" }
+              },
+              "mode": "RW",
+              "containerPath": "jenkins_home"
+            }
+          {{/storage.external-persistent-volume-name}}
         ]
    },
    {{#advanced.docker-credentials-uri}}

@@ -42,7 +42,7 @@
                     "description": "The location of a volume on the host to be used for persisting Jenkins configuration and build data. The final location will be derived from this value plus the name set in `name` (e.g. `/mnt/host_volume/jenkins`). Note that this path must be the same on all DC/OS agents.",
                     "type": "string"
                 },
-                "persistent-volume-size": {
+                "local-persistent-volume-size": {
                     "description": "Size of the persistent volume. This is applicable only when host-volume is not set",
                     "type": "number",
                     "default": 5120
@@ -50,6 +50,15 @@
                 "pinned-hostname": {
                     "description": "An optional DC/OS agent hostname to run this Jenkins instance on (e.g. 10.0.0.1).",
                     "type" : "string"
+                },
+                "external-persistent-volume-name": {
+                    "description": "Name of the persistent volume. This is applicable only when host-volume is not set and local persistent volume is not used",
+                    "type": "string"
+                },
+                "external-persistent-volume-size": {
+                    "description": "Size of the external persistent volume. This is applicable only when host-volume is not set",
+                    "type": "number",
+                    "default": 16
                 }
             }
         },
