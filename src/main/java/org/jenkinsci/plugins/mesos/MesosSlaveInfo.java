@@ -26,6 +26,7 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
+public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> implements Serializable {
     @Extension
     public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
         public FormValidation doCheckMinExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {

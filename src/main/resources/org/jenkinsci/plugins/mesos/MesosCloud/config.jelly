@@ -37,6 +37,13 @@
     </f:entry>
 
     <f:advanced>
+        <f:entry title="${%Metrics healthcheck}" description="${%Enable metrics plugin healthcheck ?}" field="enableMetricsHealthcheck">
+            <f:radio name="enableMetricsHealthcheck" value="true" checked="${instance == null || instance.enableMetricsHealthcheck == true}" id="enableMetricsHealthcheck.true"/>
+            <st:nbsp/>${%Yes}
+            <f:radio name="enableMetricsHealthcheck" value="false" checked="${instance.enableMetricsHealthcheck == false}" id="enableMetricsHealthcheck.false"/>
+            <st:nbsp/>${%No}
+        </f:entry>
+
         <f:entry title="${%Checkpointing}" description="${%Enable Mesos framework checkpointing?}" field="checkpoint">
             <f:radio name="checkpoint" value="true" checked="${instance.checkpoint == true}" id="checkpoint.true"/>
             <st:nbsp/>${%Yes}

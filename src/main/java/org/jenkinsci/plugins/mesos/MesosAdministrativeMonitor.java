@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.mesos;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AdministrativeMonitor;
+import jenkins.model.Jenkins;
 import org.apache.mesos.Scheduler;
 
 import java.util.HashSet;
@@ -15,8 +16,8 @@ import java.util.Set;
 public class MesosAdministrativeMonitor extends AdministrativeMonitor {
 
     @NonNull
-    public Set<String> getLabels() {
-        Set<String> result = new HashSet<String>();
+    static Set<String> getLabels() {
+        Set<String> result = new HashSet<>();
         for (Mesos mesos : Mesos.getAllClouds()) {
             Scheduler scheduler = mesos.getScheduler();
             if (scheduler instanceof JenkinsScheduler) {
@@ -34,5 +35,9 @@ public class MesosAdministrativeMonitor extends AdministrativeMonitor {
     @Override
     public boolean isActivated() {
         return !getLabels().isEmpty();
+    }
+
+    static MesosAdministrativeMonitor getAdministrativeMonitor() {
+        return (MesosAdministrativeMonitor) Jenkins.getInstance().getAdministrativeMonitor(MesosAdministrativeMonitor.class.getName());
     }
 }
