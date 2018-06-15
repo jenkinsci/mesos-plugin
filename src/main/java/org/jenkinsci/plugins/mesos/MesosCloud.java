@@ -50,7 +50,6 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
-import javax.swing.UIDefaults.LazyValue;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
