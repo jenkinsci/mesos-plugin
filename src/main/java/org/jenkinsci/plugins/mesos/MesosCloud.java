@@ -777,7 +777,7 @@ public void setJenkinsURL(String jenkinsURL) {
         urlConn.disconnect();
 
         if (code == 200) {
-          return FormValidation.ok("Connected to Mesos successfully");
+          return FormValidation.ok("Connectivity to URL Confirmed.");
         } else {
           return FormValidation.error("Status returned from url was " + code);
         }
