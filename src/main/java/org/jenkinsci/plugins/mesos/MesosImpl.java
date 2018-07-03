@@ -76,7 +76,7 @@ public class MesosImpl extends Mesos {
     lock();
     try {
       if (scheduler != null) {
-        LOGGER.debug("Stopping Jenkins Slave.");
+        LOGGER.debug("Stopping Jenkins Slave with name: " + name);
         scheduler.terminateJenkinsSlave(name);
       }
     } finally {
