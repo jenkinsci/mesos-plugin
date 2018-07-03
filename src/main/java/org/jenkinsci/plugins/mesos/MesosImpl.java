@@ -26,7 +26,13 @@ public class MesosImpl extends Mesos {
   public boolean isSchedulerRunning() {
     lock();
     try {
-      return scheduler != null && scheduler.isRunning();
+      status = scheduler != null && scheduler.isRunning()
+      if (status)
+      {
+        LOGGER.debug("Scheduler is running.");
+        return status;
+      }
+      return status;
     } finally {
       unlock();
     }
@@ -57,6 +63,7 @@ public class MesosImpl extends Mesos {
     lock();
     try {
       if (scheduler != null) {
+        LOGGER.debug("Starting Jenkins Slave.");
         scheduler.requestJenkinsSlave(request, result);
       }
     } finally {
@@ -69,6 +76,7 @@ public class MesosImpl extends Mesos {
     lock();
     try {
       if (scheduler != null) {
+        LOGGER.debug("Stopping Jenkins Slave.");
         scheduler.terminateJenkinsSlave(name);
       }
     } finally {
