@@ -26,7 +26,7 @@ public class MesosImpl extends Mesos {
   public boolean isSchedulerRunning() {
     lock();
     try {
-      status = scheduler != null && scheduler.isRunning()
+      status = scheduler != null && scheduler.isRunning();
       if (status)
       {
         LOGGER.debug("Scheduler is running.");
