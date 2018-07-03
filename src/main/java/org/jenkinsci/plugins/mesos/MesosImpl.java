@@ -63,7 +63,7 @@ public class MesosImpl extends Mesos {
     lock();
     try {
       if (scheduler != null) {
-        LOGGER.debug("Starting Jenkins Slave.");
+        LOGGER.debug("Starting Jenkins Slave with request: " + request);
         scheduler.requestJenkinsSlave(request, result);
       }
     } finally {
