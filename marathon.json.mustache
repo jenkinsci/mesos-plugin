@@ -15,9 +15,10 @@
       "JENKINS_AGENT_USER": "{{service.user}}",
       "JENKINS_FRAMEWORK_NAME": "{{service.name}}",
       {{#security.secret-name}}
-          "DCOS_SERVICE_ACCOUNT_CREDENTIAL": { "secret": "serviceCredential" },
-          "MESOS_MODULES": "{\"libraries\": [{\"file\": \"libdcos_security.so\", \"modules\": [{\"name\": \"com_mesosphere_dcos_ClassicRPCAuthenticatee\"}]}]}",
-          "MESOS_AUTHENTICATEE": "com_mesosphere_dcos_ClassicRPCAuthenticatee",
+        "DCOS_SERVICE_ACCOUNT_CREDENTIAL": { "secret": "serviceCredential" },
+        "MESOS_MODULES": "{\"libraries\":[{\"file\":\"libdcos_security.so\",\"modules\":[{\"name\": \"com_mesosphere_dcos_ClassicRPCAuthenticatee\"},{\"name\":\"com_mesosphere_dcos_http_Authenticatee\",\"parameters\":[{\"key\":\"jwt_exp_timeout\",\"value\":\"5mins\"},{\"key\":\"preemptive_refresh_duration\",\"value\":\"30mins\"}]}]}]}",
+        "MESOS_AUTHENTICATEE": "com_mesosphere_dcos_ClassicRPCAuthenticatee",
+        "MESOS_HTTP_AUTHENTICATEE": "com_mesosphere_dcos_http_Authenticatee",
       {{/security.secret-name}}
       "JENKINS_CONTEXT": "/service/{{service.name}}",
       "JENKINS_MESOS_MASTER": "{{advanced.mesos-master}}",
@@ -45,7 +46,7 @@
         "volumes": [
           {{#storage.host-volume}}
             {
-              "containerPath": "/var/jenkins_home",
+              "containerPath": "/var/jenkinsdcos_home",
               "hostPath": "{{storage.host-volume}}/{{service.name}}",
               "mode": "RW"
             }
@@ -87,10 +88,10 @@
       "path": "/service/{{service.name}}",
       "portIndex": 0,
       "protocol": "MESOS_HTTP",
-      "gracePeriodSeconds": 30,
+      "gracePeriodSeconds": 300,
       "intervalSeconds": 60,
       "timeoutSeconds": 20,
-      "maxConsecutiveFailures": 3
+      "maxConsecutiveFailures": 5
     }
   ],
   "labels": {
