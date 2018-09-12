@@ -37,6 +37,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
   public static class DescriptorImpl extends Descriptor<MesosSlaveInfo> {
     public FormValidation doCheckMinExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
       int minExecutorsVal = Integer.parseInt(minExecutors);
       int maxExecutorsVal = Integer.parseInt(maxExecutors);
 
@@ -52,6 +53,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     }
 
     public FormValidation doCheckMaxExecutors(@QueryParameter String minExecutors, @QueryParameter String maxExecutors) {
+      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
       int minExecutorsVal = Integer.parseInt(minExecutors);
       int maxExecutorsVal = Integer.parseInt(maxExecutors);
 
