@@ -1,11 +1,5 @@
 package org.jenkinsci.plugins.mesos;
 
-import hudson.Extension;
-import hudson.Util;
-
-import hudson.model.*;
-import hudson.model.Descriptor.FormException;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,22 +11,27 @@ import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 
+import net.sf.json.JSONException;
+import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
+import org.apache.commons.lang.StringUtils;
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
+import hudson.Extension;
+import hudson.Util;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.model.Descriptor.FormException;
+import hudson.model.Label;
+import hudson.model.Node;
 import hudson.model.Node.Mode;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
 import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
-import net.sf.json.JSONSerializer;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.NetworkInfo.Protocol;
-import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   @Extension
@@ -79,6 +78,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private static final String CUSTOM_IMAGE_SEPARATOR = ":";
   private static final Pattern CUSTOM_IMAGE_FROM_LABEL_PATTERN = Pattern.compile(CUSTOM_IMAGE_SEPARATOR + "([\\w\\.\\-/:]+[\\w])");
   private final double slaveCpus;
+  private final double diskNeeded; //MB
   private final int slaveMem; // MB.
   private final double executorCpus;
   private /*almost final*/ int minExecutors;
@@ -90,7 +90,9 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   private final String jnlpArgs;
   private final boolean defaultSlave;
   // Slave attributes JSON representation.
-  private final JSONObject slaveAttributes;
+  private String slaveAttributesString;
+  @Deprecated
+  private transient JSONObject slaveAttributes;
   private final ContainerInfo containerInfo;
   private final List<URI> additionalURIs;
   private final Mode mode;
@@ -112,6 +114,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (Double.compare(that.slaveCpus, slaveCpus) != 0) return false;
     if (slaveMem != that.slaveMem) return false;
     if (Double.compare(that.executorCpus, executorCpus) != 0) return false;
+    if (Double.compare(that.diskNeeded, diskNeeded) !=0 ) return false;
     if (minExecutors != that.minExecutors) return false;
     if (maxExecutors != that.maxExecutors) return false;
     if (executorMem != that.executorMem) return false;
@@ -119,7 +122,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) return false;
     if (jvmArgs != null ? !jvmArgs.equals(that.jvmArgs) : that.jvmArgs != null) return false;
     if (jnlpArgs != null ? !jnlpArgs.equals(that.jnlpArgs) : that.jnlpArgs != null) return false;
-    if (slaveAttributes != null ? !slaveAttributes.equals(that.slaveAttributes) : that.slaveAttributes != null)
+    if (slaveAttributesString != null ? !slaveAttributesString.equals(that.slaveAttributesString) : that.slaveAttributesString != null)
       return false;
     if (containerInfo != null ? !containerInfo.equals(that.containerInfo) : that.containerInfo != null) return false;
     if (additionalURIs != null ? !additionalURIs.equals(that.additionalURIs) : that.additionalURIs != null)
@@ -139,6 +142,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + slaveMem;
     temp = Double.doubleToLongBits(executorCpus);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(diskNeeded);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + minExecutors;
     result = 31 * result + maxExecutors;
     result = 31 * result + executorMem;
@@ -146,7 +151,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     result = 31 * result + idleTerminationMinutes;
     result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
     result = 31 * result + (jnlpArgs != null ? jnlpArgs.hashCode() : 0);
-    result = 31 * result + (slaveAttributes != null ? slaveAttributes.hashCode() : 0);
+    result = 31 * result + (slaveAttributesString != null ? slaveAttributesString.hashCode() : 0);
     result = 31 * result + (containerInfo != null ? containerInfo.hashCode() : 0);
     result = 31 * result + (additionalURIs != null ? additionalURIs.hashCode() : 0);
     result = 31 * result + (mode != null ? mode.hashCode() : 0);
@@ -164,6 +169,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       String minExecutors,
       String maxExecutors,
       String executorCpus,
+      String diskNeeded,
       String executorMem,
       String remoteFSRoot,
       String idleTerminationMinutes,
@@ -184,6 +190,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               Integer.parseInt(minExecutors),
               Integer.parseInt(maxExecutors),
               Double.parseDouble(executorCpus),
+              Double.parseDouble(diskNeeded),
               Integer.parseInt(executorMem),
               StringUtils.isNotBlank(remoteFSRoot) ? remoteFSRoot.trim() : "jenkins",
               Integer.parseInt(idleTerminationMinutes),
@@ -204,6 +211,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       int minExecutors,
       int maxExecutors,
       double executorCpus,
+      double diskNeeded,
       int executorMem,
       String remoteFSRoot,
       int idleTerminationMinutes,
@@ -222,10 +230,11 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
       this.minExecutors = minExecutors < 1 ? 1 : minExecutors; // Ensure minExecutors is at least equal to 1
       this.maxExecutors = maxExecutors;
       this.executorCpus = executorCpus;
+      this.diskNeeded = diskNeeded;
       this.executorMem = executorMem;
       this.remoteFSRoot = remoteFSRoot;
       this.idleTerminationMinutes = idleTerminationMinutes;
-      this.slaveAttributes = slaveAttributes;
+      this.slaveAttributesString = slaveAttributes != null ? slaveAttributes.toString() : null;
       this.jvmArgs = jvmArgs;
       this.jnlpArgs = jnlpArgs;
       this.defaultSlave = defaultSlave;
@@ -246,6 +255,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     return null;
   }
 
+  public double getdiskNeeded() {
+    return diskNeeded;
+  }
+
   public MesosSlaveInfo copyWithDockerImage(String label, String dockerImage) {
     LOGGER.fine(String.format("Customize mesos slave %s using docker image %s", this.getLabelString(), dockerImage));
 
@@ -258,10 +271,11 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
               minExecutors,
               maxExecutors,
               executorCpus,
+              diskNeeded,
               executorMem,
               remoteFSRoot,
               idleTerminationMinutes,
-              slaveAttributes,
+              parseSlaveAttributes(slaveAttributesString),
               jvmArgs,
               jnlpArgs,
               defaultSlave,
@@ -320,7 +334,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
   }
 
   public JSONObject getSlaveAttributes() {
-    return slaveAttributes;
+    return parseSlaveAttributes(slaveAttributesString);
   }
 
   public String getJvmArgs() {
@@ -393,6 +407,10 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
     }
     if (minExecutors == 0) {
       this.minExecutors = 1;
+    }
+    if (slaveAttributes != null) {
+      slaveAttributesString = slaveAttributes.toString();
+      slaveAttributes = null;
     }
     return this;
   }

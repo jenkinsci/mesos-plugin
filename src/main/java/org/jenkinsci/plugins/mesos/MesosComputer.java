@@ -15,7 +15,6 @@
 package org.jenkinsci.plugins.mesos;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.Hudson;
 import hudson.model.Slave;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.SlaveComputer;

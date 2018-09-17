@@ -5,9 +5,11 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.model.Queue.Item;
+import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,11 +43,13 @@ public class JenkinsSchedulerTest {
 
     private Jenkins jenkins;
 
-    private static int    TEST_JENKINS_SLAVE_MEM   = 512;
-    private static String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
-    private static String TEST_JENKINS_JNLP_ARG    = "";
-    private static String TEST_JENKINS_SLAVE_NAME  = "testSlave1";
-    private static String TEST_MESOS_ROLE_NAME     = "test_role";
+    private static final int    TEST_JENKINS_SLAVE_MEM   = 512;
+    private static final String TEST_JENKINS_SLAVE_ARG   = "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true";
+    private static final String TEST_JENKINS_JNLP_ARG    = "";
+    private static final String TEST_JENKINS_SLAVE_NAME  = "testSlave1";
+    private static final String TEST_MESOS_ROLE_NAME     = "test_role";
+    private static final Protos.FrameworkID TEST_FRAMEWORK_ID =
+            Protos.FrameworkID.newBuilder().setValue("test-framework-id").build();
 
 
     @Before
@@ -55,11 +59,12 @@ public class JenkinsSchedulerTest {
 
         // Simulate basic Jenkins env
         jenkins = Mockito.mock(Jenkins.class);
+        when(jenkins.getPlugin(Metrics.class)).thenReturn(new Metrics());
         when(jenkins.isUseSecurity()).thenReturn(false);
         PowerMockito.mockStatic(Jenkins.class);
         Mockito.when(Jenkins.getInstance()).thenReturn(jenkins);
 
-        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud);
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, false);
 
     }
 
@@ -173,6 +178,7 @@ public class JenkinsSchedulerTest {
         Mockito.when(jenkins.getQueue()).thenReturn(queue);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
@@ -189,9 +195,10 @@ public class JenkinsSchedulerTest {
         offers.add(offer);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
-        Mockito.verify(driver).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
     }
 
@@ -210,9 +217,10 @@ public class JenkinsSchedulerTest {
         Mockito.when(mesosCloud.canProvision(null)).thenReturn(true);
 
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
-        Mockito.verify(driver).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
     }
 
@@ -318,7 +326,7 @@ public class JenkinsSchedulerTest {
         // verify it
         // make sure it does not call "matches()" and gets declined because of a non-matching offer
         Mockito.verify(mesosCloud, never()).getRole();
-        Mockito.verify(driver).declineOffer(matchingOffer.getId());
+        Mockito.verify(driver).declineOffer(matchingOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         assertEquals(1, jenkinsScheduler.getUnmatchedLabels().size());
     }
 
@@ -400,6 +408,36 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.getCommandInfoBuilder(request);
     }
 
+    @Test
+    public void isProcessing() {
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, false);
+        Assert.assertFalse(jenkinsScheduler.isProcessing());
+
+        jenkinsScheduler.startProcessing();
+        Assert.assertTrue(jenkinsScheduler.isProcessing());
+    }
+
+    @Test
+    public void constructMultiThreaded() {
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+
+        jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, true);
+        jenkinsScheduler.setDriver(driver);
+        Assert.assertFalse(jenkinsScheduler.isProcessing());
+
+        jenkinsScheduler.registered(driver, TEST_FRAMEWORK_ID, null);
+        jenkinsScheduler.resourceOffers(driver, Collections.emptyList());
+
+        Assert.assertTrue(jenkinsScheduler.isProcessing());
+    }
+
+    @Test
+    public void getFrameworkId() {
+        Assert.assertEquals(JenkinsScheduler.NULL_FRAMEWORK_ID, jenkinsScheduler.getFrameworkId());
+        jenkinsScheduler.registered(null, TEST_FRAMEWORK_ID, null);
+        Assert.assertEquals(TEST_FRAMEWORK_ID.getValue(), jenkinsScheduler.getFrameworkId());
+    }
+
     private Mesos.SlaveRequest mockSlaveRequest(
         Boolean useDocker,
         Boolean useCustomDockerCommandShell,
@@ -429,6 +467,7 @@ public class JenkinsSchedulerTest {
                 "1",                // minExecutors,
                 "2",                // maxExecutors,
                 "0.2",              // executorCpus,
+                "500",               // diskNeeded
                 "512",              // executorMem,
                 "remoteFSRoot",     // remoteFSRoot,
                 "2",                // idleTerminationMinutes,
@@ -441,7 +480,7 @@ public class JenkinsSchedulerTest {
                 null              // nodeProperties
                 );
         return new Mesos.SlaveRequest(
-            new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo);
+            new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo, 500);
     }
 
     private JenkinsScheduler.Request mockMesosRequest(
