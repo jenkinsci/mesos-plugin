@@ -1,0 +1,5 @@
+<div>
+    Enable this option if Remote FS Root configured in SlaveInfo is a shared storage like NFS.
+    If this option is selected, concurrent builds for the same job will be assigned a different workspace so that they don't overwrite each other.
+    This follows Jenkins default behaviour of differentiating workspace with a Combinator '@'. For ex: /workspace/myjob, /workspace/myjob@2, /workspace/myjob@3 etc.
+</div>
