@@ -1,3 +1,7 @@
 <div>
-    Specifies the hostname:port of the Mesos master.
+    Set the Mesos master address in following format:
+	<ul>
+	<li><b>mesos_hostname:mesos_port</b> if your setup only have one Mesos master</li>
+	<li><b>zk://mesos_1:zookeeper_port,mesos_2:zookeeper_port,mesos_3:zookeeper_port/mesos</b> if your setup is a 3 master nodes Mesos cluster using Zookeeper </li>
+	</ul>
 </div>

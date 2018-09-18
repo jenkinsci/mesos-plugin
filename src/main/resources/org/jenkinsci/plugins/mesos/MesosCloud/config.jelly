@@ -4,7 +4,7 @@
         <f:textbox field="nativeLibraryPath" clazz="required"/>
     </f:entry>
 
-    <f:entry title="${%Mesos Master [hostname:port]}" field="master">
+    <f:entry title="${%Mesos Master url}" field="master">
         <f:textbox clazz="required"/>
     </f:entry>
 
