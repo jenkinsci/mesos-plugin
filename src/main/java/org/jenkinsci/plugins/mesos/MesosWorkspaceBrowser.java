@@ -37,6 +37,11 @@ public class MesosWorkspaceBrowser extends WorkspaceBrowser {
         List<MesosSlaveInfo> slaveInfos = mesosCloud.getSlaveInfos();
         for (MesosSlaveInfo mesosSlaveInfo : slaveInfos) {
           if(ObjectUtils.equals(mesosSlaveInfo.getLabelString(), assignedLabel)) {
+            // Check if NFS remoteFSRoot option is enabled and if it persisted the most recent workspace for this job
+            if(MesosRecentWSTracker.getMesosRecentWSTracker().getRecentWorkspaceForJob(jobName)!=null) {
+              // If we have an entry lets replace the jobName with recent workspace
+              jobName = MesosRecentWSTracker.getMesosRecentWSTracker().getRecentWorkspaceForJob(jobName);
+            }
             String workspacePath = mesosSlaveInfo.getRemoteFSRoot()
                     + File.separator + WORKSPACE + File.separator + jobName;
             LOGGER.info("Workspace Path: " + workspacePath);

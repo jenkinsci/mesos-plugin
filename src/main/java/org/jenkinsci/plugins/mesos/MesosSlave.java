@@ -16,11 +16,10 @@ package org.jenkinsci.plugins.mesos;
 
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.model.Computer;
+import hudson.model.*;
 import hudson.model.Descriptor.FormException;
-import hudson.model.Hudson;
-import hudson.model.Slave;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.WorkspaceList;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
@@ -28,7 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.codahale.metrics.Timer;
-
 import org.apache.commons.lang.StringUtils;
 
 public class MesosSlave extends Slave {
@@ -187,4 +185,42 @@ public class MesosSlave extends Slave {
     // let the caller handle the error.
     return rootPath;
   }
+
+  @Override
+  public FilePath getWorkspaceFor(TopLevelItem item) {
+
+    if(!getCloud().isNfsRemoteFSRoot()) {
+      return super.getWorkspaceFor(item);
+    }
+
+    FilePath r = getWorkspaceRoot();
+    if(r==null)     return null;    // offline
+    FilePath child = r.child(item.getFullName());
+    if (child!=null && item instanceof AbstractProject) {
+      AbstractProject project = (AbstractProject) item;
+      for (int i=1; ; i++) {
+        FilePath candidate = i == 1 ? child : child.withSuffix(COMBINATOR + i);
+        boolean candidateInUse = false;
+        for (Object run : project.getBuilds()) {
+          if (run instanceof AbstractBuild) {
+            AbstractBuild build = (AbstractBuild) run;
+            if (build.isBuilding() && build.getWorkspace()!=null && build.getWorkspace().getBaseName().equals(candidate.getName())) {
+              candidateInUse = true;
+              break;
+            }
+          }
+        }
+        if (!candidateInUse) {
+          // Save the workspace folder name so that user can view the workspace through MesosWorkspaceBrowser even after slave goes offline
+          MesosRecentWSTracker.getMesosRecentWSTracker().updateRecentWorkspaceMap(item.getName(), candidate.getName());
+          return candidate;
+        }
+
+      }
+    }
+    return child;
+  }
+
+  // Let us use the same property that is used by Jenkins core to get combinator for workspace
+  private static final String COMBINATOR = System.getProperty(WorkspaceList.class.getName(),"@");
 }

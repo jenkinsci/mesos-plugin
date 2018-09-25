@@ -51,7 +51,7 @@ public class MesosCloudTest {
                             Collections.singletonList(new MesosSlaveInfo.NetworkInfo("<networkName>"))),
                     Collections.singletonList(new MesosSlaveInfo.URI("<value>", true, true)),
                     Collections.<NodeProperty<?>>emptyList())),
-            true, true, "<jenkinsURL>", "1234", "<cloudID>");
+            true, true, false, "<jenkinsURL>", "1234", "<cloudID>");
         r.jenkins.clouds.add(cloud);
         r.configRoundtrip();
         r.assertEqualDataBoundBeans(Collections.singletonList(cloud), r.jenkins.clouds);
