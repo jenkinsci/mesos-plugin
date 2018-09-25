@@ -243,10 +243,26 @@ public class JenkinsScheduler implements Scheduler {
         return prefix + '/' + suffix;
     }
 
-    public synchronized void terminateJenkinsSlave(String name) {
-        LOGGER.info("Terminating jenkins slave " + name);
+  /**
+   * When using the Docker Image Can Be Customized option you can specify the docker image to use for example
+   * foo/bar:version1 which is appended at the end of the mesos task name (then limited to 64 chars)
+   *
+   * This is a problem because mesos task names cannot contain "/" as the mesos task name is used in
+   * the directory structure to run the task
+   * It is also a problem for the docker hostname which cannot contain ":" or "/"
+   * See RFC 952
+   *
+   * @param name the task or hostname
+   * @return cleaned up hostname or task name where invalid chars are replaced by the "_" character
+   */
+  private static String replaceInvalidHostnameCharacters(String name) {
+    return name.replaceAll("[^a-zA-Z0-9-]", "-");
+  }
 
-        TaskID taskId = TaskID.newBuilder().setValue(name).build();
+  public synchronized void terminateJenkinsSlave(String name) {
+    LOGGER.info("Terminating jenkins slave " + name);
+
+    TaskID taskId = TaskID.newBuilder().setValue(replaceInvalidHostnameCharacters(name)).build();
 
         if (results.containsKey(taskId)) {
             LOGGER.info("Killing mesos task " + taskId);
@@ -701,9 +717,9 @@ public class JenkinsScheduler implements Scheduler {
         return portsToUse;
     }
 
-    private void createMesosTask(Offer offer, Request request) {
-        final String slaveName = request.request.slave.name;
-        TaskID taskId = TaskID.newBuilder().setValue(slaveName).build();
+  private void createMesosTask(Offer offer, Request request) {
+    final String slaveName = request.request.slave.name;
+    TaskID taskId = TaskID.newBuilder().setValue(replaceInvalidHostnameCharacters(slaveName)).build();
 
         LOGGER.fine("Launching task " + taskId.getValue() + " with URI " +
                 joinPaths(jenkinsMaster, SLAVE_JAR_URI_SUFFIX));
@@ -852,10 +868,11 @@ public class JenkinsScheduler implements Scheduler {
                 String networking = request.request.slaveInfo.getContainerInfo().getNetworking();
                 dockerInfoBuilder.setNetwork(Network.valueOf(networking));
 
-                //  https://github.com/jenkinsci/mesos-plugin/issues/109
-                if (dockerInfoBuilder.getNetwork() != Network.HOST) {
-                    containerInfoBuilder.setHostname(slaveName);
-                }
+          //  https://github.com/jenkinsci/mesos-plugin/issues/109
+          if (dockerInfoBuilder.getNetwork() != Network.HOST) {
+            // https://github.com/jenkinsci/mesos-plugin/issues/251
+            containerInfoBuilder.setHostname(replaceInvalidHostnameCharacters(slaveName));
+          }
 
                 if (request.request.slaveInfo.getContainerInfo().hasPortMappings()) {
                     List<MesosSlaveInfo.PortMapping> portMappings = request.request.slaveInfo.getContainerInfo().getPortMappings();
