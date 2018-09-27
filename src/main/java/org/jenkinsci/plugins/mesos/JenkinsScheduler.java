@@ -431,7 +431,7 @@ public class JenkinsScheduler implements Scheduler {
 
     @VisibleForTesting
     void startProcessing() {
-        String threadName = "mesos-offer-processor-" + getFrameworkId();
+        final String threadName = "mesos-offer-processor-" + getFrameworkId();
         LOGGER.info("Starting offer processing thread: " + threadName);
 
         offerProcessingThread = new Thread(new Runnable() {
