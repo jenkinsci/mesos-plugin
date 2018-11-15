@@ -41,7 +41,20 @@ import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 
-import java.util.*;
+import java.util.Queue;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.HashSet;
+import java.util.TreeSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -90,7 +103,7 @@ public class JenkinsScheduler implements Scheduler {
 
     private static final Object IGNORE = new Object();
 
-    private static final OfferQueue offerQueue = new OfferQueue();
+    private final OfferQueue offerQueue = new OfferQueue();
     private Thread offerProcessingThread = null;
     private volatile FrameworkID frameworkId;
 
@@ -423,7 +436,7 @@ public class JenkinsScheduler implements Scheduler {
             public void run() {
                 LOGGER.info("Started offer processing thread: " + threadName);
                 try {
-                    while (true) {
+                    while (isRunning()) {
                         processOffers();
                     }
                 } catch (Throwable t) {
