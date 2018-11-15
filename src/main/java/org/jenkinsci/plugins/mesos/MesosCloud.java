@@ -61,7 +61,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MesosCloud extends Cloud {
-  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
+  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600"; // 10 mins.
   public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5;
   private String nativeLibraryPath;
   private String master;
@@ -724,10 +724,10 @@ public void setJenkinsURL(String jenkinsURL) {
         this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
       } else {
         double duration = Double.parseDouble(declineOfferDuration);
-        if (duration >= 1000) {
+        if (duration >= 1) {
           this.declineOfferDuration = declineOfferDuration;
         } else {
-          LOGGER.warning("Minimum declineOfferDuration (1000) > " + declineOfferDuration
+          LOGGER.warning("Minimum declineOfferDuration (1) > " + declineOfferDuration
               + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
           this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
         }
