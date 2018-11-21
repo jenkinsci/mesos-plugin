@@ -13,6 +13,9 @@ public final class MesosUtils {
         } else {
             suffix = StringUtils.remove("-" + label, " ");
         }
-        return StringUtils.left("mesos-jenkins-" + StringUtils.remove(UUID.randomUUID().toString(), '-') + suffix, MAX_HOSTNAME_LENGTH);
+        return StringUtils.left(
+            "mesos-jenkins-" +
+            StringUtils.left(StringUtils.remove(UUID.randomUUID().toString(), '-'), 8) +
+            suffix, MAX_HOSTNAME_LENGTH);
     }
 }
