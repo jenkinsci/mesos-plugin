@@ -159,6 +159,7 @@ public class JenkinsScheduler implements Scheduler {
         } else {
             driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
         }
+
         // Start the framework.
         Thread frameworkThread = new Thread(new Runnable() {
             @Override
@@ -173,33 +174,33 @@ public class JenkinsScheduler implements Scheduler {
                 } catch(RuntimeException e) {
                     LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
                 } finally {
-                    SUPERVISOR_LOCK.lock();
-                    if (driver != null) {
-                        driver.abort();
-                    }
-                    driver = null;
                     running = false;
-                    SUPERVISOR_LOCK.unlock();
+                    SUPERVISOR_LOCK.lock();
+                    try {
+                        if (driver != null) {
+                            driver.abort();
+                        }
+                        driver = null;
+                    } finally {
+                        SUPERVISOR_LOCK.unlock();
+                    }
                 }
             }
-        });
-
-        frameworkThread.setName("mesos-framework-thread");
+        }, String.format("mesos-framework-thread-%d", startedTime));
         frameworkThread.setDaemon(true);
-
         frameworkThread.start();
     }
 
     public synchronized void stop() {
+        running = false;
+        SUPERVISOR_LOCK.lock();
         try {
-            SUPERVISOR_LOCK.lock();
             if (driver != null) {
                 LOGGER.info("Stopping Mesos driver.");
                 driver.stop();
             } else {
                 LOGGER.warning("Unable to stop Mesos driver:  driver is null.");
             }
-            running = false;
         } finally {
             SUPERVISOR_LOCK.unlock();
         }
@@ -347,7 +348,6 @@ public class JenkinsScheduler implements Scheduler {
 
                 if (isOfferAvailable(offer)) {
                     for (Request request : requests) {
-                        // TODO: Dirty modification of list while traversing it.
                         if (matches(offer, request)) {
                             Timer.Context ctx = Metrics.metricRegistry().timer("mesos.scheduler.offer.matched").time();
                             LOGGER.info("Offer matched! Creating mesos task " + request.request.slave.name);
@@ -1150,8 +1150,8 @@ public class JenkinsScheduler implements Scheduler {
      * sure JenkinsScheduler's request queue is empty.
      */
     public static void supervise() {
+        SUPERVISOR_LOCK.lock();
         try {
-            SUPERVISOR_LOCK.lock();
             Collection<Mesos> clouds = Mesos.getAllClouds();
             for (Mesos cloud : clouds) {
                 try {
