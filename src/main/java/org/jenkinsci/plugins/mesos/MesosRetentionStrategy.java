@@ -52,12 +52,11 @@ public class MesosRetentionStrategy extends RetentionStrategy<MesosComputer> {
   public long check(MesosComputer c) {
     if (!computerCheckLock.tryLock()) {
       return 1;
-    } else {
-      try {
-        return checkInternal(c);
-      } finally {
-        computerCheckLock.unlock();
-      }
+    }
+    try {
+      return checkInternal(c);
+    } finally {
+      computerCheckLock.unlock();
     }
   }
 

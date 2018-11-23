@@ -15,7 +15,6 @@
 
 package org.jenkinsci.plugins.mesos;
 
-
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
@@ -57,7 +56,6 @@ import java.util.Iterator;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,6 +81,7 @@ public class JenkinsScheduler implements Scheduler {
     private final boolean multiThreaded;
 
     private Queue<Request> requests;
+    private final ReentrantLock REQUESTS_LOCK = new ReentrantLock();
     private Set<String> unmatchedLabels;
     private Map<TaskID, Result> results;
     private Set<TaskID> finishedTasks;
@@ -95,7 +94,7 @@ public class JenkinsScheduler implements Scheduler {
 
     private static final Logger LOGGER = Logger.getLogger(JenkinsScheduler.class.getName());
 
-    public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
+    public static final ReentrantLock SUPERVISOR_LOCK = new ReentrantLock();
 
     private static int lruCacheSize = Integer.getInteger(JenkinsScheduler.class.getName()+".lruCacheSize", 10);
 
@@ -213,7 +212,12 @@ public class JenkinsScheduler implements Scheduler {
     public synchronized void requestJenkinsSlave(Mesos.SlaveRequest request, Mesos.SlaveResult result) {
         Metrics.metricRegistry().meter("mesos.scheduler.slave.requests").mark();
         LOGGER.fine("Enqueuing jenkins slave request");
-        requests.add(new Request(request, result));
+        REQUESTS_LOCK.lock();
+        try {
+            requests.add(new Request(request, result));
+        } finally {
+            REQUESTS_LOCK.unlock();
+        }
         if (driver != null) {
             // Ask mesos to send all offers, even the those we declined earlier.
             // See comment in resourceOffers() for further details.
@@ -273,18 +277,21 @@ public class JenkinsScheduler implements Scheduler {
             // between this removal request from jenkins and a resource getting freed up in mesos
             // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
             // by Jenkins.
-
-            for(Request request : requests) {
-                if(request.request.slave.name.equals(name)) {
-                    LOGGER.info("Removing enqueued mesos task " + name);
-                    requests.remove(request);
-                    // Also signal the Thread of the MesosComputerLauncher.launch() to exit from latch.await()
-                    // Otherwise the Thread will stay in WAIT forever -> Leak!
-                    request.result.failed(request.request.slave);
-                    return;
+            REQUESTS_LOCK.lock();
+            try {
+                for(Request request : requests) {
+                    if(request.request.slave.name.equals(name)) {
+                        LOGGER.info("Removing enqueued mesos task " + name);
+                        requests.remove(request);
+                        // Also signal the Thread of the MesosComputerLauncher.launch() to exit from latch.await()
+                        // Otherwise the Thread will stay in WAIT forever -> Leak!
+                        request.result.failed(request.request.slave);
+                        return;
+                    }
                 }
+            } finally {
+                REQUESTS_LOCK.unlock();
             }
-
             LOGGER.warning("Asked to kill unknown mesos task " + taskId);
         }
 
@@ -333,6 +340,7 @@ public class JenkinsScheduler implements Scheduler {
             boolean answered = false;
             Metrics.metricRegistry().meter("mesos.scheduler.offer.processed").mark();
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
+            REQUESTS_LOCK.lock();
             try {
                 if (requests.isEmpty() && !buildsInQueue(Jenkins.getInstance().getQueue())) {
                     unmatchedLabels.clear();
@@ -347,7 +355,6 @@ public class JenkinsScheduler implements Scheduler {
                 }
 
                 boolean taskCreated = false;
-
                 if (isOfferAvailable(offer)) {
                     for (Request request : requests) {
                         if (matches(offer, request)) {
@@ -376,9 +383,9 @@ public class JenkinsScheduler implements Scheduler {
                 if (!taskCreated) {
                     declineShort(offer);
                     answered = true;
-                    continue;
                 }
             } finally {
+                REQUESTS_LOCK.unlock();
                 if (!answered) {
                     declineShort(offer);
                 }
@@ -396,8 +403,13 @@ public class JenkinsScheduler implements Scheduler {
                 LOGGER.info("Did not match any of the " + offers.size() + " offers (" + requests.size() + " pending requests)");
             }
         }
-        for (Request request: requests) {
-            unmatchedLabels.add(request.request.slaveInfo.getLabelString());
+        REQUESTS_LOCK.lock();
+        try {
+            for (Request request: requests) {
+                unmatchedLabels.add(request.request.slaveInfo.getLabelString());
+            }
+        } finally {
+            REQUESTS_LOCK.unlock();
         }
     }
 

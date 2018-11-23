@@ -122,7 +122,6 @@ public class MesosCleanupThread extends AsyncPeriodicWork {
             } catch (InterruptedException e) {
                 logger.log(Level.WARNING, "Failed to disconnect and delete " + c.getName() + ": " + e.getMessage());
             }
-
         }
     }
 
