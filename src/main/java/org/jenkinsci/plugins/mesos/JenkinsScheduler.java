@@ -330,6 +330,7 @@ public class JenkinsScheduler implements Scheduler {
         reArrangeOffersBasedOnAffinity(offers);
         int processedRequests = 0;
         for (Offer offer : offers) {
+            boolean answered = false;
             Metrics.metricRegistry().meter("mesos.scheduler.offer.processed").mark();
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
             try {
@@ -341,6 +342,7 @@ public class JenkinsScheduler implements Scheduler {
                     Metrics.metricRegistry().meter("mesos.scheduler.decline.long").mark();
                     LOGGER.info("No slave in queue.");
                     declineOffer(offer, mesosCloud.getDeclineOfferDurationDouble());
+                    answered = true;
                     continue;
                 }
 
@@ -353,6 +355,7 @@ public class JenkinsScheduler implements Scheduler {
                             LOGGER.info("Offer matched! Creating mesos task " + request.request.slave.name);
                             try {
                                 createMesosTask(offer, request);
+                                answered = true;
                                 unmatchedLabels.remove(request.request.slaveInfo.getLabelString());
                                 taskCreated = true;
                                 recentlyAcceptedOffers.put(offer.getSlaveId().getValue(), IGNORE);
@@ -372,9 +375,13 @@ public class JenkinsScheduler implements Scheduler {
 
                 if (!taskCreated) {
                     declineShort(offer);
+                    answered = true;
                     continue;
                 }
             } finally {
+                if (!answered) {
+                    declineShort(offer);
+                }
                 offerContext.stop();
             }
         }
