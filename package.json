@@ -17,6 +17,14 @@
       {
         "name": "Apache License Version 2.0",
         "url": "https://github.com/mesosphere/dcos-jenkins-service/blob/master/LICENSE"
+      },
+      {
+        "name": "Apache License Version 2.0",
+        "url": "https://github.com/jenkinsci/mesos-plugin/blob/master/LICENSE"
+      },
+      {
+        "name": "MIT License",
+        "url": "https://github.com/jenkinsci/jenkins/blob/master/LICENSE.txt"
       }
     ],
     "selected": true
