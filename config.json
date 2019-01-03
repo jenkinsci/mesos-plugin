@@ -6,9 +6,10 @@
             "type": "object",
             "properties": {
                 "name": {
-                    "description": "The name of the service to display in the DC/OS dashboard.",
-                    "type": "string",
-                    "default": "jenkins"
+                  "description": "Unique name for the service instance consisting of a series of words separated by slashes. Each word must be at least 1 alphanumeric character and may only contain digits (`0-9`), dashes (`-`), dots (`.`), and lowercase letters (`a-z`). The word may not begin or end with a dash",
+                  "type": "string",
+                  "pattern": "^(\\/?((\\.\\.)|(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9]))?($|\\/))+$",
+                  "default": "jenkins"
                 },
                 "cpus": {
                     "description": "CPU shares to allocate to each Jenkins master.",
@@ -121,7 +122,7 @@
                 "mesos-master": {
                     "description": "URL of this cluster's Mesos master.",
                     "type": "string",
-                    "default": "zk://leader.mesos:2181/mesos"
+                    "default": "zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos"
                 },
                 "jvm-opts": {
                     "description": "Optional arguments to pass to the JVM.",
