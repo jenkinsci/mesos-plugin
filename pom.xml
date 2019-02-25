@@ -95,8 +95,8 @@
     <jenkins.version>2.7.3</jenkins.version>
     <java.level>8</java.level>
     <findbugs.failOnError>false</findbugs.failOnError>
-    <mesos.version>1.0.0</mesos.version>
-    <protobuf.version>2.6.1</protobuf.version>
+    <mesos.version>1.7.0</mesos.version>
+    <protobuf.version>3.5.0</protobuf.version>
     <mockito.version>1.10.19</mockito.version>
     <powermock.version>1.6.6</powermock.version>
     <assertj.version>2.1.0</assertj.version>
