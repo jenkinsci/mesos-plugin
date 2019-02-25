@@ -68,7 +68,7 @@
     </f:entry>
 
     <f:advanced>
-        <f:optionalProperty title="${%Use Docker Containerizer}" field="containerInfo"/>
+        <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
         <f:entry title="${%Additional URIs}">
             <f:repeatableProperty field="additionalURIs" minimum="0" add="Add URI">
                 <f:entry>

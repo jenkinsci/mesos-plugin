@@ -76,6 +76,8 @@ By default, the Jenkins slaves are run in the default Mesos container. To run th
 
 	2) "Use External Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=external".
 
+To run jenkins slave within a docker image (but using mesos containerizer), use "Mesos" container type.
+
 ### Docker Configuration ###
 
 #### Volumes ####

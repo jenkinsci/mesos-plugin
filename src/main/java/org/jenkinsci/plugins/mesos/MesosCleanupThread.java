@@ -108,7 +108,7 @@ public class MesosCleanupThread extends AsyncPeriodicWork {
                             " is not pending deletion or the slave is null");
                 }
             } else {
-                logger.log(Level.FINER, c.getName() + " is not a mesos computer, it is a " + c.getClass().getName());
+              logger.log(Level.FINER, c.getName() + " is not a mesos computer, it is a " + c.getClass().getName());
             }
         }
 
