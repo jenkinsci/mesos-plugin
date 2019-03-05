@@ -82,6 +82,10 @@
       <id>repository.apache.org</id>
       <url>https://repository.apache.org/content/repositories/releases/</url>
     </repository>
+      <repository>
+          <id>project.local</id>
+          <url>file:${project.basedir}/repo</url>
+      </repository>
   </repositories>
 
   <pluginRepositories>
@@ -170,6 +174,11 @@
           <artifactId>metrics</artifactId>
           <version>3.1.2.6</version>
           <optional>true</optional>
+      </dependency>
+      <dependency>
+          <groupId>com.mesosphere</groupId>
+          <artifactId>usi</artifactId>
+          <version>0.1</version>
       </dependency>
   </dependencies>
   <dependencyManagement>
