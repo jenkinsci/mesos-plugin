@@ -20,6 +20,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.TextFormat;
+import com.mesosphere.usi.core.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Computer;
 import hudson.model.Node;
@@ -41,7 +42,6 @@ import org.apache.mesos.Protos.Value.Range;
 import org.apache.mesos.Protos.Volume.Mode;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class JenkinsScheduler implements Scheduler {
+public class JenkinsScheduler implements Scheduler  {
     private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
 
     /**
@@ -94,6 +94,8 @@ public class JenkinsScheduler implements Scheduler {
     private static final OfferQueue offerQueue = new OfferQueue();
     private Thread offerProcessingThread = null;
     private volatile FrameworkID frameworkId;
+
+    private com.mesosphere.usi.core.Scheduler scheduler;
 
     public JenkinsScheduler(String jenkinsMaster, MesosCloud mesosCloud, boolean multiThreaded) {
         startedTime = System.currentTimeMillis();
@@ -146,7 +148,9 @@ public class JenkinsScheduler implements Scheduler {
             driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster(), credential);
         } else {
             driver = new MesosSchedulerDriver(JenkinsScheduler.this, framework, mesosCloud.getMaster());
+
         }
+
         // Start the framework.
         Thread frameworkThread = new Thread(new Runnable() {
             @Override
