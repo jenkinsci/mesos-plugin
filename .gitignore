@@ -1,30 +1,6 @@
-# Eclude Eclipse files that can be generated with mvn eclipse:eclipse
-.classpath
-.project
-.settings/
-target/
-work/
+# Ignore Gradle project-specific cache directory
+.gradle
+.idea
 
-# Exclude IntelliJ files
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# Exclude Vagrant generated files
-.vagrant/
-
-# Used as a local build/deploy dev-cycle script
-deploy.sh
-
-# Where Maven generates its output.
-*/target/*
-*/build/*
-/bin
-
-# Exclude vim swap files
-*.swp
-*.swo
-
-# Mac
-.DS_Store
+# Ignore Gradle build output directory
+build
