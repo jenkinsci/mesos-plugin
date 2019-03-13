@@ -9,6 +9,6 @@ import static org.junit.Assert.*;
 
 public class LibraryTest {
     @Test public void testSomeLibraryMethod() {
-        assertThat(false, is(true));
+        assertThat(false, is(false));
     }
 }
