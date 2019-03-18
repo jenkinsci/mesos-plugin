@@ -1,6 +1,7 @@
 plugins {
     id 'idea'
     id 'java-library'
+    id "com.diffplug.gradle.spotless" version "3.19.0"
     id "org.jenkins-ci.jpi" version "0.30.0-SNAPSHOT"
 }
 
@@ -22,14 +23,23 @@ dependencies {
     implementation('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
     implementation('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
 
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    // Test dependencie
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
+    testImplementation('com.mesosphere.usi:test-utils') { version { branch = usiBranch } }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 group = "org.jenkins-ci.plugins"
 description = "Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload"
+sourceCompatibility = 1.11
+targetCompatibility = 1.11
+
 jenkinsPlugin {
-    coreVersion = "2.150"
+    coreVersion = "2.155"
     displayName = "Mesos Cloud"
     url = "https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin"
     gitHubUrl = "https://github.com/mesosphere/mesos-plugin/"
@@ -39,10 +49,17 @@ jenkinsPlugin {
     developers {
     }
 }
+
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}
+
 idea {
     project {
-        jdkName = '1.8'
-        languageLevel = '1.8'
+        jdkName = '1.11'
+        languageLevel = '1.11'
         vcs = 'Git'
     }
 }

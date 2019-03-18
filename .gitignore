@@ -7,3 +7,4 @@ build
 
 # Ignore Jenkins work dir
 work
+sandboxes

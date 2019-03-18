@@ -115,31 +115,14 @@ To schedule slave disposal from a Pipeline job:
 
 Build the plugin as follows:
 
-        $ mvn package
+    $ ./gradlew check
 
-This should build the Mesos plugin (mesos.hpi) in the `target` folder.
+This should build the Mesos plugin (mesos.hpi) in the `target` folder. A test Jenkins server can be
+started with
 
-> NOTE: If you want to build against a different version of Mesos than
-> the default you'll need to update the `mesos` version in `pom.xml`.
-> You should use the same (**recommended**) or compatible version as the
-> one your Mesos cluster is running on.
+    $ ./gradlew server 
 
-
-### Building the Mesos native library ##
-
-First, [download](http://mesos.apache.org/downloads/) Mesos.
-
-> NOTE: Ensure the Mesos version you download is same (**recommended**) or compatible with the `mesos` version in `pom.xml`.
-
-Now, build it as follows:
-
-		$ cd mesos
-		$ mkdir build && cd build
-		$ ../configure
-		$ make
-
-This should build the Mesos native library in the `build/src/.libs` folder.
-
+The code is formatted following the [Google Style Guide](https://github.com/google/styleguide).
 
 ### Vagrant ###
 
