@@ -478,11 +478,16 @@ public class JenkinsScheduler implements Scheduler {
         if(offer.hasUnavailability()) {
             Protos.Unavailability unavailability = offer.getUnavailability();
 
+            LOGGER.info("Offer hasUnavailability, we have to check if we are in the window: " +
+                    "\n start nanoseconds:" + unavailability.getStart().getNanoseconds() +
+                    "\n duration:" + unavailability.getDuration().getNanoseconds());
             Date startTime = new Date(TimeUnit.NANOSECONDS.toMillis(unavailability.getStart().getNanoseconds()));
             long duration = unavailability.getDuration().getNanoseconds();
             Date endTime = new Date(startTime.getTime() + TimeUnit.NANOSECONDS.toMillis(duration));
             Date currentTime = new Date();
 
+            LOGGER.info("method would return: " +
+                    !(startTime.before(currentTime) && endTime.after(currentTime)));
             return !(startTime.before(currentTime) && endTime.after(currentTime));
         }
 
