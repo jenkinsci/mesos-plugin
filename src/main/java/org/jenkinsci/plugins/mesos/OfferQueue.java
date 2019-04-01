@@ -22,7 +22,7 @@ public class OfferQueue {
     private final Logger logger = Logger.getLogger(JenkinsScheduler.class.getName());
 
     private static final int DEFAULT_CAPACITY = 100;
-    private static final Duration DEFAULT_OFFER_WAIT = Duration.ofSeconds(30);
+    private static final Duration DEFAULT_OFFER_WAIT = Duration.ofSeconds(600);
     private final BlockingQueue<Protos.Offer> queue;
 
     public OfferQueue() {

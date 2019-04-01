@@ -1,0 +1,7 @@
+version: '3'
+services:
+  builder:
+    image: maven
+    volumes:
+      - .:/data
+      - ./maven-repo:/root/.m2
