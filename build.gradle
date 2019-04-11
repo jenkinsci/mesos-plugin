@@ -22,8 +22,9 @@ dependencies {
     implementation('com.mesosphere.usi:core') { version { branch = usiBranch } }
     implementation('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
     implementation('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
 
-    // Test dependencie
+    // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     testImplementation('com.mesosphere.usi:test-utils') { version { branch = usiBranch } }
