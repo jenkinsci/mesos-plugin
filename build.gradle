@@ -16,18 +16,17 @@ ext {
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api 'org.apache.commons:commons-math3:3.6.1'
-
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:26.0-jre'
-    implementation('com.mesosphere.usi:core') { version { branch = usiBranch } }
-    implementation('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
-    implementation('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
+    api 'com.google.guava:guava:26.0-jre'
+    api ('com.mesosphere.usi:core') { version { branch = usiBranch } }
+    api ('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
+    api ('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
+    api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
 
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     testImplementation('com.mesosphere.usi:test-utils') { version { branch = usiBranch } }
+    testImplementation 'org.awaitility:awaitility:3.1.6'
 }
 
 test {

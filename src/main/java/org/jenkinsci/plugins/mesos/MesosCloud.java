@@ -4,6 +4,8 @@ import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.AbstractCloudImpl;
 import hudson.slaves.NodeProvisioner;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -23,14 +25,17 @@ class MesosCloud extends AbstractCloudImpl {
 
   private MesosApi mesos;
   private final String frameworkName = "JenkinsMesos";
-  private final String slavesUser = "example";
+  private final String slavesUser = System.getProperty("user.name");
+  private final URL jenkinsUrl;
 
   @DataBoundConstructor
-  public MesosCloud(String name) throws InterruptedException, ExecutionException {
+  public MesosCloud(String name, String mesosUrl, String jenkinsUrl)
+      throws InterruptedException, ExecutionException, MalformedURLException {
     super(name, null);
 
-    String masterUrl = null;
-    mesos = new MesosApi(masterUrl, slavesUser, frameworkName);
+    this.jenkinsUrl = new URL(jenkinsUrl);
+
+    mesos = new MesosApi(mesosUrl, this.jenkinsUrl, slavesUser, frameworkName);
     throw new NotImplementedException();
   }
 

@@ -12,13 +12,13 @@ import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
 import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
-import com.mesosphere.usi.core.models.Goal.Running$;
-import com.mesosphere.usi.core.models.resources.ScalarRequirement;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 import hudson.model.Descriptor.FormException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -28,8 +28,6 @@ import org.apache.mesos.v1.Protos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
-import scala.collection.JavaConverters;
-import scala.collection.Seq;
 import scala.concurrent.ExecutionContext;
 
 public class MesosApi {
@@ -38,6 +36,7 @@ public class MesosApi {
 
   private final String slavesUser;
   private final String frameworkName;
+  private final URL jenkinsUrl;
   private final Protos.FrameworkID frameworkId;
   private final MesosClientSettings clientSettings;
   private final MesosClient client;
@@ -54,17 +53,19 @@ public class MesosApi {
    * MesosSlave} instances.
    *
    * @param masterUrl The Mesos master address to connect to.
+   * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
    * @param user The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
    * @throws InterruptedException
    * @throws ExecutionException
    */
-  public MesosApi(String masterUrl, String user, String frameworkName)
+  public MesosApi(String masterUrl, URL jenkinsUrl, String user, String frameworkName)
       throws InterruptedException, ExecutionException {
     this.frameworkName = frameworkName;
     this.frameworkId =
         Protos.FrameworkID.newBuilder().setValue(UUID.randomUUID().toString()).build();
     this.slavesUser = user;
+    this.jenkinsUrl = jenkinsUrl;
 
     Config conf =
         ConfigFactory.load()
@@ -142,12 +143,13 @@ public class MesosApi {
    *
    * @return a {@link MesosSlave} once it's queued for running.
    */
-  public CompletionStage<MesosSlave> enqueueAgent() throws IOException, FormException {
-    PodSpec spec = buildMesosAgentTask(0.1, 32);
-    SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
-
+  public CompletionStage<MesosSlave> enqueueAgent()
+      throws IOException, FormException, URISyntaxException {
+    var name = String.format("jenkins-test-%s", UUID.randomUUID().toString());
     MesosSlave mesosSlave =
-        new MesosSlave(spec.id().value(), "Mesos Jenkins Slave", "label", List.of());
+        new MesosSlave(name, "Mesos Jenkins Slave", jenkinsUrl, "label", List.of());
+    PodSpec spec = mesosSlave.getPodSpec(0.1, 32);
+    SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
 
     stateMap.put(spec.id(), mesosSlave);
 
@@ -175,21 +177,6 @@ public class MesosApi {
         .toCompletableFuture();
   }
 
-  private PodSpec buildMesosAgentTask(double cpu, double mem) {
-    var role = "jenkins";
-    RunSpec spec =
-        new RunSpec(
-            convertListToSeq(
-                Arrays.asList(ScalarRequirement.cpus(cpu), ScalarRequirement.memory(mem))),
-            "echo Hello! && sleep 1000000",
-            role,
-            convertListToSeq(Collections.emptyList()));
-    String id = UUID.randomUUID().toString();
-    PodSpec podSpec =
-        new PodSpec(new PodId(String.format("jenkins-test-%s", id)), Running$.MODULE$, spec);
-    return podSpec;
-  }
-
   /**
    * Callback for USI to process state events.
    *
@@ -209,9 +196,5 @@ public class MesosApi {
             return slave;
           });
     }
-  }
-
-  private <T> Seq<T> convertListToSeq(List<T> inputList) {
-    return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
   }
 }
