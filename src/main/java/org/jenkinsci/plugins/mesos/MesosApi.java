@@ -1,10 +1,7 @@
 package org.jenkinsci.plugins.mesos;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.KillSwitch;
-import akka.stream.KillSwitches;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.*;
 import com.mesosphere.mesos.client.MesosClient;
@@ -81,32 +78,7 @@ public class MesosApi {
     stateMap = new ConcurrentHashMap<>();
 
     logger.info("Starting USI scheduler flow.");
-    updates = runUsi(SpecsSnapshot.empty(), client, materializer);
-  }
-
-  /**
-   * Helper method that terminates the completes scheduler flow if on internal source or flow stops.
-   * See {@link MesosApi#runUsi(SpecsSnapshot, MesosClient, ActorMaterializer)}.
-   *
-   * @param input Source of state events.
-   * @param killSwitch The kill switch that should be triggered.
-   * @return A new source with state events and a kill switch in place.
-   */
-  private Source<StateEvent, NotUsed> triggerKillSwitch(
-      Source<StateEvent, Object> input, KillSwitch killSwitch) {
-    return input.watchTermination(
-        (mat, future) -> {
-          future.whenComplete(
-              (success, failure) -> {
-                if (success != null) {
-                  killSwitch.shutdown();
-                }
-                if (failure != null) {
-                  killSwitch.abort(failure);
-                }
-              });
-          return NotUsed.notUsed();
-        });
+    updates = runScheduler(SpecsSnapshot.empty(), client, materializer).get();
   }
 
   /**
@@ -118,24 +90,20 @@ public class MesosApi {
    * @param materializer The {@link ActorMaterializer} used for the source queue.
    * @return A running source queue.
    */
-  private SourceQueueWithComplete<SpecUpdated> runUsi(
+  private CompletableFuture<SourceQueueWithComplete<SpecUpdated>> runScheduler(
       SpecsSnapshot specsSnapshot, MesosClient client, ActorMaterializer materializer) {
-    var schedulerFlow = Scheduler.fromSnapshot(specsSnapshot, client);
+    return Scheduler.asFlow(specsSnapshot, client, materializer)
+        .thenApply(
+            builder -> {
+              // We create a SourceQueue and assume that the very first item is a spec snapshot.
+              var queue =
+                  Source.<SpecUpdated>queue(256, OverflowStrategy.fail())
+                      .via(builder.getFlow())
+                      .toMat(Sink.foreach(this::updateState), Keep.left())
+                      .run(materializer);
 
-    var killSwitch = KillSwitches.shared("mesos-jenkins-plugin");
-
-    // We create a SourceQueue and assume that the very first item is a spec snapshot.
-    var queue =
-        Source.<SpecUpdated>queue(256, OverflowStrategy.fail())
-            .via(killSwitch.flow())
-            .via(schedulerFlow)
-            .flatMapConcat( // Ignore state snapshot for now.
-                pair -> triggerKillSwitch(pair.second(), killSwitch))
-            .via(killSwitch.flow())
-            .toMat(Sink.foreach(this::updateState), Keep.left())
-            .run(materializer);
-
-    return queue;
+              return queue;
+            });
   }
 
   /**
