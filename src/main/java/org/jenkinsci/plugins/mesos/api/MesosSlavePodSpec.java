@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.mesos.api;
 
 import com.mesosphere.usi.core.models.FetchUri;
-import com.mesosphere.usi.core.models.Goal.Running$;
+import com.mesosphere.usi.core.models.Goal;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.PodSpec;
 import com.mesosphere.usi.core.models.RunSpec;
@@ -41,6 +41,7 @@ public class MesosSlavePodSpec {
     private ScalarRequirement cpus = null;
     private ScalarRequirement memory = null;
     private String role = "test";
+    private Goal goal = null;
 
     private int xmx = 0;
 
@@ -88,6 +89,11 @@ public class MesosSlavePodSpec {
       return this;
     }
 
+    public Builder withGoal(Goal goal) {
+      this.goal = goal;
+      return this;
+    }
+
     public PodSpec build() throws MalformedURLException, URISyntaxException {
       final var runSpec =
           new RunSpec(
@@ -95,7 +101,7 @@ public class MesosSlavePodSpec {
               this.buildCommand(),
               this.role,
               convertListToSeq(List.of(buildFetchUri())));
-      return new PodSpec(this.id, Running$.MODULE$, runSpec);
+      return new PodSpec(this.id, this.goal, runSpec);
     }
 
     /** @return the agent shell command for the Mesos task. */

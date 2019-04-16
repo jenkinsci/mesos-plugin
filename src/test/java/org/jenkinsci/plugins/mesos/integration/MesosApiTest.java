@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.mesos.integration;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
@@ -43,8 +47,25 @@ class MesosApiTest {
     String mesosUrl = mesosCluster.getMesosUrl();
     MesosApi api = new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest");
 
-    MesosSlave agent = api.enqueueAgent().toCompletableFuture().get();
+    MesosSlave agent = api.enqueueAgent(null, 0.1, 32).toCompletableFuture().get();
 
-    Awaitility.await().atMost(1, TimeUnit.SECONDS).until(agent::isRunning);
+    Awaitility.await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
+  }
+
+  @Test
+  public void stopAgent(JenkinsRule j) throws Exception {
+
+    String mesosUrl = mesosCluster.getMesosUrl();
+    var jenkinsUrl = j.getURL();
+    MesosApi api = new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest");
+
+    MesosSlave agent = api.enqueueAgent(null, 0.1, 32).toCompletableFuture().get();
+    // Poll state until we get something.
+    await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
+    assertThat(agent.isRunning(), equalTo(true));
+
+    api.killAgent(agent.getPodId());
+    await().atMost(5, TimeUnit.MINUTES).until(agent::isKilled);
+    assertThat(agent.isKilled(), equalTo(true));
   }
 }

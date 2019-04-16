@@ -139,20 +139,33 @@ public class MesosApi {
   }
 
   /**
-   * Enqueue spec for a Jenkins agent that will eventually come online.
+   * Enqueue spec for a Jenkins event, passing a non-null existing podId will trigger a kill for
+   * that pod
    *
    * @return a {@link MesosSlave} once it's queued for running.
    */
-  public CompletionStage<MesosSlave> enqueueAgent()
+  public CompletionStage<Void> killAgent(String id) throws Exception {
+    PodSpec spec = stateMap.get(new PodId(id)).getPodSpec(0.1, 32, Goal.Terminal$.MODULE$);
+    SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
+    return updates.offer(update).thenRun(() -> {});
+  }
+
+  /**
+   * Enqueue spec for a Jenkins event, passing a non-null existing podId will trigger a kill for
+   * that pod
+   *
+   * @return a {@link MesosSlave} once it's queued for running.
+   */
+  public CompletionStage<MesosSlave> enqueueAgent(MesosCloud cloud, double cpu, int mem)
       throws IOException, FormException, URISyntaxException {
+
     var name = String.format("jenkins-test-%s", UUID.randomUUID().toString());
     MesosSlave mesosSlave =
-        new MesosSlave(name, "Mesos Jenkins Slave", jenkinsUrl, "label", List.of());
-    PodSpec spec = mesosSlave.getPodSpec(0.1, 32);
+        new MesosSlave(cloud, name, "Mesos Jenkins Slave", jenkinsUrl, "label", List.of());
+    PodSpec spec = mesosSlave.getPodSpec(cpu, mem, Goal.Running$.MODULE$);
     SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
 
     stateMap.put(spec.id(), mesosSlave);
-
     // async add agent to queue
     return updates.offer(update).thenApply(result -> mesosSlave); // TODO: handle QueueOfferResult.
   }
@@ -177,6 +190,10 @@ public class MesosApi {
         .toCompletableFuture();
   }
 
+  public ActorMaterializer getMaterializer() {
+    return materializer;
+  }
+
   /**
    * Callback for USI to process state events.
    *
@@ -196,5 +213,6 @@ public class MesosApi {
             return slave;
           });
     }
+    // TODO: kill pod if unknown.
   }
 }

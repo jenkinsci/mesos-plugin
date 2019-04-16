@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.mesos;
 
+import akka.NotUsed;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import com.mesosphere.usi.core.models.Goal;
 import com.mesosphere.usi.core.models.PodSpec;
 import com.mesosphere.usi.core.models.PodStatus;
 import com.mesosphere.usi.core.models.PodStatusUpdated;
@@ -15,10 +19,11 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.apache.commons.lang.NotImplementedException;
+import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos.TaskState;
 import org.jenkinsci.plugins.mesos.api.MesosSlavePodSpec;
 import org.slf4j.Logger;
@@ -32,25 +37,36 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
   // Holds the current USI status for this agent.
   Optional<PodStatus> currentStatus = Optional.empty();
 
+  private final Boolean reusable;
+
+  private final MesosCloud cloud;
+
+  private final String podId;
+
   private final URL jenkinsUrl;
 
   public MesosSlave(
-      String name,
+      MesosCloud cloud,
+      String id,
       String nodeDescription,
       URL jenkinsUrl,
       String labelString,
       List<? extends NodeProperty<?>> nodeProperties)
       throws Descriptor.FormException, IOException {
     super(
-        name,
+        id,
         nodeDescription,
-        null,
+        "jenkins",
         1,
-        null,
+        Mode.NORMAL,
         labelString,
         new JNLPLauncher(),
         null,
         nodeProperties);
+    // pass around the MesosApi connection via MesosCloud
+    this.cloud = cloud;
+    this.reusable = true;
+    this.podId = id;
     this.jenkinsUrl = jenkinsUrl;
   }
 
@@ -58,10 +74,15 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
    * Polls the agent until it is online. Note: This is a non-blocking call in contrast to the
    * blocking {@link AbstractCloudComputer#waitUntilOnline}.
    *
-   * @return This agent when it's online.
+   * @return The future agent that will come online.
    */
-  public CompletableFuture<MesosSlave> waitUntilOnlineAsync() {
-    throw new NotImplementedException();
+  public CompletableFuture<Node> waitUntilOnlineAsync() {
+    return Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(1), NotUsed.notUsed())
+        .completionTimeout(Duration.ofMinutes(5))
+        .filter(ignored -> this.getComputer().isOnline())
+        .map(ignored -> this.asNode())
+        .runWith(Sink.head(), this.getCloud().getMesosClient().getMaterializer())
+        .toCompletableFuture();
   }
 
   /** @return whether the agent is running or not. */
@@ -77,13 +98,27 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
     }
   }
 
-  public PodSpec getPodSpec(Double cpu, int memory)
+  /** @return whether the agent is killed or not. */
+  public synchronized boolean isKilled() {
+    if (currentStatus.isPresent()) {
+      return currentStatus
+          .get()
+          .taskStatuses()
+          .values()
+          .forall(taskStatus -> taskStatus.getState() == TaskState.TASK_KILLED);
+    } else {
+      return false;
+    }
+  }
+
+  public PodSpec getPodSpec(Double cpu, int memory, Goal goal)
       throws MalformedURLException, URISyntaxException {
     return MesosSlavePodSpec.builder()
         .withCpu(cpu)
         .withMemory(memory)
         .withName(this.name)
         .withJenkinsUrl(this.jenkinsUrl)
+        .withGoal(goal)
         .build();
   }
 
@@ -111,6 +146,27 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
 
   @Override
   protected void _terminate(TaskListener listener) {
-    throw new NotImplementedException();
+    try {
+      logger.info("killing task {}", this.podId);
+      // create a terminating spec for this pod
+      Jenkins.getInstanceOrNull().removeNode(this);
+      this.getCloud().getMesosClient().killAgent(this.podId);
+    } catch (Exception ex) {
+      logger.warn("error when killing task {}", this.podId);
+    }
+  }
+
+  public Boolean getReusable() {
+    // TODO: implement reusable slaves
+    return reusable;
+  }
+
+  public MesosCloud getCloud() {
+    return cloud;
+  }
+
+  /** get the podId tied to this task. */
+  public String getPodId() {
+    return podId;
   }
 }
