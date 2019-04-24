@@ -9,13 +9,16 @@ import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Descriptor.FormException;
+import hudson.model.Node.Mode;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
+import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosApi;
-import org.jenkinsci.plugins.mesos.MesosSlave;
+import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsParameterResolver;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsRule;
 import org.junit.jupiter.api.Test;
@@ -42,12 +45,15 @@ class MesosApiTest {
       throws InterruptedException, ExecutionException, IOException, FormException,
           URISyntaxException {
 
-    var jenkinsUrl = j.getURL();
+    URL jenkinsUrl = j.getURL();
 
-    String mesosUrl = mesosCluster.getMesosUrl();
-    MesosApi api = new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest");
+    URL mesosUrl = new URL(mesosCluster.getMesosUrl());
+    MesosApi api =
+        new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
 
-    MesosSlave agent = api.enqueueAgent(null, 0.1, 32).toCompletableFuture().get();
+    final String name = "jenkins-start-agent";
+    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    MesosJenkinsAgent agent = api.enqueueAgent(null, name, spec).toCompletableFuture().get();
 
     Awaitility.await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
   }
@@ -55,11 +61,14 @@ class MesosApiTest {
   @Test
   public void stopAgent(JenkinsRule j) throws Exception {
 
-    String mesosUrl = mesosCluster.getMesosUrl();
-    var jenkinsUrl = j.getURL();
-    MesosApi api = new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest");
+    URL mesosUrl = new URL(mesosCluster.getMesosUrl());
+    URL jenkinsUrl = j.getURL();
+    MesosApi api =
+        new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
 
-    MesosSlave agent = api.enqueueAgent(null, 0.1, 32).toCompletableFuture().get();
+    final String name = "jenkins-stop-agent";
+    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    MesosJenkinsAgent agent = api.enqueueAgent(null, name, spec).toCompletableFuture().get();
     // Poll state until we get something.
     await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
     assertThat(agent.isRunning(), equalTo(true));

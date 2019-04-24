@@ -1,17 +1,29 @@
 package org.jenkinsci.plugins.mesos;
 
+import static java.lang.Math.toIntExact;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.model.Descriptor.FormException;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.AbstractCloudImpl;
+import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+import hudson.util.FormValidation;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.NotImplementedException;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,28 +38,38 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
 
-  private MesosApi mesos;
+  private final URL mesosMasterUrl;
+  private MesosApi mesosApi;
 
-  private final String frameworkName = "JenkinsMesos";
-
-  private final String slavesUser = System.getProperty("user.name");
+  private final String agentUser;
 
   private final URL jenkinsUrl;
 
+  private final List<MesosAgentSpecTemplate> mesosAgentSpecTemplates;
+
   @DataBoundConstructor
-  public MesosCloud(String name, String mesosUrl, String jenkinsUrl)
+  public MesosCloud(
+      String mesosMasterUrl,
+      String frameworkName,
+      String role,
+      String agentUser,
+      String jenkinsUrl,
+      List<MesosAgentSpecTemplate> mesosAgentSpecTemplates)
       throws InterruptedException, ExecutionException, MalformedURLException {
-    super(name, null);
+    super("MesosCloud", null);
 
+    this.mesosMasterUrl = new URL(mesosMasterUrl);
     this.jenkinsUrl = new URL(jenkinsUrl);
+    this.agentUser = agentUser; // TODO: default to system user
+    this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
 
-    mesos = new MesosApi(mesosUrl, this.jenkinsUrl, slavesUser, frameworkName);
+    mesosApi = new MesosApi(this.mesosMasterUrl, this.jenkinsUrl, agentUser, frameworkName, role);
   }
 
   /**
    * Provision one or more Jenkins nodes on Mesos.
    *
-   * <p>The provisioning follows the Nomad plugin. The Jenkins agnets is started as a Mesos task and
+   * <p>The provisioning follows the Nomad plugin. The Jenkins agents is started as a Mesos task and
    * added to the available Jenkins nodes. This differs from the old plugin when the provision
    * method would return immediately.
    *
@@ -58,21 +80,23 @@ public class MesosCloud extends AbstractCloudImpl {
   @Override
   public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
     List<NodeProvisioner.PlannedNode> nodes = new ArrayList<>();
+    final MesosAgentSpecTemplate spec =
+        getSpecForLabel(label).get(); // TODO: handle case when optional is empty.
 
     while (excessWorkload > 0) {
       try {
         logger.info(
-            "Excess workload of "
-                + excessWorkload
-                + ", provisioning new Jenkins slave on Mesos cluster");
-        String slaveName = "undefined";
-
-        nodes.add(new NodeProvisioner.PlannedNode(slaveName, startAgent(), 1));
+            "Excess workload of {} provisioning new Jenkins agent on Mesos cluster",
+            excessWorkload);
+        final String agentName = spec.getName();
+        nodes.add(new NodeProvisioner.PlannedNode(agentName, startAgent(agentName, spec), 1));
         excessWorkload--;
       } catch (Exception ex) {
-        logger.warn("could not create planned Node");
+        logger.warn("could not create planned node", ex);
       }
     }
+
+    logger.info("Done queuing {} nodes", nodes.size());
 
     return nodes;
   }
@@ -86,12 +110,17 @@ public class MesosCloud extends AbstractCloudImpl {
    */
   @Override
   public boolean canProvision(Label label) {
-    // TODO: implement executor limits
-    return true;
+    return getSpecForLabel(label).isPresent();
   }
 
-  public MesosApi getMesosClient() {
-    return this.mesos;
+  /** @return the {@link MesosAgentSpecTemplate} for passed label or empty optional. */
+  private Optional<MesosAgentSpecTemplate> getSpecForLabel(Label label) {
+    for (MesosAgentSpecTemplate spec : this.mesosAgentSpecTemplates) {
+      if (label.matches(spec.getLabelSet())) {
+        return Optional.of(spec);
+      }
+    }
+    return Optional.empty();
   }
 
   /**
@@ -99,21 +128,83 @@ public class MesosCloud extends AbstractCloudImpl {
    *
    * <p>Provide a callback for Jenkins to start a Node.
    *
+   * @param name Name of the Jenkins name and Mesos task.
+   * @param spec The {@link MesosAgentSpecTemplate} that was configured for the Jenkins node.
    * @return A future reference to the launched node.
    */
-  public Future<Node> startAgent() throws Exception {
-    return mesos
-        .enqueueAgent(this, 0.1, 32)
+  public Future<Node> startAgent(String name, MesosAgentSpecTemplate spec)
+      throws IOException, FormException, URISyntaxException {
+    return mesosApi
+        .enqueueAgent(this, name, spec)
         .thenCompose(
-            mesosSlave -> {
+            mesosAgent -> {
               try {
-                Jenkins.getInstanceOrNull().addNode(mesosSlave);
-                logger.info("waiting for slave to come online...");
-                return mesosSlave.waitUntilOnlineAsync();
+                Jenkins.get().addNode(mesosAgent);
+                logger.info("waiting for node to come online...");
+                return mesosAgent
+                    .waitUntilOnlineAsync()
+                    .thenApply(
+                        node -> {
+                          logger.info("Agent {} is online", name);
+                          return node;
+                        });
               } catch (Exception ex) {
                 throw new CompletionException(ex);
               }
             })
         .toCompletableFuture();
+  }
+
+  @Extension
+  public static class DescriptorImpl extends Descriptor<Cloud> {
+
+    public DescriptorImpl() {
+      load();
+    }
+
+    @Override
+    public String getDisplayName() {
+      return "Mesos Cloud";
+    }
+
+    // TODO: validate URLs
+
+    /** Test connection from configuration page. */
+    public FormValidation doTestConnection(
+        @QueryParameter("mesosMasterUrl") String mesosMasterUrl) {
+      throw new NotImplementedException("Connection testing is not supported yet.");
+    }
+  }
+
+  // Getters
+
+  public String getMesosMasterUrl() {
+    return this.mesosMasterUrl.toString();
+  }
+
+  public String getFrameworkName() {
+    return this.mesosApi.getFrameworkName();
+  }
+
+  public String getJenkinsUrl() {
+    return this.jenkinsUrl.toString();
+  }
+
+  public String getAgentUser() {
+    return "kjeschkies";
+  }
+
+  public String getRole() {
+    return "*";
+  }
+
+  /** @return Number of launching agents that are not connected yet. */
+  public synchronized int getPending() {
+    return toIntExact(
+        mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
+  }
+
+  public MesosApi getMesosApi() {
+    return this.mesosApi;
   }
 }

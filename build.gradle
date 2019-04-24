@@ -2,7 +2,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id "com.diffplug.gradle.spotless" version "3.19.0"
-    id "org.jenkins-ci.jpi" version "0.30.0-SNAPSHOT"
+    id "org.jenkins-ci.jpi" version "0.31.0"
 }
 
 repositories {
@@ -11,6 +11,8 @@ repositories {
 
 ext {
     usiBranch = 'master'
+    scalaVersion = '2.12'
+    akkaVersion = '2.5.19'
 }
 
 dependencies {
@@ -20,7 +22,7 @@ dependencies {
     api ('com.mesosphere.usi:core') { version { branch = usiBranch } }
     api ('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
     api ('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
-    api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
+    api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
@@ -35,18 +37,23 @@ test {
 
 group = "org.jenkins-ci.plugins"
 description = "Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload"
-sourceCompatibility = 1.11
-targetCompatibility = 1.11
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 jenkinsPlugin {
-    coreVersion = "2.155"
+    coreVersion = "2.164"
     displayName = "Mesos Cloud"
     url = "https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin"
     gitHubUrl = "https://github.com/mesosphere/mesos-plugin/"
     shortName = "mesos"
- 
+
     // The developers section is optional, and corresponds to the POM developers section.
     developers {
+        developer {
+            id 'jeschkies'
+            name 'Karsten Jeschkies'
+            email 'kjeschkies@mesosphere.com'
+        }
     }
 }
 
@@ -58,8 +65,8 @@ spotless {
 
 idea {
     project {
-        jdkName = '1.11'
-        languageLevel = '1.11'
+        jdkName = '1.8'
+        languageLevel = '1.8'
         vcs = 'Git'
     }
 }

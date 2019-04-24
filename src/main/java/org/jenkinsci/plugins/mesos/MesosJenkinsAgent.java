@@ -30,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Representation of a Jenkins node on Mesos. */
-public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
+public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNode {
 
-  private static final Logger logger = LoggerFactory.getLogger(MesosSlave.class);
+  private static final Logger logger = LoggerFactory.getLogger(MesosJenkinsAgent.class);
 
   // Holds the current USI status for this agent.
   Optional<PodStatus> currentStatus = Optional.empty();
@@ -45,29 +45,32 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
 
   private final URL jenkinsUrl;
 
-  public MesosSlave(
+  private final MesosAgentSpecTemplate spec;
+
+  public MesosJenkinsAgent(
       MesosCloud cloud,
-      String id,
+      String name,
+      MesosAgentSpecTemplate spec,
       String nodeDescription,
       URL jenkinsUrl,
-      String labelString,
       List<? extends NodeProperty<?>> nodeProperties)
       throws Descriptor.FormException, IOException {
     super(
-        id,
+        name,
         nodeDescription,
         "jenkins",
         1,
-        Mode.NORMAL,
-        labelString,
+        spec.getMode(),
+        spec.getLabel(),
         new JNLPLauncher(),
         null,
         nodeProperties);
     // pass around the MesosApi connection via MesosCloud
     this.cloud = cloud;
     this.reusable = true;
-    this.podId = id;
+    this.podId = name;
     this.jenkinsUrl = jenkinsUrl;
+    this.spec = spec;
   }
 
   /**
@@ -79,9 +82,9 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
   public CompletableFuture<Node> waitUntilOnlineAsync() {
     return Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(1), NotUsed.notUsed())
         .completionTimeout(Duration.ofMinutes(5))
-        .filter(ignored -> this.getComputer().isOnline())
+        .filter(ignored -> this.isOnline())
         .map(ignored -> this.asNode())
-        .runWith(Sink.head(), this.getCloud().getMesosClient().getMaterializer())
+        .runWith(Sink.head(), this.getCloud().getMesosApi().getMaterializer())
         .toCompletableFuture();
   }
 
@@ -111,11 +114,20 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
     }
   }
 
-  public PodSpec getPodSpec(Double cpu, int memory, Goal goal)
-      throws MalformedURLException, URISyntaxException {
+  /** @return whether the Jenkins agent connected and is online. */
+  public synchronized boolean isOnline() {
+    return this.toComputer().isOnline();
+  }
+
+  /** @return whether the agent is launching and not connected yet. */
+  public synchronized boolean isPending() {
+    return (!isKilled() && !isOnline());
+  }
+
+  public PodSpec getPodSpec(Goal goal) throws MalformedURLException, URISyntaxException {
     return MesosSlavePodSpec.builder()
-        .withCpu(cpu)
-        .withMemory(memory)
+        .withCpu(this.spec.getCpu())
+        .withMemory(this.spec.getMemory())
         .withName(this.name)
         .withJenkinsUrl(this.jenkinsUrl)
         .withGoal(goal)
@@ -150,9 +162,9 @@ public class MesosSlave extends AbstractCloudSlave implements EphemeralNode {
       logger.info("killing task {}", this.podId);
       // create a terminating spec for this pod
       Jenkins.getInstanceOrNull().removeNode(this);
-      this.getCloud().getMesosClient().killAgent(this.podId);
+      this.getCloud().getMesosApi().killAgent(this.podId);
     } catch (Exception ex) {
-      logger.warn("error when killing task {}", this.podId);
+      logger.warn("error when killing task {}", this.podId, ex);
     }
   }
 

@@ -9,18 +9,20 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
-import hudson.model.labels.LabelAtom;
+import hudson.model.Node.Mode;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosCloud;
-import org.jenkinsci.plugins.mesos.MesosSlave;
+import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
 import org.jenkinsci.plugins.mesos.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
-public class MesosSlaveLifecycleTest {
+public class MesosJenkinsAgentLifecycleTest {
 
   @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
 
@@ -31,15 +33,24 @@ public class MesosSlaveLifecycleTest {
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-          .withLogPrefix(MesosSlaveLifecycleTest.class.getCanonicalName())
+          .withLogPrefix(MesosJenkinsAgentLifecycleTest.class.getCanonicalName())
           .build(system, materializer);
 
   @Test
   public void testAgentLifecycle(TestUtils.JenkinsRule j) throws Exception {
-    LabelAtom label = new LabelAtom("label");
-    MesosCloud cloud = new MesosCloud("mesos", mesosCluster.getMesosUrl(), j.getURL().toString());
+    String mesosUrl = mesosCluster.getMesosUrl();
+    MesosCloud cloud =
+        new MesosCloud(
+            mesosUrl,
+            "MesosTest",
+            "*",
+            System.getProperty("user.name"),
+            j.getURL().toString(),
+            new ArrayList<>());
 
-    MesosSlave agent = (MesosSlave) cloud.startAgent().get();
+    final String name = "jenkins-lifecycle";
+    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
     agent.waitUntilOnlineAsync().get();
 
     // verify slave is running when the future completes;

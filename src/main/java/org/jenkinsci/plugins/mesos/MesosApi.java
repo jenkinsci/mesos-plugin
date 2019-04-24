@@ -9,6 +9,7 @@ import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
 import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
@@ -21,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,49 +33,59 @@ public class MesosApi {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApi.class);
 
-  private final String slavesUser;
   private final String frameworkName;
+  private final String role;
+  private final String agentUser;
+  private final String frameworkId;
   private final URL jenkinsUrl;
-  private final Protos.FrameworkID frameworkId;
-  private final MesosClientSettings clientSettings;
-  private final MesosClient client;
 
-  private final SourceQueueWithComplete<SpecUpdated> updates;
-  private final ConcurrentHashMap<PodId, MesosSlave> stateMap;
+  @XStreamOmitField private final MesosClient client;
 
-  private final ActorSystem system;
-  private final ActorMaterializer materializer;
-  private final ExecutionContext context;
+  @XStreamOmitField private final SourceQueueWithComplete<SpecUpdated> updates;
+
+  private final ConcurrentHashMap<PodId, MesosJenkinsAgent> stateMap;
+
+  @XStreamOmitField private final ActorSystem system;
+
+  @XStreamOmitField private final ActorMaterializer materializer;
+
+  @XStreamOmitField private final ExecutionContext context;
 
   /**
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
-   * MesosSlave} instances.
+   * MesosJenkinsAgent} instances.
    *
    * @param masterUrl The Mesos master address to connect to.
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
-   * @param user The username used for executing Mesos tasks.
+   * @param agentUser The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
+   * @param role The Mesos role to assume.
    * @throws InterruptedException
    * @throws ExecutionException
    */
-  public MesosApi(String masterUrl, URL jenkinsUrl, String user, String frameworkName)
+  public MesosApi(
+      URL masterUrl, URL jenkinsUrl, String agentUser, String frameworkName, String role)
       throws InterruptedException, ExecutionException {
     this.frameworkName = frameworkName;
-    this.frameworkId =
-        Protos.FrameworkID.newBuilder().setValue(UUID.randomUUID().toString()).build();
-    this.slavesUser = user;
+    this.frameworkId = UUID.randomUUID().toString();
+    this.role = role;
+    this.agentUser = agentUser;
     this.jenkinsUrl = jenkinsUrl;
 
-    Config conf =
-        ConfigFactory.load()
-            .getConfig("mesos-client")
-            .withValue("master-url", ConfigValueFactory.fromAnyRef(masterUrl));
-    this.clientSettings = MesosClientSettings.fromConfig(conf);
-    system = ActorSystem.create("mesos-scheduler");
+    ClassLoader classLoader = Jenkins.getInstanceOrNull().pluginManager.uberClassLoader;
+
+    Config conf = ConfigFactory.load(classLoader);
+    Config clientConf =
+        conf.getConfig("mesos-client")
+            .withValue("master-url", ConfigValueFactory.fromAnyRef(masterUrl.toString()));
+
+    logger.info("Config: {}", conf);
+    MesosClientSettings clientSettings = MesosClientSettings.fromConfig(clientConf);
+    system = ActorSystem.create("mesos-scheduler", conf, classLoader);
     context = system.dispatcher();
     materializer = ActorMaterializer.create(system);
 
-    client = connectClient().get();
+    client = connectClient(clientSettings).get();
 
     stateMap = new ConcurrentHashMap<>();
 
@@ -96,7 +108,7 @@ public class MesosApi {
         .thenApply(
             builder -> {
               // We create a SourceQueue and assume that the very first item is a spec snapshot.
-              var queue =
+              SourceQueueWithComplete<SpecUpdated> queue =
                   Source.<SpecUpdated>queue(256, OverflowStrategy.fail())
                       .via(builder.getFlow())
                       .toMat(Sink.foreach(this::updateState), Keep.left())
@@ -110,10 +122,10 @@ public class MesosApi {
    * Enqueue spec for a Jenkins event, passing a non-null existing podId will trigger a kill for
    * that pod
    *
-   * @return a {@link MesosSlave} once it's queued for running.
+   * @return a {@link MesosJenkinsAgent} once it's queued for running.
    */
   public CompletionStage<Void> killAgent(String id) throws Exception {
-    PodSpec spec = stateMap.get(new PodId(id)).getPodSpec(0.1, 32, Goal.Terminal$.MODULE$);
+    PodSpec spec = stateMap.get(new PodId(id)).getPodSpec(Goal.Terminal$.MODULE$);
     SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
     return updates.offer(update).thenRun(() -> {});
   }
@@ -122,30 +134,35 @@ public class MesosApi {
    * Enqueue spec for a Jenkins event, passing a non-null existing podId will trigger a kill for
    * that pod
    *
-   * @return a {@link MesosSlave} once it's queued for running.
+   * @return a {@link MesosJenkinsAgent} once it's queued for running.
    */
-  public CompletionStage<MesosSlave> enqueueAgent(MesosCloud cloud, double cpu, int mem)
+  public CompletionStage<MesosJenkinsAgent> enqueueAgent(
+      MesosCloud cloud, String name, MesosAgentSpecTemplate spec)
       throws IOException, FormException, URISyntaxException {
 
-    var name = String.format("jenkins-test-%s", UUID.randomUUID().toString());
-    MesosSlave mesosSlave =
-        new MesosSlave(cloud, name, "Mesos Jenkins Slave", jenkinsUrl, "label", List.of());
-    PodSpec spec = mesosSlave.getPodSpec(cpu, mem, Goal.Running$.MODULE$);
-    SpecUpdated update = new PodSpecUpdated(spec.id(), Option.apply(spec));
+    MesosJenkinsAgent mesosJenkinsAgent =
+        new MesosJenkinsAgent(
+            cloud, name, spec, "Mesos Jenkins Slave", jenkinsUrl, Collections.emptyList());
+    PodSpec podSpec = mesosJenkinsAgent.getPodSpec(Goal.Running$.MODULE$);
+    SpecUpdated update = new PodSpecUpdated(podSpec.id(), Option.apply(podSpec));
 
-    stateMap.put(spec.id(), mesosSlave);
+    stateMap.put(podSpec.id(), mesosJenkinsAgent);
     // async add agent to queue
-    return updates.offer(update).thenApply(result -> mesosSlave); // TODO: handle QueueOfferResult.
+    return updates
+        .offer(update)
+        .thenApply(result -> mesosJenkinsAgent); // TODO: handle QueueOfferResult.
   }
 
   /** Establish a connection to Mesos via the v1 client. */
-  private CompletableFuture<MesosClient> connectClient() {
+  private CompletableFuture<MesosClient> connectClient(MesosClientSettings clientSettings) {
+    Protos.FrameworkID frameworkId =
+        Protos.FrameworkID.newBuilder().setValue(this.frameworkId).build();
     Protos.FrameworkInfo frameworkInfo =
         Protos.FrameworkInfo.newBuilder()
-            .setUser(slavesUser)
-            .setName(frameworkName)
+            .setUser(this.agentUser)
+            .setName(this.frameworkName)
             .setId(frameworkId)
-            .addRoles("test")
+            .addRoles(role)
             .addCapabilities(
                 Protos.FrameworkInfo.Capability.newBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
@@ -166,13 +183,13 @@ public class MesosApi {
    * Callback for USI to process state events.
    *
    * <p>This method will filter out {@link PodStatusUpdated} and pass them on to their {@link
-   * MesosSlave}. It should be threadsafe.
+   * MesosJenkinsAgent}. It should be threadsafe.
    *
    * @param event The {@link PodStatusUpdated} for a USI pod.
    */
   public void updateState(StateEvent event) {
     if (event instanceof PodStatusUpdated) {
-      var podStateEvent = (PodStatusUpdated) event;
+      PodStatusUpdated podStateEvent = (PodStatusUpdated) event;
       logger.info("Got status update for pod {}", podStateEvent.id().value());
       stateMap.computeIfPresent(
           podStateEvent.id(),
@@ -181,6 +198,17 @@ public class MesosApi {
             return slave;
           });
     }
-    // TODO: kill pod if unknown.
+  }
+
+  // Getters
+
+  /** @return the name of the registered Mesos framework. */
+  public String getFrameworkName() {
+    return this.frameworkName;
+  }
+
+  /** @return the current state map. */
+  public Map<PodId, MesosJenkinsAgent> getState() {
+    return Collections.unmodifiableMap(this.stateMap);
   }
 }
