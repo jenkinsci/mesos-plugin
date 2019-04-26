@@ -141,7 +141,14 @@ public class MesosApi {
 
     MesosJenkinsAgent mesosJenkinsAgent =
         new MesosJenkinsAgent(
-            cloud, name, spec, "Mesos Jenkins Slave", jenkinsUrl, Collections.emptyList());
+            cloud,
+            name,
+            spec,
+            "Mesos Jenkins Slave",
+            jenkinsUrl,
+            spec.getIdleTerminationMinutes(),
+            spec.getReusable(),
+            Collections.emptyList());
     PodSpec podSpec = mesosJenkinsAgent.getPodSpec(Goal.Running$.MODULE$);
     SpecUpdated update = new PodSpecUpdated(podSpec.id(), Option.apply(podSpec));
 

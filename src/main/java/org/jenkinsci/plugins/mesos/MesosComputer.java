@@ -3,6 +3,9 @@ package org.jenkinsci.plugins.mesos;
 import hudson.model.Executor;
 import hudson.model.Queue;
 import hudson.slaves.AbstractCloudComputer;
+import java.io.IOException;
+import org.kohsuke.stapler.HttpRedirect;
+import org.kohsuke.stapler.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,12 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
   @Override
   public void taskAccepted(Executor executor, Queue.Task task) {
     super.taskAccepted(executor, task);
+    if (!reusable) {
+      // single use computer will only accept one task, after completing task it will go idle and be
+      // killed by MesosRetentionStrategy
+      logger.info("Computer {}: is no longer accepting tasks and was marked as single-use", this);
+      setAcceptingTasks(false);
+    }
     logger.info("Computer {}: task accepted", this);
   }
 
@@ -47,5 +56,20 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
   @Override
   public String toString() {
     return String.format("%s (slave: %s)", getName(), getNode());
+  }
+
+  @Override
+  public MesosJenkinsAgent getNode() {
+    return super.getNode();
+  }
+
+  @Override
+  public HttpResponse doDoDelete() throws IOException {
+    try {
+      getNode().terminate();
+    } catch (InterruptedException e) {
+      logger.warn("Failure to terminate agent {}", getNode().getPodId(), e);
+    }
+    return new HttpRedirect("..");
   }
 }

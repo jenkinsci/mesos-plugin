@@ -52,6 +52,7 @@ class MesosApiTest {
         new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
 
     final String name = "jenkins-start-agent";
+    final String idleMin = "1";
     final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
     MesosJenkinsAgent agent = api.enqueueAgent(null, name, spec).toCompletableFuture().get();
 
@@ -67,6 +68,7 @@ class MesosApiTest {
         new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
 
     final String name = "jenkins-stop-agent";
+    final String idleMin = "1";
     final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
     MesosJenkinsAgent agent = api.enqueueAgent(null, name, spec).toCompletableFuture().get();
     // Poll state until we get something.

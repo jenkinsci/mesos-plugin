@@ -51,6 +51,7 @@ public class MesosCloudProvisionTest {
   @Test
   public void testJenkinsProvision(TestUtils.JenkinsRule j) throws Exception {
     LabelAtom label = new LabelAtom("label");
+    final String idleMin = "1";
     final MesosAgentSpecTemplate spec =
         new MesosAgentSpecTemplate(label.toString(), Mode.EXCLUSIVE);
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
@@ -74,6 +75,7 @@ public class MesosCloudProvisionTest {
 
       // ensure all plannedNodes are now running
       assertThat(agent.isRunning(), is(true));
+      assertThat(agent.getComputer().isOnline(), is(true));
     }
 
     // check that jenkins knows about all the plannedNodes
@@ -83,6 +85,7 @@ public class MesosCloudProvisionTest {
   @Test
   public void testStartAgent(TestUtils.JenkinsRule j) throws Exception {
     final String name = "jenkins-agent";
+    final String idleMin = "1";
     final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
     MesosCloud cloud =
@@ -96,7 +99,7 @@ public class MesosCloudProvisionTest {
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
 
-    await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
+    await().atMost(10, TimeUnit.SECONDS).until(agent::isRunning);
 
     assertThat(agent.isRunning(), is(true));
     assertThat(agent.isOnline(), is(true));

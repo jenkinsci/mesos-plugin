@@ -17,12 +17,14 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final Set<LabelAtom> labelSet;
 
   private final Node.Mode mode;
+  private final int idleTerminationMinutes;
 
   @DataBoundConstructor
   public MesosAgentSpecTemplate(String label, Node.Mode mode) {
     this.label = label;
     this.labelSet = Label.parse(label);
     this.mode = mode;
+    this.idleTerminationMinutes = 1;
   }
 
   @Extension
@@ -57,5 +59,13 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
   public int getMemory() {
     return 32;
+  }
+
+  public int getIdleTerminationMinutes() {
+    return idleTerminationMinutes;
+  }
+
+  public Boolean getReusable() {
+    return true;
   }
 }
