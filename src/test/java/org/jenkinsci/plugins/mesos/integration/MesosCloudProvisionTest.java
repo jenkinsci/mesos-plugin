@@ -2,21 +2,29 @@ package org.jenkinsci.plugins.mesos.integration;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
 import hudson.model.Node.Mode;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.NodeProvisioner;
+import hudson.tasks.Builder;
+import hudson.tasks.Shell;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
+import okhttp3.Response;
+import org.jenkinsci.plugins.mesos.JenkinsConfigClient;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosCloud;
 import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
@@ -95,5 +103,35 @@ public class MesosCloudProvisionTest {
 
     // assert jenkins has the 1 added nodes
     assertThat(Jenkins.getInstanceOrNull().getNodes(), hasSize(1));
+  }
+
+  @Test
+  public void runSimpleBuild(TestUtils.JenkinsRule j) throws Exception {
+
+    // Given: a configured Mesos Cloud.
+    final String label = "mesos";
+    final JenkinsConfigClient jenkinsClient = new JenkinsConfigClient(j.createWebClient());
+    final Response response =
+        jenkinsClient.addMesosCloud(
+            mesosCluster.getMesosUrl(),
+            "Jenkins Scheduler",
+            "*",
+            System.getProperty("user.name"),
+            j.getURL().toURI().resolve("jenkins").toString(),
+            label,
+            "EXCLUSIVE");
+    assertThat(response.code(), is(lessThan(400)));
+
+    // And: a project with a simple build command.
+    FreeStyleProject project = j.createFreeStyleProject("mesos-test");
+    final Builder step = new Shell("echo Hello");
+    project.getBuildersList().add(step);
+    project.setAssignedLabel(new LabelAtom(label));
+
+    // When: we run a build
+    FreeStyleBuild build = j.buildAndAssertSuccess(project);
+
+    // Then it finishes successfully and the logs contain our command.
+    assertThat(j.getLog(build), containsString("echo Hello"));
   }
 }

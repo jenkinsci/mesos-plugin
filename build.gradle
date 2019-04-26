@@ -25,6 +25,9 @@ dependencies {
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
     // Test dependencies
+    testImplementation 'com.squareup.okhttp3:okhttp:3.14.1'
+    testImplementation 'javax.json:javax.json-api:1.1'
+    testImplementation 'org.glassfish:javax.json:1.0.4'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     testImplementation('com.mesosphere.usi:test-utils') { version { branch = usiBranch } }

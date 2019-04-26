@@ -79,7 +79,6 @@ public class MesosApi {
         conf.getConfig("mesos-client")
             .withValue("master-url", ConfigValueFactory.fromAnyRef(masterUrl.toString()));
 
-    logger.info("Config: {}", conf);
     MesosClientSettings clientSettings = MesosClientSettings.fromConfig(clientConf);
     system = ActorSystem.create("mesos-scheduler", conf, classLoader);
     context = system.dispatcher();
