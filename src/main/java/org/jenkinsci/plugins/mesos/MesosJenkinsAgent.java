@@ -10,11 +10,7 @@ import com.mesosphere.usi.core.models.PodStatusUpdated;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
-import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
-import hudson.slaves.EphemeralNode;
-import hudson.slaves.JNLPLauncher;
-import hudson.slaves.NodeProperty;
+import hudson.slaves.*;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -130,6 +126,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     return MesosSlavePodSpec.builder()
         .withCpu(this.spec.getCpu())
         .withMemory(this.spec.getMemory())
+        .withDisk(this.spec.getDisk())
         .withName(this.name)
         .withJenkinsUrl(this.jenkinsUrl)
         .withGoal(goal)

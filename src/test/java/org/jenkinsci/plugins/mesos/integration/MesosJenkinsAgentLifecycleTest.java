@@ -10,6 +10,7 @@ import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Node.Mode;
+import hudson.model.labels.LabelAtom;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
@@ -50,7 +51,26 @@ public class MesosJenkinsAgentLifecycleTest {
 
     final String name = "jenkins-lifecycle";
     final String idleMin = "1";
-    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    LabelAtom label = new LabelAtom("label");
+    final MesosAgentSpecTemplate spec =
+        new MesosAgentSpecTemplate(
+            label.toString(),
+            Mode.EXCLUSIVE,
+            "0.1",
+            "32",
+            idleMin,
+            true,
+            "1",
+            "1",
+            "0",
+            "0",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "");
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
     agent.waitUntilOnlineAsync().get();
 
@@ -79,7 +99,26 @@ public class MesosJenkinsAgentLifecycleTest {
 
     final String name = "jenkins-node-terminate";
     final String idleMin = "1";
-    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    LabelAtom label = new LabelAtom("label");
+    final MesosAgentSpecTemplate spec =
+        new MesosAgentSpecTemplate(
+            label.toString(),
+            Mode.EXCLUSIVE,
+            "0.1",
+            "32",
+            idleMin,
+            true,
+            "1",
+            "1",
+            "0",
+            "0",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "");
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
     agent.waitUntilOnlineAsync().get();
@@ -106,7 +145,26 @@ public class MesosJenkinsAgentLifecycleTest {
 
     final String name = "jenkins-node-delete";
     final String idleMin = "1";
-    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    LabelAtom label = new LabelAtom("label");
+    final MesosAgentSpecTemplate spec =
+        new MesosAgentSpecTemplate(
+            label.toString(),
+            Mode.EXCLUSIVE,
+            "0.1",
+            "32",
+            idleMin,
+            true,
+            "1",
+            "1",
+            "0",
+            "0",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "");
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
     agent.waitUntilOnlineAsync().get();
@@ -133,7 +191,26 @@ public class MesosJenkinsAgentLifecycleTest {
 
     final String name = "jenkins-node-delete";
     final String idleMin = "1";
-    final MesosAgentSpecTemplate spec = new MesosAgentSpecTemplate(name, Mode.EXCLUSIVE);
+    LabelAtom label = new LabelAtom("label");
+    final MesosAgentSpecTemplate spec =
+        new MesosAgentSpecTemplate(
+            label.toString(),
+            Mode.EXCLUSIVE,
+            "0.1",
+            "32",
+            idleMin,
+            true,
+            "1",
+            "1",
+            "0",
+            "0",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            null);
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
     agent.waitUntilOnlineAsync().get();

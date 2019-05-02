@@ -42,6 +42,7 @@ public class MesosSlavePodSpec {
     private PodId id = null;
     private ScalarRequirement cpus = null;
     private ScalarRequirement memory = null;
+    private ScalarRequirement disk = null;
     private String role = "test";
     private Goal goal = null;
 
@@ -81,6 +82,11 @@ public class MesosSlavePodSpec {
       return this;
     }
 
+    public Builder withDisk(Double disk) {
+      this.disk = ScalarRequirement.disk(disk);
+      return this;
+    }
+
     public Builder withJenkinsUrl(URL url) {
       this.jenkinsMaster = url;
       return this;
@@ -99,7 +105,7 @@ public class MesosSlavePodSpec {
     public PodSpec build() throws MalformedURLException, URISyntaxException {
       final RunSpec runSpec =
           new RunSpec(
-              convertListToSeq(Arrays.asList(this.cpus, this.memory)),
+              convertListToSeq(Arrays.asList(this.cpus, this.memory, this.disk)),
               this.buildCommand(),
               this.role,
               convertListToSeq(Arrays.asList(buildFetchUri())));

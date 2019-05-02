@@ -10,6 +10,58 @@
 
         <f:slave-mode name="mode" node="${instance}" />
 
+        <f:entry title="${%Jenkins Agent CPUs}" field="cpus">
+                <f:textbox clazz="required" default="0.1"/>
+        </f:entry>
+
+        <f:entry title="${%Jenkins Agent Memory in MB}" field="mem">
+            <f:number clazz="required positive-number" default="512"/>
+        </f:entry>
+
+         <f:entry title="${%Idle Termination Minutes}" field="idleTerminationMinutes">
+                <f:number clazz="required number" default="3"/>
+         </f:entry>
+
+         <f:entry title="${%Minimum number of Executors per Agent}" field="minExecutors">
+               <f:number clazz="required number" default="1"/>
+         </f:entry>
+
+         <f:entry title="${%Maximum number of Executors per Agent}" field="maxExecutors">
+             <f:number clazz="required number" default="1"/>
+         </f:entry>
+
+         <f:entry title="${%Disk Space in MB}" field="disk">
+             <f:textbox clazz="required" default="0.0"/>
+         </f:entry>
+
+         <f:entry title="${%Mesos Offer Selection Attributes}" field="agentAttributes">
+                 <f:textbox/>
+         </f:entry>git st
+
+         <f:entry title="${%Additional Jenkins Agent JVM arguments}" field="jvmArgs">
+              <f:textbox default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"/>
+         </f:entry>
+
+         <f:entry title="${%Additional Jenkins Agent Agent JNLP arguments}" field="jnlpArgs">
+             <f:textbox default="-noReconnect"/>
+         </f:entry>
+
+          <f:entry title="${%Mark this Agent Info as default for all Jobs}" field="defaultAgent">
+                 <f:checkbox onclick="checkDefaultSlave(this)"/>
+          </f:entry>
+
+          <f:entry title="${%Remote FS Root}" field="remoteFSRoot">
+              <f:textbox clazz="required" default="jenkins"/>
+          </f:entry>
+
+         <f:entry title="${%Jenkins Executor Memory in MB}" field="executorMem">
+              <f:number clazz="required positive-number" default="128"/>
+          </f:entry>
+
+          <f:entry title="${%Node Properties}" field="nodeProperties">
+              <f:number clazz="required number" default=""/>
+          </f:entry>
+
     </table>
 
 </j:jelly>
