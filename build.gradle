@@ -22,6 +22,7 @@ dependencies {
     api ('com.mesosphere.usi:core') { version { branch = usiBranch } }
     api ('com.mesosphere.usi:core-models') { version { branch = usiBranch } }
     api ('com.mesosphere.usi:mesos-client') { version { branch = usiBranch } }
+    api ('com.mesosphere.usi:persistence') { version { branch = usiBranch } }
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
     // Test dependencies
