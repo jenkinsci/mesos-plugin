@@ -11,7 +11,9 @@ import hudson.slaves.AbstractCloudImpl;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
+import hudson.util.FormValidation.Kind;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -20,8 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -263,10 +265,40 @@ public class MesosCloud extends AbstractCloudImpl {
       }
     }
 
-    /** Test connection from configuration page. */
+    /**
+     * Test connection from configuration page.
+     *
+     * @param mesosMasterUrl The Mesos master URL set by the user.
+     * @return Whether the URL is correct and reachable or a validation error.
+     */
     public FormValidation doTestConnection(
         @QueryParameter("mesosMasterUrl") String mesosMasterUrl) {
-      throw new NotImplementedException("Connection testing is not supported yet.");
+      FormValidation urlValidation = doCheckMesosMasterUrl(mesosMasterUrl);
+      if (urlValidation.kind == Kind.ERROR) {
+        return urlValidation;
+      }
+
+      mesosMasterUrl = mesosMasterUrl.trim();
+      @CheckForNull HttpURLConnection urlConn = null;
+      try {
+        urlConn = (HttpURLConnection) new URL(mesosMasterUrl).openConnection();
+        urlConn.connect();
+        int code = urlConn.getResponseCode();
+
+        // Response is OK or redirect.
+        if (code <= 400) {
+          return FormValidation.ok("Connected to Mesos successfully.");
+        } else {
+          return FormValidation.error("Status returned from url was: " + code);
+        }
+      } catch (IOException e) {
+        logger.warn("Failed to connect to Mesos at {}", mesosMasterUrl, e);
+        return FormValidation.error(e.getMessage());
+      } finally {
+        if (urlConn != null) {
+          urlConn.disconnect();
+        }
+      }
     }
 
     /**
