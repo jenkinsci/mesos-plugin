@@ -48,7 +48,7 @@ jenkinsPlugin {
     coreVersion = "2.164"
     displayName = "Mesos Cloud"
     url = "https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin"
-    gitHubUrl = "https://github.com/mesosphere/mesos-plugin/"
+    gitHubUrl = "https://github.com/mesosphere/jenkins-mesos-plugin/"
     shortName = "mesos"
 
     // The developers section is optional, and corresponds to the POM developers section.
