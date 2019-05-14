@@ -101,7 +101,7 @@ public class MesosCloud extends AbstractCloudImpl {
             "Excess workload of {} provisioning new Jenkins agent on Mesos cluster with {} executors",
             excessWorkload,
             numExecutors);
-        final String agentName = spec.getName();
+        final String agentName = spec.generateName();
         nodes.add(
             new NodeProvisioner.PlannedNode(agentName, startAgent(agentName, spec), numExecutors));
         excessWorkload -= numExecutors;
@@ -154,7 +154,7 @@ public class MesosCloud extends AbstractCloudImpl {
             mesosAgent -> {
               try {
                 Jenkins.get().addNode(mesosAgent);
-                logger.info("waiting for node to come online...");
+                logger.info("waiting for node {} to come online...", mesosAgent.getNodeName());
                 return mesosAgent
                     .waitUntilOnlineAsync()
                     .thenApply(

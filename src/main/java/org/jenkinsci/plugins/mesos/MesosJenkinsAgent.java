@@ -3,17 +3,13 @@ package org.jenkinsci.plugins.mesos;
 import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.mesosphere.usi.core.models.Goal;
-import com.mesosphere.usi.core.models.PodSpec;
-import com.mesosphere.usi.core.models.PodStatus;
-import com.mesosphere.usi.core.models.PodStatusUpdated;
+import com.mesosphere.usi.core.models.*;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.*;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
@@ -21,7 +17,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos.TaskState;
-import org.jenkinsci.plugins.mesos.api.MesosSlavePodSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +24,9 @@ import org.slf4j.LoggerFactory;
 public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNode {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosJenkinsAgent.class);
+
+  // TODO: Move magic number to config.
+  private static final Duration onlineTimeout = Duration.ofMinutes(5);
 
   // Holds the current USI status for this agent.
   Optional<PodStatus> currentStatus = Optional.empty();
@@ -40,8 +38,6 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   private final String podId;
 
   private final URL jenkinsUrl;
-
-  private final MesosAgentSpecTemplate spec;
 
   public MesosJenkinsAgent(
       MesosCloud cloud,
@@ -68,7 +64,6 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     this.reusable = reusable;
     this.podId = name;
     this.jenkinsUrl = jenkinsUrl;
-    this.spec = spec;
   }
 
   /**
@@ -79,7 +74,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
    */
   public CompletableFuture<Node> waitUntilOnlineAsync() {
     return Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(1), NotUsed.notUsed())
-        .completionTimeout(Duration.ofMinutes(5))
+        .completionTimeout(onlineTimeout)
         .filter(ignored -> this.isOnline())
         .map(ignored -> this.asNode())
         .runWith(Sink.head(), this.getCloud().getMesosApi().getMaterializer())
@@ -114,7 +109,13 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   /** @return whether the Jenkins agent connected and is online. */
   public synchronized boolean isOnline() {
-    return this.toComputer().isOnline();
+    final Computer computer = this.toComputer();
+    if (computer != null) {
+      return computer.isOnline();
+    } else {
+      logger.warn("No computer for node {}.", getNodeName());
+      return false;
+    }
   }
 
   /** @return whether the agent is launching and not connected yet. */
@@ -122,23 +123,12 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     return (!isKilled() && !isOnline());
   }
 
-  public PodSpec getPodSpec(Goal goal) throws MalformedURLException, URISyntaxException {
-    return MesosSlavePodSpec.builder()
-        .withCpu(this.spec.getCpu())
-        .withMemory(this.spec.getMemory())
-        .withDisk(this.spec.getDisk())
-        .withName(this.name)
-        .withJenkinsUrl(this.jenkinsUrl)
-        .withGoal(goal)
-        .build();
-  }
-
   /**
    * Updates the state of the slave.
    *
    * @param event The state event from USI which informs about the task status.
    */
-  public synchronized void update(PodStatusUpdated event) {
+  public synchronized void update(PodStatusUpdatedEvent event) {
     if (event.newStatus().isDefined()) {
       logger.info("Received new status for {}", event.id().value());
       this.currentStatus = Optional.of(event.newStatus().get());

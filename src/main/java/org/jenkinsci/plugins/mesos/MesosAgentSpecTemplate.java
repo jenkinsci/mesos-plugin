@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
+import com.mesosphere.usi.core.models.LaunchPod;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -7,9 +8,13 @@ import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -104,7 +109,23 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     }
   }
 
-  // Getters
+  /**
+   * Creates a LaunchPod command to to create a new Jenkins agent via USI
+   *
+   * @param jenkinsUrl the URL of the jenkins master.
+   * @param name The name of the node to launch.
+   * @return a LaunchPod command to be passed to USI.
+   */
+  public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
+      throws MalformedURLException, URISyntaxException {
+    return new LaunchCommandBuilder()
+        .withCpu(this.getCpu())
+        .withMemory(this.getMemory())
+        .withDisk(this.getDisk())
+        .withName(name)
+        .withJenkinsUrl(jenkinsUrl)
+        .build();
+  }
 
   public String getLabel() {
     return this.label;
@@ -118,7 +139,12 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.mode;
   }
 
-  public String getName() {
+  /**
+   * Generate a new unique name for a new agent. Note: multiple calls will yield different names.
+   *
+   * @return A new unique name for an agent.
+   */
+  public String generateName() {
     return String.format("jenkins-agent-%s-%s", this.label, UUID.randomUUID().toString());
   }
 
