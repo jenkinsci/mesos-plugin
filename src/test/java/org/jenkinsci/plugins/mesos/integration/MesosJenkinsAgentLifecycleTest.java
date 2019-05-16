@@ -39,10 +39,9 @@ public class MesosJenkinsAgentLifecycleTest {
 
   @Test
   public void testAgentLifecycle(TestUtils.JenkinsRule j) throws Exception {
-    String mesosUrl = mesosCluster.getMesosUrl();
     MesosCloud cloud =
         new MesosCloud(
-            mesosUrl,
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),
@@ -90,7 +89,7 @@ public class MesosJenkinsAgentLifecycleTest {
   public void testComputerNodeTermination(TestUtils.JenkinsRule j) throws Exception {
     MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),
@@ -136,7 +135,7 @@ public class MesosJenkinsAgentLifecycleTest {
   public void testComputerNodeDeletion(TestUtils.JenkinsRule j) throws Exception {
     MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),
@@ -182,7 +181,7 @@ public class MesosJenkinsAgentLifecycleTest {
   public void testRetentionStrategy(TestUtils.JenkinsRule j) throws Exception {
     MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),

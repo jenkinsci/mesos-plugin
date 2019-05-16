@@ -75,7 +75,7 @@ public class MesosCloudProvisionTest {
 
     MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),
@@ -127,7 +127,7 @@ public class MesosCloudProvisionTest {
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
     MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "MesosTest",
             "*",
             System.getProperty("user.name"),
@@ -153,7 +153,7 @@ public class MesosCloudProvisionTest {
     final JenkinsConfigClient jenkinsClient = new JenkinsConfigClient(j.createWebClient());
     final Response response =
         jenkinsClient.addMesosCloud(
-            mesosCluster.getMesosUrl(),
+            mesosCluster.getMesosUrl().toString(),
             "Jenkins Scheduler",
             "*",
             System.getProperty("user.name"),

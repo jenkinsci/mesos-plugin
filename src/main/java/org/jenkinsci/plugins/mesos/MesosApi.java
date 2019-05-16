@@ -13,7 +13,6 @@ import com.mesosphere.usi.repository.PodRecordRepository;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValueFactory;
 import hudson.model.Descriptor.FormException;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -77,11 +76,9 @@ public class MesosApi {
     ClassLoader classLoader = Jenkins.getInstanceOrNull().pluginManager.uberClassLoader;
 
     Config conf = ConfigFactory.load(classLoader);
-    Config clientConf =
-        conf.getConfig("mesos-client")
-            .withValue("master-url", ConfigValueFactory.fromAnyRef(masterUrl.toString()));
-
-    MesosClientSettings clientSettings = MesosClientSettings.fromConfig(clientConf);
+    MesosClientSettings clientSettings =
+        MesosClientSettings.fromConfig(conf.getConfig("mesos-client"))
+            .withMasters(Collections.singletonList(masterUrl));
     system = ActorSystem.create("mesos-scheduler", conf, classLoader);
     context = system.dispatcher();
     materializer = ActorMaterializer.create(system);
