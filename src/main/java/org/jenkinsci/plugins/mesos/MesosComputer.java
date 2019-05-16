@@ -25,7 +25,7 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
    */
   public MesosComputer(MesosJenkinsAgent agent) {
     super(agent);
-    this.reusable = agent.getReusable();
+    this.reusable = (agent.getReusable() == null) ? false : agent.getReusable();
   }
 
   @Override

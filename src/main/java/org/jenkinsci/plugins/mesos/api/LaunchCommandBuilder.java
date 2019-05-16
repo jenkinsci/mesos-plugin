@@ -86,13 +86,13 @@ public class LaunchCommandBuilder {
   }
 
   public LaunchPod build() throws MalformedURLException, URISyntaxException {
-    final RunSpec runSpec =
-        new RunSpec(
+    final RunTemplate runTemplate =
+        new RunTemplate(
             convertListToSeq(Arrays.asList(this.cpus, this.memory, this.disk)),
             this.buildCommand(),
             this.role,
             convertListToSeq(Arrays.asList(buildFetchUri())));
-    return new LaunchPod(this.id, runSpec);
+    return new LaunchPod(this.id, runTemplate);
   }
 
   /** @return the agent shell command for the Mesos task. */
