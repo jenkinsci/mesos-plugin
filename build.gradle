@@ -2,6 +2,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id "com.diffplug.gradle.spotless" version "3.19.0"
+    id "com.github.spotbugs" version "1.7.1"
     id "org.jenkins-ci.jpi" version "0.31.0"
 }
 
@@ -58,6 +59,13 @@ jenkinsPlugin {
             name 'Karsten Jeschkies'
             email 'kjeschkies@mesosphere.com'
         }
+    }
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
     }
 }
 

@@ -74,7 +74,7 @@ public class MesosApi {
     this.agentUser = agentUser;
     this.jenkinsUrl = jenkinsUrl;
 
-    ClassLoader classLoader = Jenkins.getInstanceOrNull().pluginManager.uberClassLoader;
+    ClassLoader classLoader = Jenkins.get().pluginManager.uberClassLoader;
 
     Config conf = ConfigFactory.load(classLoader);
     MesosClientSettings clientSettings =

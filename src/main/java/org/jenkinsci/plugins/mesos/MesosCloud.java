@@ -49,7 +49,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private final URL jenkinsUrl;
 
-  private final List<MesosAgentSpecTemplate> mesosAgentSpecTemplates;
+  private final transient List<MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
   @DataBoundConstructor
   public MesosCloud(

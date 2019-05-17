@@ -16,7 +16,8 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosComputer.class);
 
-  private final Boolean reusable;
+  private final boolean reusable;
+  private final String podId;
 
   /**
    * Constructs a new computer. This is called by {@link MesosJenkinsAgent#createComputer()}.
@@ -26,6 +27,7 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
   public MesosComputer(MesosJenkinsAgent agent) {
     super(agent);
     this.reusable = (agent.getReusable() == null) ? false : agent.getReusable();
+    this.podId = agent.getPodId();
   }
 
   @Override
@@ -66,9 +68,12 @@ public class MesosComputer extends AbstractCloudComputer<MesosJenkinsAgent> {
   @Override
   public HttpResponse doDoDelete() throws IOException {
     try {
-      getNode().terminate();
+      final MesosJenkinsAgent agent = getNode();
+      if (agent != null) {
+        agent.terminate();
+      }
     } catch (InterruptedException e) {
-      logger.warn("Failure to terminate agent {}", getNode().getPodId(), e);
+      logger.warn("Failure to terminate agent {}", podId, e);
     }
     return new HttpRedirect("..");
   }

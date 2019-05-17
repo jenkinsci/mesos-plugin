@@ -10,6 +10,7 @@ import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.*;
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
@@ -150,7 +151,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     try {
       logger.info("killing task {}", this.podId);
       // create a terminating spec for this pod
-      Jenkins.getInstanceOrNull().removeNode(this);
+      Jenkins.get().removeNode(this);
       this.getCloud().getMesosApi().killAgent(this.podId);
     } catch (Exception ex) {
       logger.warn("error when killing task {}", this.podId, ex);
@@ -169,5 +170,16 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   /** get the podId tied to this task. */
   public String getPodId() {
     return podId;
+  }
+
+  // Mark as not serializable.
+
+  private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+    throw new NotSerializableException();
+  }
+
+  private void readObject(java.io.ObjectInputStream stream)
+      throws IOException, ClassNotFoundException {
+    throw new NotSerializableException();
   }
 }
