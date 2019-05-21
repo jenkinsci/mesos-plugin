@@ -149,14 +149,14 @@ public class MesosCloud extends AbstractCloudImpl {
   public Future<Node> startAgent(String name, MesosAgentSpecTemplate spec)
       throws IOException, FormException, URISyntaxException {
     return mesosApi
-        .enqueueAgent(this, name, spec)
+        .enqueueAgent(name, spec)
         .thenCompose(
             mesosAgent -> {
               try {
                 Jenkins.get().addNode(mesosAgent);
                 logger.info("waiting for node {} to come online...", mesosAgent.getNodeName());
                 return mesosAgent
-                    .waitUntilOnlineAsync()
+                    .waitUntilOnlineAsync(mesosApi.getMaterializer())
                     .thenApply(
                         node -> {
                           logger.info("Agent {} is online", name);

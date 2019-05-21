@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.mesos;
 
 import akka.NotUsed;
+import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.mesosphere.usi.core.models.*;
@@ -26,29 +27,29 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   private static final Logger logger = LoggerFactory.getLogger(MesosJenkinsAgent.class);
 
-  // TODO: Move magic number to config.
-  private static final Duration onlineTimeout = Duration.ofMinutes(5);
+  private final Duration onlineTimeout;
 
   // Holds the current USI status for this agent.
   Optional<PodStatus> currentStatus = Optional.empty();
 
   private final Boolean reusable;
 
-  private final MesosCloud cloud;
+  private final MesosApi api;
 
   private final String podId;
 
   private final URL jenkinsUrl;
 
   public MesosJenkinsAgent(
-      MesosCloud cloud,
+      MesosApi api,
       String name,
       MesosAgentSpecTemplate spec,
       String nodeDescription,
       URL jenkinsUrl,
       Integer idleTerminationInMinutes,
       Boolean reusable,
-      List<? extends NodeProperty<?>> nodeProperties)
+      List<? extends NodeProperty<?>> nodeProperties,
+      Duration agentTimeout)
       throws Descriptor.FormException, IOException {
     super(
         name,
@@ -60,11 +61,12 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
         new JNLPLauncher(),
         new MesosRetentionStrategy(idleTerminationInMinutes),
         nodeProperties);
-    // pass around the MesosApi connection via MesosCloud
-    this.cloud = cloud;
+    // pass around the MesosApi connection
+    this.api = api;
     this.reusable = reusable;
     this.podId = name;
     this.jenkinsUrl = jenkinsUrl;
+    this.onlineTimeout = agentTimeout;
   }
 
   /**
@@ -73,12 +75,12 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
    *
    * @return The future agent that will come online.
    */
-  public CompletableFuture<Node> waitUntilOnlineAsync() {
+  public CompletableFuture<Node> waitUntilOnlineAsync(ActorMaterializer materializer) {
     return Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(1), NotUsed.notUsed())
         .completionTimeout(onlineTimeout)
         .filter(ignored -> this.isOnline())
         .map(ignored -> this.asNode())
-        .runWith(Sink.head(), this.getCloud().getMesosApi().getMaterializer())
+        .runWith(Sink.head(), materializer)
         .toCompletableFuture();
   }
 
@@ -152,7 +154,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
       logger.info("killing task {}", this.podId);
       // create a terminating spec for this pod
       Jenkins.get().removeNode(this);
-      this.getCloud().getMesosApi().killAgent(this.podId);
+      this.api.killAgent(this.podId);
     } catch (Exception ex) {
       logger.warn("error when killing task {}", this.podId, ex);
     }
@@ -161,10 +163,6 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   public Boolean getReusable() {
     // TODO: implement reusable slaves
     return reusable;
-  }
-
-  public MesosCloud getCloud() {
-    return cloud;
   }
 
   /** get the podId tied to this task. */
