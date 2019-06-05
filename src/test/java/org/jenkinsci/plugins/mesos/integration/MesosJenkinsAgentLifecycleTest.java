@@ -11,6 +11,8 @@ import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Slave;
+import hudson.security.FullControlOnceLoggedInAuthorizationStrategy;
+import hudson.security.HudsonPrivateSecurityRealm;
 import hudson.slaves.SlaveComputer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -149,6 +151,35 @@ public class MesosJenkinsAgentLifecycleTest {
 
     // after 1 minute MesosRetentionStrategy will kill the task
     await().atMost(3, TimeUnit.MINUTES).until(agent::isKilled);
+  }
+
+  @Test
+  public void testJnlpAgentCommandContainsSecret(TestUtils.JenkinsRule j) throws Exception {
+    final String name = "jenkins-jnlp-security";
+    final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
+
+    // before enabling security shell command contains no secret param
+    assertThat(
+        spec.buildLaunchCommand(j.getURL(), name).runSpec().shellCommand().contains("-secret"),
+        is(false));
+
+    Jenkins instance = Jenkins.getInstanceOrNull();
+    if (instance == null) {
+      throw new IllegalStateException("Jenkins is null");
+    }
+    HudsonPrivateSecurityRealm realm = new HudsonPrivateSecurityRealm(false);
+    instance.setSecurityRealm(realm);
+    FullControlOnceLoggedInAuthorizationStrategy strategy =
+        new hudson.security.FullControlOnceLoggedInAuthorizationStrategy();
+
+    strategy.setAllowAnonymousRead(false);
+    instance.setAuthorizationStrategy(strategy);
+    instance.save();
+
+    // after enabling security shell command contains secret
+    assertThat(
+        spec.buildLaunchCommand(j.getURL(), name).runSpec().shellCommand().contains("-secret"),
+        is(true));
   }
 
   @Test

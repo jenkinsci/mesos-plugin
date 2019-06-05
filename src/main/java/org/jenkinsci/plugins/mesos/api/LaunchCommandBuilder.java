@@ -9,6 +9,8 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import jenkins.model.Jenkins;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -28,6 +30,8 @@ public class LaunchCommandBuilder {
 
   private static final String AGENT_COMMAND_FORMAT =
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/agent.jar %s %s -jnlpUrl %s";
+
+  private static final String JNLP_SECRET_FORMAT = "-secret %s";
 
   private PodId id = null;
   private ScalarRequirement cpus = null;
@@ -108,8 +112,23 @@ public class LaunchCommandBuilder {
   }
 
   private String buildJnlpSecret() {
-    return ""; // TODO
-    // https://github.com/mesosphere/mesos-plugin/blob/master/src/main/java/org/jenkinsci/plugins/mesos/JenkinsScheduler.java#L232
+    String jnlpSecret = "";
+    if (getJenkins().isUseSecurity()) {
+      jnlpSecret =
+          String.format(
+              JNLP_SECRET_FORMAT,
+              jenkins.slaves.JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(this.id.toString()));
+    }
+    return jnlpSecret;
+  }
+
+  @NonNull
+  private static Jenkins getJenkins() {
+    Jenkins jenkins = Jenkins.getInstanceOrNull();
+    if (jenkins == null) {
+      throw new IllegalStateException("Jenkins is null");
+    }
+    return jenkins;
   }
 
   /** @return the Jnlp url for the agent: http://[master]/computer/[slaveName]/slave-agent.jnlp */
