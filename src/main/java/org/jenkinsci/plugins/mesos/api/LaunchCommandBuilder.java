@@ -14,7 +14,8 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 /**
- * A simpler factory for building {@link com.mesosphere.usi.core.models.PodSpec} for Jenkins agents.
+ * A simpler factory for building {@link com.mesosphere.usi.core.models.LaunchPod} for Jenkins
+ * agents.
  */
 public class LaunchCommandBuilder {
 
