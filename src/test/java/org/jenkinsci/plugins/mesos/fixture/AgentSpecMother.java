@@ -28,5 +28,27 @@ public class AgentSpecMother {
           "",
           "",
           "",
+          "",
           "");
+
+  public static final MesosAgentSpecTemplate docker =
+      new MesosAgentSpecTemplate(
+          "label",
+          Mode.EXCLUSIVE,
+          "0.1",
+          "32",
+          "1",
+          true,
+          "1",
+          "1",
+          "0",
+          "0",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "mesosphere/jenkins-dind:0.6.0-alpine");
 }

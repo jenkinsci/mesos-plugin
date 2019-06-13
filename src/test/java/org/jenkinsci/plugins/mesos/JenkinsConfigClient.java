@@ -86,6 +86,7 @@ public class JenkinsConfigClient {
                                     .add("defaultAgent", "")
                                     .add("additionalUris", "")
                                     .add("nodeProperties", "")
+                                    .add("containerImage", "")
                                     .build())
                             .add("stapler-class", "org.jenkinsci.plugins.mesos.MesosCloud")
                             .add("$class", "org.jenkinsci.plugins.mesos.MesosCloud")

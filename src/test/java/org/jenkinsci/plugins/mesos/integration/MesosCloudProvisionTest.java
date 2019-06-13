@@ -70,6 +70,7 @@ public class MesosCloudProvisionTest {
             "",
             "",
             "",
+            "",
             "");
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
 
@@ -116,6 +117,7 @@ public class MesosCloudProvisionTest {
             "1",
             "0",
             "0",
+            "",
             "",
             "",
             "",

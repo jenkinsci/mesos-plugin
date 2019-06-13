@@ -11,6 +11,7 @@ import hudson.util.FormValidation;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.lang.StringUtils;
@@ -40,6 +41,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private String agentAttributes;
   private final String additionalURIs;
   private String nodeProperties;
+  private Optional<String> containerImage;
 
   @DataBoundConstructor
   public MesosAgentSpecTemplate(
@@ -59,7 +61,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       String jnlpArgs,
       String defaultAgent,
       String additionalURIs,
-      String nodeProperties) {
+      String nodeProperties,
+      String containerImage) {
     this.label = label;
     this.labelSet = Label.parse(label);
     this.mode = mode;
@@ -78,6 +81,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.jvmArgs = jvmArgs;
     this.additionalURIs = additionalURIs;
     this.nodeProperties = nodeProperties;
+    this.containerImage = Optional.ofNullable(containerImage).filter(s -> !s.isEmpty());
     validate();
   }
 
@@ -124,6 +128,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withDisk(this.getDisk())
         .withName(name)
         .withJenkinsUrl(jenkinsUrl)
+        .withImage(this.containerImage)
         .build();
   }
 
@@ -206,5 +211,9 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
   public String getNodeProperties() {
     return nodeProperties;
+  }
+
+  public Optional<String> getContainerImage() {
+    return this.containerImage;
   }
 }

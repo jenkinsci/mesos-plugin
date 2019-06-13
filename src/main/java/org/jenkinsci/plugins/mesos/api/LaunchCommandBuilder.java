@@ -9,11 +9,13 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import jenkins.model.Jenkins;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
+import scala.compat.java8.OptionConverters;
 
 /**
  * A simpler factory for building {@link com.mesosphere.usi.core.models.LaunchPod} for Jenkins
@@ -38,6 +40,7 @@ public class LaunchCommandBuilder {
   private ScalarRequirement memory = null;
   private ScalarRequirement disk = null;
   private String role = "test";
+  private Optional<String> containerImage = Optional.empty();
 
   private int xmx = 0;
 
@@ -90,13 +93,19 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withImage(Optional<String> containerImage) {
+    this.containerImage = containerImage;
+    return this;
+  }
+
   public LaunchPod build() throws MalformedURLException, URISyntaxException {
     final RunTemplate runTemplate =
         new RunTemplate(
             convertListToSeq(Arrays.asList(this.cpus, this.memory, this.disk)),
             this.buildCommand(),
             this.role,
-            convertListToSeq(Arrays.asList(buildFetchUri())));
+            convertListToSeq(Arrays.asList(buildFetchUri())),
+            OptionConverters.toScala(this.containerImage));
     return new LaunchPod(this.id, runTemplate);
   }
 
