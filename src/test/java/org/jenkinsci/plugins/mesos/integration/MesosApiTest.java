@@ -11,7 +11,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import com.mesosphere.usi.core.models.SchedulerCommand;
-import com.mesosphere.usi.core.models.StateEventOrSnapshot;
+import com.mesosphere.usi.core.models.StateEvent;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Descriptor.FormException;
@@ -91,8 +91,8 @@ class MesosApiTest {
   public void testLaunchOverflow(JenkinsRule j) throws Exception {
     // Given a scheduler flow that never processes commands.
     Settings settings = Settings.load().withCommandQueueBufferSize(1);
-    final CompletableFuture<StateEventOrSnapshot> ignore = new CompletableFuture<>();
-    final Flow<SchedulerCommand, StateEventOrSnapshot, NotUsed> schedulerFlow =
+    final CompletableFuture<StateEvent> ignore = new CompletableFuture<>();
+    final Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =
         Flow.of(SchedulerCommand.class).mapAsync(1, command -> ignore);
 
     MesosApi api =
@@ -128,8 +128,8 @@ class MesosApiTest {
   void testKillOverflow(JenkinsRule j) throws Exception {
     // Given a scheduler flow that never processes commands.
     Settings settings = Settings.load().withCommandQueueBufferSize(1);
-    final CompletableFuture<StateEventOrSnapshot> ignore = new CompletableFuture<>();
-    final Flow<SchedulerCommand, StateEventOrSnapshot, NotUsed> schedulerFlow =
+    final CompletableFuture<StateEvent> ignore = new CompletableFuture<>();
+    final Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =
         Flow.of(SchedulerCommand.class).mapAsync(1, command -> ignore);
 
     MesosApi api =
