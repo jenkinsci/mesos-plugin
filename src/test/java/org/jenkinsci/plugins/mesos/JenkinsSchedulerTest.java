@@ -183,6 +183,7 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
         Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+        Mockito.verify(driver).suppressOffers();
     }
 
     @Test
@@ -200,6 +201,7 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+        Mockito.verify(driver, Mockito.never()).suppressOffers();
     }
 
     @Test
@@ -222,6 +224,7 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+        Mockito.verify(driver, Mockito.never()).suppressOffers();
     }
 
     @Test
@@ -419,6 +422,9 @@ public class JenkinsSchedulerTest {
 
     @Test
     public void constructMultiThreaded() {
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
 
         jenkinsScheduler = new JenkinsScheduler("jenkinsMaster", mesosCloud, true);
