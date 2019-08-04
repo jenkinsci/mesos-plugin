@@ -22,10 +22,11 @@ You need to have access to a running Mesos cluster. For instructions on setting 
 
 ### Configuring the plugin ###
 
-Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
-you should see an option to 'Add a new cloud' at the bottom of the page. Add the
-'Mesos Cloud' and give the path to the Mesos native library (e.g., libmesos.so on Linux or libmesos.dylib on OSX) (see the above section)
-and the address (HOST:PORT) of a running Mesos master.
+Now go to 'Configure' page in Jenkins. If the plugin is successfully installed you should see an option to 'Add a new cloud' at the bottom of the page. Add the 'Mesos Cloud' and then:
+* Give the path to the Mesos native library (e.g., libmesos.so on Linux or libmesos.dylib on OSX) (see the above section)
+* Set the Mesos master address in following format:
+  * **<mesos_hostname>:<mesos_port>** if your setup only have one Mesos master (example: mesos_master.com:5050)
+  * **zk://<mesos_1>:<zookeeper_port>,<mesos_2>:<zookeeper_port>,<mesos_3>:<zookeeper_port>/mesos** if your setup is a 3 master nodes Mesos cluster using Zookeeper (example: zk://mesos_master1:2181,mesos_master2:2181,mesos_master3:2181/mesos)
 
 If you want to test immediately connectivity to Mesos, you can set 'On-demand framework registration' to 'no' and the framework will appear in Mesos as soon as you save. Otherwise it will register and unregister automatically when a build is scheduled on Mesos.
 
@@ -65,7 +66,7 @@ for more details.
 
 ### Configuring Jenkins jobs ###
 
-Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`) 
+Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`)
 to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific slave type inside Mesos cluster.
 
 ### Docker containers ###
