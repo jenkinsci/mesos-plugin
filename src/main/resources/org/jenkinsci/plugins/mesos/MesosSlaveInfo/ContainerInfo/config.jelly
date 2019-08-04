@@ -38,6 +38,7 @@
                 </f:repeatableProperty>
             </f:entry>
         </f:radioBlock>
+        <f:radioBlock id="networking.USER" name="networking" title="${%User}" value="USER" inline="true" checked="${instance.networking == null || instance.networking == 'USER'}" />
     </f:entry>
 
     <f:entry title="${%Network Info}">
