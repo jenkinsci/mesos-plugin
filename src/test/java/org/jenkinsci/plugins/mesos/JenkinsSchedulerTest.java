@@ -344,6 +344,28 @@ public class JenkinsSchedulerTest {
     }
 
     @Test
+    public void testReviveOffersAfterSuppressOffers() throws Exception {
+        Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        offers.add(offer);
+
+        Queue queue = Mockito.mock(Queue.class);
+        Mockito.when(jenkins.getQueue()).thenReturn(queue);
+
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+        Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+        Mockito.verify(driver).suppressOffers();
+
+        Mesos.SlaveRequest request = mockSlaveRequest(false, false, null);
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+        Mockito.verify(driver).reviveOffers();
+    }
+
+    @Test
     public void testConstructMesosCommandInfoWithNoContainer() throws Exception {
         JenkinsScheduler.Request request = mockMesosRequest(Boolean.FALSE, null, null);
 
