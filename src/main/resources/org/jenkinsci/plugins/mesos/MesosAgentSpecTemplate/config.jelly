@@ -36,7 +36,7 @@
 
          <f:entry title="${%Mesos Offer Selection Attributes}" field="agentAttributes">
                  <f:textbox/>
-         </f:entry>git st
+         </f:entry>
 
          <f:entry title="${%Additional Jenkins Agent JVM arguments}" field="jvmArgs">
               <f:textbox default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"/>

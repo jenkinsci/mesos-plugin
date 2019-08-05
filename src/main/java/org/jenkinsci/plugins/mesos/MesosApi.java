@@ -13,7 +13,6 @@ import com.mesosphere.usi.core.conf.SchedulerSettings;
 import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
 import com.mesosphere.usi.repository.PodRecordRepository;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import hudson.model.Descriptor.FormException;
@@ -26,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos;
 import org.jenkinsci.plugins.mesos.api.Settings;
@@ -46,17 +46,17 @@ public class MesosApi {
   private final URL jenkinsUrl;
   private Duration agentTimeout;
 
-  @XStreamOmitField private final SourceQueueWithComplete<SchedulerCommand> commands;
+  // Interface to USI.
+  @Nonnull private final SourceQueueWithComplete<SchedulerCommand> commands;
 
-  private final ConcurrentHashMap<PodId, MesosJenkinsAgent> stateMap;
+  // Internal state.
+  @Nonnull private final ConcurrentHashMap<PodId, MesosJenkinsAgent> stateMap;
+  @Nonnull private final PodRecordRepository repository;
 
-  @XStreamOmitField private final ActorSystem system;
-
-  @XStreamOmitField private final ActorMaterializer materializer;
-
-  @XStreamOmitField private final ExecutionContext context;
-
-  @XStreamOmitField private final PodRecordRepository repository;
+  // Actor system.
+  @Nonnull private final ActorSystem system;
+  @Nonnull private final ActorMaterializer materializer;
+  @Nonnull private final ExecutionContext context;
 
   /**
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
@@ -66,36 +66,43 @@ public class MesosApi {
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
    * @param agentUser The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
+   * @param frameworkId The id of the framework the Mesos client should register for.
    * @param role The Mesos role to assume.
    * @throws InterruptedException
    * @throws ExecutionException
    */
   public MesosApi(
-      URL masterUrl, URL jenkinsUrl, String agentUser, String frameworkName, String role)
+      URL masterUrl,
+      URL jenkinsUrl,
+      String agentUser,
+      String frameworkName,
+      String frameworkId,
+      String role)
       throws InterruptedException, ExecutionException {
     this.frameworkName = frameworkName;
-    this.frameworkId = UUID.randomUUID().toString();
+    this.frameworkId = frameworkId;
     this.role = role;
     this.agentUser = agentUser;
     this.jenkinsUrl = jenkinsUrl;
 
-    ClassLoader classLoader = Jenkins.get().pluginManager.uberClassLoader;
-
-    Config conf = ConfigFactory.load(classLoader);
+    // Load settings.
+    final ClassLoader classLoader = Jenkins.get().pluginManager.uberClassLoader;
     MesosClientSettings clientSettings =
-        MesosClientSettings.fromConfig(conf.getConfig("mesos-client"))
-            .withMasters(Collections.singletonList(masterUrl));
+        MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
     SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
-
     this.operationalSettings = Settings.load(classLoader);
 
+    // Create actor system.
+    final Config conf = ConfigFactory.load(classLoader);
     this.system = ActorSystem.create("mesos-scheduler", conf, classLoader);
     this.materializer = ActorMaterializer.create(system);
     this.context = system.dispatcher();
 
+    // Initialize state.
     this.stateMap = new ConcurrentHashMap<>();
     this.repository = new MesosPodRecordRepository();
 
+    // Initialize scheduler flow.
     logger.info("Starting USI scheduler flow.");
     commands =
         connectClient(clientSettings)
@@ -115,6 +122,9 @@ public class MesosApi {
    * @param frameworkId Unique identifier of the framework in Mesos.
    * @param role The Mesos role to assume.
    * @param schedulerFlow The USI scheduler flow constructed by {@link Scheduler#fromClient()}
+   * @param operationalSettings Operation settings for this plugin.
+   * @param clientSettings The settings used to connect to USI.
+   * @param schedulerSettings The settings used to created the scheduler flow.
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.
    */
@@ -249,7 +259,7 @@ public class MesosApi {
             .addCapabilities(
                 Protos.FrameworkInfo.Capability.newBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
-            .setFailoverTimeout(0d) // Use config from current Mesos plugin.
+            .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds())
             .build();
 
     return MesosClient$.MODULE$
@@ -300,6 +310,16 @@ public class MesosApi {
   /** @return the name of the registered Mesos framework. */
   public String getFrameworkName() {
     return this.frameworkName;
+  }
+
+  /** @return the id of the registered Mesos framework. */
+  public String getFrameworkId() {
+    return this.frameworkId;
+  }
+
+  /** @return the role of the registered Mesos framework. */
+  public String getRole() {
+    return this.role;
   }
 
   /** @return the current state map. */

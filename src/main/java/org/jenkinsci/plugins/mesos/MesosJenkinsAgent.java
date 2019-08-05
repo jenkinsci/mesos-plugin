@@ -32,7 +32,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   // Holds the current USI status for this agent.
   Optional<PodStatus> currentStatus = Optional.empty();
 
-  private final Boolean reusable;
+  private final boolean reusable;
 
   private final MesosApi api;
 
@@ -47,7 +47,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
       String nodeDescription,
       URL jenkinsUrl,
       Integer idleTerminationInMinutes,
-      Boolean reusable,
+      boolean reusable,
       List<? extends NodeProperty<?>> nodeProperties,
       Duration agentTimeout)
       throws Descriptor.FormException, IOException {
@@ -160,8 +160,8 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     }
   }
 
-  public Boolean getReusable() {
-    // TODO: implement reusable slaves
+  public boolean getReusable() {
+    // TODO: implement reusable slaves DCOS_OSS-5048
     return reusable;
   }
 

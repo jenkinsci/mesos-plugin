@@ -57,7 +57,8 @@ class MesosApiTest {
 
     URL mesosUrl = mesosCluster.getMesosUrl();
     MesosApi api =
-        new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
+        new MesosApi(
+            mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "unique", "*");
 
     final String name = "jenkins-start-agent";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
@@ -73,7 +74,8 @@ class MesosApiTest {
     URL mesosUrl = mesosCluster.getMesosUrl();
     URL jenkinsUrl = j.getURL();
     MesosApi api =
-        new MesosApi(mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "*");
+        new MesosApi(
+            mesosUrl, jenkinsUrl, System.getProperty("user.name"), "MesosTest", "unique", "*");
     final String name = "jenkins-stop-agent";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
 
