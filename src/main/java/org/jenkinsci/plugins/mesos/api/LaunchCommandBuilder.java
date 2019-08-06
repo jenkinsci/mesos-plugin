@@ -98,6 +98,11 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withJnlpArguments(String args) {
+    this.jnlpArgString = args;
+    return this;
+  }
+
   public LaunchPod build() throws MalformedURLException, URISyntaxException {
     final RunTemplate runTemplate =
         new RunTemplate(
@@ -126,7 +131,7 @@ public class LaunchCommandBuilder {
       jnlpSecret =
           String.format(
               JNLP_SECRET_FORMAT,
-              jenkins.slaves.JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(this.id.toString()));
+              jenkins.slaves.JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(this.id.value()));
     }
     return jnlpSecret;
   }

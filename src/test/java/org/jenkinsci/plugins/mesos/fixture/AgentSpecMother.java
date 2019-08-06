@@ -27,7 +27,6 @@ public class AgentSpecMother {
           "",
           "",
           "",
-          "",
           "");
 
   public static final MesosAgentSpecTemplate docker =
@@ -37,13 +36,11 @@ public class AgentSpecMother {
           "0.1",
           "32",
           "1",
-          true,
+          "1",
           "1",
           "1",
           "0",
           "0",
-          "",
-          "",
           "",
           "",
           "",

@@ -56,7 +56,51 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private final URL jenkinsUrl;
 
+  private final Optional<String> sslCert;
+  private final Optional<DcosAuthorization> dcosAuthorization;
+
   private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
+
+  public static class CustomSsl {
+
+    private String sslCert;
+
+    @DataBoundConstructor
+    public CustomSsl(String sslCert) {
+      this.sslCert = sslCert;
+    }
+
+    public String getSslCert() {
+      return this.sslCert;
+    }
+  }
+
+  public static class DcosAuthorization {
+
+    private String secret;
+    private String uid;
+    private String dcosRoot;
+
+    @DataBoundConstructor
+    public DcosAuthorization(String uid, String dcosRoot, String secret)
+        throws MalformedURLException {
+      this.uid = uid;
+      this.secret = secret;
+      this.dcosRoot = dcosRoot;
+    }
+
+    public String getSecret() {
+      return this.secret;
+    }
+
+    public String getUid() {
+      return this.uid;
+    }
+
+    public String getDcosRoot() {
+      return this.dcosRoot;
+    }
+  }
 
   @DataBoundConstructor
   public MesosCloud(
@@ -65,6 +109,8 @@ public class MesosCloud extends AbstractCloudImpl {
       String role,
       String agentUser,
       String jenkinsUrl,
+      CustomSsl customSsl, // TODO: the SSL certificate should be provided by a credential provider.
+      DcosAuthorization authorization, // TODO: use secret from credential provider.
       List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates)
       throws InterruptedException, ExecutionException {
     super("MesosCloud", null);
@@ -75,6 +121,9 @@ public class MesosCloud extends AbstractCloudImpl {
     } catch (MalformedURLException e) {
       throw new RuntimeException("Mesos Cloud URL validation failed", e);
     }
+
+    this.sslCert = (customSsl != null) ? Optional.of(customSsl.getSslCert()) : Optional.empty();
+    this.dcosAuthorization = Optional.ofNullable(authorization);
 
     this.agentUser = agentUser;
     this.role = role;
@@ -89,7 +138,9 @@ public class MesosCloud extends AbstractCloudImpl {
             this.agentUser,
             this.frameworkName,
             this.frameworkId,
-            this.role);
+            this.role,
+            sslCert,
+            this.dcosAuthorization);
     logger.info("Initialized Mesos API object.");
   }
 
@@ -102,7 +153,9 @@ public class MesosCloud extends AbstractCloudImpl {
               this.agentUser,
               this.frameworkName,
               this.frameworkId,
-              this.role);
+              this.role,
+              this.sslCert,
+              this.dcosAuthorization);
       logger.info("Initialized Mesos API object after deserialization.");
     } catch (InterruptedException | ExecutionException e) {
       logger.error("Failed initialize Mesos API object", e);
@@ -389,9 +442,21 @@ public class MesosCloud extends AbstractCloudImpl {
     return this.role;
   }
 
+  public CustomSsl getCustomSsl() {
+    return this.sslCert.map(CustomSsl::new).orElse(null);
+  }
+
+  public DcosAuthorization getAuthentication() {
+    return this.dcosAuthorization.orElse(null);
+  }
+
   /** @return Number of launching agents that are not connected yet. */
   public synchronized int getPending() {
     return toIntExact(
         mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
+  }
+
+  public MesosApi getMesosApi() {
+    return this.mesosApi;
   }
 }

@@ -58,12 +58,8 @@
               <f:number clazz="required positive-number" default="128"/>
           </f:entry>
 
-          <f:entry title="${%Node Properties}" field="nodeProperties">
-              <f:number clazz="required number" default=""/>
-          </f:entry>
-
           <f:entry title="Docker image" field="containerImage">
-              <f:textbox/>
+              <f:textbox default="amazoncorretto:8"/>
           </f:entry>
 
     </table>

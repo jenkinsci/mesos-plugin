@@ -1,3 +1,8 @@
+<p align="center">
+  <a href='https://jenkins.mesosphere.com/service/jenkins/job/Mesos%20Jenkins%20Plugin/mesos-plugin/master'><img src='https://jenkins.mesosphere.com/service/jenkins/buildStatus/icon?job=Mesos%20Jenkins%20Plugin/mesos-plugin/master'></a>
+  <a href="https://cloud.docker.com/u/mesosphere/repository/docker/mesosphere/jenkins/general"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/mesosphere/jenkins.svg"></a>
+</p>
+
 Jenkins on Mesos
 ----------------
 

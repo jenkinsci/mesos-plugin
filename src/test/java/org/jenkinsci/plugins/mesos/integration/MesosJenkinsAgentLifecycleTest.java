@@ -48,6 +48,8 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             new ArrayList<>());
 
     final String name = "jenkins-lifecycle";
@@ -76,6 +78,8 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             new ArrayList<>());
 
     final String name = "jenkins-node-terminate";
@@ -106,6 +110,8 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             new ArrayList<>());
 
     final String name = "jenkins-node-delete";
@@ -134,6 +140,8 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             new ArrayList<>());
 
     final String name = "jenkins-node-delete";
@@ -191,6 +199,8 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             new ArrayList<>());
 
     cloud.getMesosApi().setAgentTimeout(Duration.ofSeconds(1));

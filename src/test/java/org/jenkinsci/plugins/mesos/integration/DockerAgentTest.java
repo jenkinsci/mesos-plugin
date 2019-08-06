@@ -58,6 +58,8 @@ public class DockerAgentTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
+            null,
+            null,
             specTemplates);
 
     final String name = "jenkins-docker-agent";
