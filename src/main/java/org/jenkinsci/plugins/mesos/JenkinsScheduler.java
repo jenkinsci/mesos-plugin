@@ -49,6 +49,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.apache.mesos.Protos.ContainerInfo.Type.MESOS;
+import static org.apache.mesos.Protos.Image.Type.DOCKER;
+
 public class JenkinsScheduler implements Scheduler {
     private static final String SLAVE_JAR_URI_SUFFIX = "jnlpJars/slave.jar";
 
@@ -927,6 +930,20 @@ public class JenkinsScheduler implements Scheduler {
 
                 containerInfoBuilder.setDocker(dockerInfoBuilder);
                 break;
+            case MESOS:
+                LOGGER.info("Launching in UCR Mode:" + containerInfo.getDockerImage());
+
+                Image dockerImage = Image
+                                    .newBuilder()
+                                    .setType(DOCKER)
+                                    .setDocker(Image.Docker.newBuilder().setName(containerInfo.getDockerImage()).build())
+                                    .build();
+
+                containerInfoBuilder
+                        .setType(MESOS)
+                        .setMesos(ContainerInfo.MesosInfo.newBuilder().setImage(dockerImage).build());
+                break;
+
             default:
                 LOGGER.warning("Unknown container type:" + containerInfo.getType());
         }
@@ -1007,6 +1024,7 @@ public class JenkinsScheduler implements Scheduler {
 
         } else {
             LOGGER.fine("About to use default shell ....");
+            commandBuilder.setShell(true);
             commandBuilder.setValue(jenkinsCommand2Run);
         }
 
