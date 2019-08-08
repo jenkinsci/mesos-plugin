@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mesos.listener;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Computer;
@@ -19,7 +20,9 @@ import org.jenkinsci.plugins.mesos.MesosSlave;
 public class MesosRunListener extends RunListener<Run> {
 
   private static final Logger LOGGER = Logger.getLogger(MesosRunListener.class.getName());
-  
+  private static final String HOSTNAME = "HOSTNAME";
+  private static final String DOCKER = "DOCKER";
+
   public MesosRunListener() {
     
   }
@@ -42,13 +45,21 @@ public class MesosRunListener extends RunListener<Run> {
       Node node = getCurrentNode();
       if (node instanceof MesosSlave) {
         try {
+          String hostname = null;
           Computer computer = node.toComputer();
-          if (computer != null) {
-            String hostname = computer.getHostName();
-            listener.getLogger().println("Mesos slave(hostname): " + hostname);
+          MesosSlave mesosSlave = (MesosSlave) node;
+          if (mesosSlave.getSlaveInfo().getContainerInfo() != null &&
+                  DOCKER.equals(mesosSlave.getSlaveInfo().getContainerInfo().getType())) {
+            if (computer != null) {
+              EnvVars environment = computer.getEnvironment();
+              hostname = environment.get(HOSTNAME);
+            }
           } else {
-            listener.getLogger().println("Mesos slave(computer is null)");
+              if(computer != null) {
+                hostname = computer.getHostName();
+              }
           }
+          listener.getLogger().println("Mesos slave(hostname): " + hostname);
         } catch (IOException e) {
           LOGGER.warning("IOException while trying to get hostname: " + e);
           e.printStackTrace();
