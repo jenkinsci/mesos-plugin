@@ -394,7 +394,7 @@ public class JenkinsScheduler implements Scheduler {
 
         // Note that even if the suppress call is dropped on the way to the master it is ok
 	// because we will do this check again when processing a subsequent offer.
-        if (!pendingWork()) {
+        if (offers.size() > 0 && !pendingWork()) {
             unmatchedLabels.clear();
             suppressOffers();
         }
