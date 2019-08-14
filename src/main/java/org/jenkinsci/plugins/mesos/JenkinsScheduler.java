@@ -347,7 +347,6 @@ public class JenkinsScheduler implements Scheduler {
                     // This prevents unnecessarily getting offers every few seconds and causing
                     // starvation when running a lot of frameworks.
                     Metrics.metricRegistry().meter("mesos.scheduler.decline.long").mark();
-                    LOGGER.info("No slave in queue.");
 
                     if (offer.hasSlaveId()) {
                         Metrics.metricRegistry().meter("mesos.scheduler.decline.long."+offer.getSlaveId().getValue()).mark();
