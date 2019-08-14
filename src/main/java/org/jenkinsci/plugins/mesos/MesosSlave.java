@@ -23,6 +23,8 @@ import hudson.slaves.WorkspaceList;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,12 +52,19 @@ public class MesosSlave extends Slave {
   private boolean singleUse;
 
 
+
   private boolean pendingDelete;
 
   private static final Logger LOGGER = Logger.getLogger(MesosSlave.class
       .getName());
 
-  public MesosSlave(MesosCloud cloud, String name, int numExecutors, MesosSlaveInfo slaveInfo, Timer.Context provisioningContext) throws IOException, FormException {
+  public MesosSlave(MesosCloud cloud,
+                    String name,
+                    int numExecutors,
+                    MesosSlaveInfo slaveInfo,
+                    Timer.Context provisionToReadyContext,
+                    Timer.Context provisionToMesosContext,
+                    Timer mesosToReady) throws IOException, FormException {
     super(name,
           slaveInfo.getLabelString(), // node description.
           StringUtils.isBlank(slaveInfo.getRemoteFSRoot()) ? "jenkins" : slaveInfo.getRemoteFSRoot().trim(),   // remoteFS.
@@ -115,8 +124,18 @@ public class MesosSlave extends Slave {
     return idleTerminationMinutes;
   }
 
-  public Timer.Context getProvisioningContext() {
-    return provisioningContext;
+  public void provisionedAndReady() {
+    mesosToReady.update(System.currentTimeMillis() - mesosHandoffTime, TimeUnit.MILLISECONDS);
+    provisionToReady.stop();
+  }
+
+  public void provisionedToMesos() {
+    provisionToMesos.stop();
+    mesosHandoffTime = System.currentTimeMillis();
+  }
+
+  public UUID getUuid() {
+    return uuid;
   }
 
   public void terminate() {
