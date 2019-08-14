@@ -298,6 +298,11 @@ public class JenkinsScheduler implements Scheduler {
 
     private void declineShort(Offer offer) {
         Metrics.metricRegistry().meter("mesos.scheduler.decline.short").mark();
+
+        if (offer.hasSlaveId()) {
+            Metrics.metricRegistry().meter("mesos.scheduler.decline.short."+offer.getSlaveId().getValue()).mark();
+        }
+
         declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
     }
 
@@ -332,6 +337,10 @@ public class JenkinsScheduler implements Scheduler {
         int processedRequests = 0;
         for (Offer offer : offers) {
             Metrics.metricRegistry().meter("mesos.scheduler.offer.processed").mark();
+            if (offer.hasSlaveId()) {
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.processed."+offer.getSlaveId().getValue()).mark();
+            }
+
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
             try {
                 if (!pendingWork()) {
@@ -339,6 +348,10 @@ public class JenkinsScheduler implements Scheduler {
                     // This prevents unnecessarily getting offers every few seconds and causing
                     // starvation when running a lot of frameworks.
                     Metrics.metricRegistry().meter("mesos.scheduler.decline.long").mark();
+
+                    if (offer.hasSlaveId()) {
+                        Metrics.metricRegistry().meter("mesos.scheduler.decline.long."+offer.getSlaveId().getValue()).mark();
+                    }
                     declineOffer(offer, mesosCloud.getDeclineOfferDurationDouble());
                     continue;
                 }
@@ -395,7 +408,7 @@ public class JenkinsScheduler implements Scheduler {
 
         // Note that even if the suppress call is dropped on the way to the master it is ok
 	// because we will do this check again when processing a subsequent offer.
-        if (!pendingWork()) {
+        if (offers.size() > 0 && !pendingWork()) {
             unmatchedLabels.clear();
             suppressOffers();
         }
@@ -411,6 +424,12 @@ public class JenkinsScheduler implements Scheduler {
 
         for (Protos.Offer offer : offers) {
             boolean queued = offerQueue.offer(offer);
+
+            // Track offers received per agent
+            if (offer.hasSlaveId()) {
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.received."+offer.getSlaveId().getValue()).mark();
+            }
+
             if (!queued) {
                 LOGGER.warning("Offer queue is full.");
                 declineShort(offer);
