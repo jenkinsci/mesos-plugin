@@ -98,4 +98,62 @@ public class MesosRetentionStrategyTest {
     verify(mesosComputer, never()).isOffline();
   }
 
+  /**
+   * This test checks that a single use agent that has completed work
+   * before the idle timeout is marked for deletion.
+   */
+  @Test
+  public void testSingleUseIsMarkedForDeletion() {
+    // Given
+    int idleTerminationMinutes = 10;
+
+    MesosRetentionStrategy mesosRetentionStrategy = new MesosRetentionStrategy(idleTerminationMinutes);
+
+    MesosComputer mesosComputer = PowerMockito.mock(MesosComputer.class);
+    MesosSlave mesosSlave = mock(MesosSlave.class);
+
+    when(mesosSlave.isSingleUse()).thenReturn(true);
+    when(mesosSlave.isPendingDelete()).thenReturn(false);
+    when(mesosComputer.getNode()).thenReturn(mesosSlave);
+    // connect time - now is < idle term mins
+    when(mesosComputer.getConnectTime()).thenReturn(new DateTime().minusMinutes(2).getMillis());
+    when(mesosComputer.isOffline()).thenReturn(true);
+    when(mesosComputer.isIdle()).thenReturn(true);
+
+    // When
+    mesosRetentionStrategy.check(mesosComputer);
+
+    // Then
+    verify(mesosSlave, atLeastOnce()).setPendingDelete(true);
+    verify(mesosSlave, atLeastOnce()).isSingleUse();
+  }
+
+  /**
+   * Test that a single use agent is not marked for deletion when it
+   * is still online and doing work.
+   */
+  @Test
+  public void testSingleUseNotMarkedIfRunning() {
+    // Given
+    int idleTerminationMinutes = 10;
+
+    MesosRetentionStrategy mesosRetentionStrategy = new MesosRetentionStrategy(idleTerminationMinutes);
+
+    MesosComputer mesosComputer = PowerMockito.mock(MesosComputer.class);
+    MesosSlave mesosSlave = mock(MesosSlave.class);
+
+    when(mesosSlave.isSingleUse()).thenReturn(true);
+    when(mesosSlave.isPendingDelete()).thenReturn(false);
+    when(mesosComputer.getNode()).thenReturn(mesosSlave);
+    when(mesosComputer.getConnectTime()).thenReturn(new DateTime().minusMinutes(2).getMillis());
+    when(mesosComputer.isOffline()).thenReturn(false);
+    when(mesosComputer.isIdle()).thenReturn(false);
+
+    // When
+    mesosRetentionStrategy.check(mesosComputer);
+
+    // Then
+    verify(mesosSlave, never()).setPendingDelete(true);
+  }
+
 }
