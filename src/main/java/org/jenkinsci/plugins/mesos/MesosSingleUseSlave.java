@@ -62,7 +62,7 @@ public class MesosSingleUseSlave extends SimpleBuildWrapper {
         if (computer != null) {
             if (MesosComputer.class.isInstance(computer)) {
                 String msg = "Marking " + computer.getName() + " as single-use.";
-                LOGGER.warning(msg);
+                LOGGER.info(msg);
                 listener.getLogger().println(msg);
 
                 MesosSlave mesosSlave = (MesosSlave) computer.getNode();
