@@ -1024,7 +1024,6 @@ public class JenkinsScheduler implements Scheduler {
 
         } else {
             LOGGER.fine("About to use default shell ....");
-            commandBuilder.setShell(true);
             commandBuilder.setValue(jenkinsCommand2Run);
         }
 

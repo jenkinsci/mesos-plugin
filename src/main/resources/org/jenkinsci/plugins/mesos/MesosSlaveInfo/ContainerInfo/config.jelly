@@ -1,10 +1,10 @@
-<?jelly escape-by-default='true'?>
+?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:entry title="${%Container Type}" field="type">
-        <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="true">
-            <f:entry title="${%Docker Image}" field="dockerImage" description="If using Docker, specify the docker image.">
+            <f:entry title="${%Docker Image}" field="dockerImage" description="Specify the docker image.">
                 <f:textbox clazz="required"/>
             </f:entry>
+        <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="false">
             <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
                 <f:checkbox/>
             </f:entry>
@@ -14,6 +14,8 @@
             <f:entry title="${%Docker Image Can Be Customized}" field="dockerImageCustomizable" description="This will allow override default docker image using labels. E.g.: mesosSlaveLabel:evarga/jenkins-slave:latest">
                 <f:checkbox/>
             </f:entry>
+        </f:radioBlock>
+        <f:radioBlock name="type" title="${%Mesos}" value="MESOS" inline="true" checked="false">
         </f:radioBlock>
     </f:entry>
 
@@ -38,7 +40,6 @@
                 </f:repeatableProperty>
             </f:entry>
         </f:radioBlock>
-        <f:radioBlock id="networking.USER" name="networking" title="${%User}" value="USER" inline="true" checked="${instance.networking == null || instance.networking == 'USER'}" />
     </f:entry>
 
     <f:entry title="${%Network Info}">
