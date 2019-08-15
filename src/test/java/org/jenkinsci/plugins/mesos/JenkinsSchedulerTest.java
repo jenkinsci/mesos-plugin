@@ -205,7 +205,7 @@ public class JenkinsSchedulerTest {
     }
 
     @Test
-    public void testDeclineOffersWithBuildsInQueue() throws Exception {
+    public void testDeclineOffersWithBuildsInQueueButNoRequestsinQueue() throws Exception {
         Protos.Offer offer = createOfferWithVariableRanges(31000, 32000);
         ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
         offers.add(offer);
@@ -222,9 +222,9 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.setDriver(driver);
         Mockito.when(mesosCloud.getDeclineOfferDurationDouble()).thenReturn((double) 120000);
         jenkinsScheduler.resourceOffers(driver, offers);
-        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
-        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
-        Mockito.verify(driver, Mockito.never()).suppressOffers();
+        Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId());
+        Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
+        Mockito.verify(driver).suppressOffers();
     }
 
     @Test
