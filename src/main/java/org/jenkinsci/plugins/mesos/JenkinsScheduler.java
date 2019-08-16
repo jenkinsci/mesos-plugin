@@ -343,7 +343,7 @@ public class JenkinsScheduler implements Scheduler {
 
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
             try {
-                if (!pendingWork()) {
+                if (requests.isEmpty()) {
                     // Decline offer for a longer period if no slave is waiting to get spawned.
                     // This prevents unnecessarily getting offers every few seconds and causing
                     // starvation when running a lot of frameworks.
@@ -408,7 +408,7 @@ public class JenkinsScheduler implements Scheduler {
 
         // Note that even if the suppress call is dropped on the way to the master it is ok
 	// because we will do this check again when processing a subsequent offer.
-        if (offers.size() > 0 && !pendingWork()) {
+        if (offers.size() > 0 && requests.isEmpty()) {
             unmatchedLabels.clear();
             suppressOffers();
         }
@@ -645,23 +645,6 @@ public class JenkinsScheduler implements Scheduler {
                             "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
             return false;
         }
-    }
-
-    private boolean pendingWork() {
-        if (!requests.isEmpty()) {
-            return true;
-        }
-
-        hudson.model.Queue.Item[] items =  Jenkins.getInstance().getQueue().getItems();
-        if(items != null) {
-            for(hudson.model.Queue.Item item: items) {
-                // Check and return if there is an item in jenkins queue for which this MesosCloud can provsion a slave
-                if(mesosCloud.canProvision(item.getAssignedLabel())) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
