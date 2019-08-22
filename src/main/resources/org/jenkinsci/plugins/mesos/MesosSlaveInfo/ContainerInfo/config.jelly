@@ -1,9 +1,9 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:entry title="${%Container Type}" field="type">
-          <f:entry title="${%Docker Image}" field="dockerImage" description="If using Docker, specify the docker image.">
-              <f:textbox clazz="required"/>
-          </f:entry>
+      <f:entry title="${%Docker Image}" field="dockerImage" description="Image to be run under UCR or DOCKER.">
+          <f:textbox clazz="required"/>
+      </f:entry>
         <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="${instance.type == 'DOCKER'}">
             <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
                 <f:checkbox/>
