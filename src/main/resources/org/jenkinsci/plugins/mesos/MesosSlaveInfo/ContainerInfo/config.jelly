@@ -4,7 +4,7 @@
       <f:entry title="${%Docker Image}" field="dockerImage" description="Image to be run under UCR or DOCKER.">
           <f:textbox clazz="required"/>
       </f:entry>
-        <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="${instance.type == 'DOCKER'}">
+        <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="${instance.type == null || instance.type == 'DOCKER'}">
             <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
                 <f:checkbox/>
             </f:entry>
