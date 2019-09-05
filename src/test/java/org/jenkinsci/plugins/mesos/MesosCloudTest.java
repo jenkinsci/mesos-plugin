@@ -58,6 +58,27 @@ public class MesosCloudTest {
         assertThat(new XmlFile(Jenkins.XSTREAM, new File(r.jenkins.root, "config.xml")).asString(), containsString(slaveAttributes.replace("\"", "&quot;")));
     }
 
+    @Test
+    public void configRoundTripUCR() throws Exception {
+        String slaveAttributes = "{\"somekey\":\"somevalue\"}";
+        MesosCloud cloud = new MesosCloud(
+                "<nativeLibraryPath>", "<master>", "<description>", "<frameworkName>", "<role>", "<slavesUser>", "", "<principal>", /* TODO why is secret still in the DBC?? */null,
+                Collections.singletonList(new MesosSlaveInfo("<labelString>", Node.Mode.NORMAL, "4", "1024", "1", "1", "1", "0.0", "1024", "<remoteFSRoot>", "1", slaveAttributes, "<jvmArgs>", "<jnlpArgs>", "<defaultSlave>",
+                        new MesosSlaveInfo.ContainerInfo(/* not actually used, should really be using f:optionalProperty */"MESOS", "<dockerImage>", true, true, true, true, "<customDockerCommandShell>",
+                                Collections.singletonList(new MesosSlaveInfo.Volume("<containerPath>", "<hostPath>", true)),
+                                Collections.singletonList(new MesosSlaveInfo.Parameter("<key>", "<value>")),
+                                "BRIDGE",
+                                Collections.singletonList(new MesosSlaveInfo.PortMapping(23, 46, "udp")),
+                                Collections.singletonList(new MesosSlaveInfo.NetworkInfo("<networkName>"))),
+                        Collections.singletonList(new MesosSlaveInfo.URI("<value>", true, true)),
+                        Collections.<NodeProperty<?>>emptyList())),
+                true, true, false, "<jenkinsURL>", "1234", "<cloudID>");
+        r.jenkins.clouds.add(cloud);
+        r.configRoundtrip();
+        r.assertEqualDataBoundBeans(Collections.singletonList(cloud), r.jenkins.clouds);
+        assertThat(new XmlFile(Jenkins.XSTREAM, new File(r.jenkins.root, "config.xml")).asString(), containsString(slaveAttributes.replace("\"", "&quot;")));
+    }
+
     @Issue("JENKINS-50303")
     @LocalData
     @Test
