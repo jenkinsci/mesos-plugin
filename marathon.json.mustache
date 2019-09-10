@@ -20,10 +20,10 @@
         "MESOS_AUTHENTICATEE": "com_mesosphere_dcos_ClassicRPCAuthenticatee",
         "MESOS_HTTP_AUTHENTICATEE": "com_mesosphere_dcos_http_Authenticatee",
       {{/security.secret-name}}
-      "JENKINS_CONTEXT": "/service/{{service.name}}",
+      "JENKINS_CONTEXT": "/service{{service.name}}",
       "JENKINS_MESOS_MASTER": "{{advanced.mesos-master}}",
       {{#networking.virtual-host}}
-      "JENKINS_ROOT_URL": "{{#networking.https-redirect}}https://{{/networking.https-redirect}}{{^networking.https-redirect}}http://{{/networking.https-redirect}}{{networking.virtual-host}}/service/{{service.name}}",
+      "JENKINS_ROOT_URL": "{{#networking.https-redirect}}https://{{/networking.https-redirect}}{{^networking.https-redirect}}http://{{/networking.https-redirect}}{{networking.virtual-host}}/service{{service.name}}",
       {{/networking.virtual-host}}
       {{^storage.host-volume}}
         "JENKINS_HOME":"/mnt/mesos/sandbox/jenkins_home",
@@ -86,7 +86,7 @@
    "acceptedResourceRoles": [ "{{roles.jenkins-master-role}}" ],
    "healthChecks": [
     {
-      "path": "/service/{{service.name}}",
+      "path": "/service{{service.name}}",
       "portIndex": 0,
       "protocol": "MESOS_HTTP",
       "gracePeriodSeconds": 300,
