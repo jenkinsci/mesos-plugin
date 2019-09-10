@@ -10,72 +10,79 @@ The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins slaves o
 Mesos cluster depending on the workload!
 
 Put simply, whenever the Jenkins `Build Queue` starts getting bigger, this plugin
-automatically spins up additional Jenkins slave(s) on Mesos so that jobs can be
+automatically spins up additional Jenkins agent(s) on Mesos so that jobs can be
 immediately scheduled! Similarly, when a Jenkins slave is idle for a long time it
 is automatically shut down.
+
+## Table of Contents
+<!-- toc -->
+- __[Prerequisite](#prerequisite)__
+- __[Installing the Plugin](#installing-the-plugin)__
+  - __[Configuring the Plugin](#configuring-the-plugin)__
+  - __[Adding Agent Specs](#adding-agent-specs)__
+  - __[DC/OS Authentication](#dcos-authentication)__
+  - __[Configuring Jenkins Jobs](#configuring-jenkins-jobs)__
+  - __[Docker Containers](#docker-containers)__
+  - __[Docker Configuration](#docker-configuration)__
+  - __[Over provisioning flags](#over-provisioning-flags)__
+- __[Single-Use Slave](#single-use-slave)__
+  - __[Freestyle jobs](#freestyle-jobs)__
+  - __[Pipeline jobs](#pipeline-jobs)__
+- __[Plugin Development](#plugin-development)__
+  - __[Building the plugin](#building-the-plugin)__
+<!-- /toc -->
 
 
 ## Prerequisite ##
 
 You need to have access to a running Mesos cluster. For instructions on setting up a Mesos cluster, please refer to the [Mesos website](http://mesos.apache.org).
 
-## Installing the plugin ##
+## Installing the Plugin ##
 
 * Go to 'Manage Plugins' page in the Jenkins Web UI, you'll find the plugin in the 'Available' tab under the name 'mesos'.
 
 * (Optional) Install the metrics plugin which is an optional dependency of this plugin, used for additional but not essential features.
 
-### Configuring the plugin ###
+### Configuring the Plugin ###
 
 Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
-you should see an option to 'Add a new cloud' at the bottom of the page. Add the
-'Mesos Cloud' and give the path to the Mesos native library (e.g., libmesos.so on Linux or libmesos.dylib on OSX) (see the above section)
-and the address (HOST:PORT) of a running Mesos master.
+you should see an option to 'Add a new cloud' at the bottom of the page.
 
-If you want to test immediately connectivity to Mesos, you can set 'On-demand framework registration' to 'no' and the framework will appear in Mesos as soon as you save. Otherwise it will register and unregister automatically when a build is scheduled on Mesos.
+1. Add the 'Mesos Cloud'.
+2. Give the path to the address `http://HOST:PORT` of a running Mesos master.
+3. Set the user name agents should start as. Ensure that the Mesos agents have have the user available.
+4. Set the Jenkins URL.
+5. Click `Save`.
 
-### Mesos slave setup ###
+You can click `Test Conection` to see if the Mesos client of the plugin can find the Mesos master.
 
-Ensure Mesos slaves have a `jenkins` user or the user the Jenkins master is running as. `jenkins` user should have JAVA_HOME environment variable setup.
+If the Mesos master uses a secured connection with a custom certificate you can supply it under
+`Use a custom SSL certificate`.
 
-### Adding Slave Info ###
+### Adding Agent Specs ###
 
-By default one 'Slave Info' will be created with default values for each field.
-You can update the values/Add  more 'Slave Info'/Delete 'Slave Info' by clicking on 'Advanced'.
-'Slave Info' can hold required information(Executor CPU, Executor Mem etc) for slave that need to be matched against Mesos offers.
-Label name is the key between the job and the required slave to execute the job.
+An `Agent Spec` describes a Jenkins node for Mesos.
+
+You can update the values/Add  more 'Agent Specs'/Delete 'Agent Specs' by clicking on 'Advanced'.
+'Agent Specs' can hold required information(Executor CPU, Executor Mem etc) for an agent that needs
+to be matched against Mesos offers.
+Label name is the key between the job and the required agent to execute the job. See [Configuring Jenkins Jobs](#configuring-jenkins-jobs).
 Ex: Heavy jobs can be assigned  label 'powerful_slave'(which has 'Slave Info' 20 Executor CPU, 10240M Executor Mem etc)
 and light weight jobs can be assigned label 'light_weight_slave'(which has  'Slave Info' 1 Executor CPU, 128M Executor Mem etc).
 
-### Mesos slave attributes ###
+### DC/OS Authentication ###
 
-Mesos slaves can be tagged with attributes. This feature allows the Jenkins scheduler to pick specific
-Mesos slaves based on attributes specified in JSON format. Ex. {"clusterType":"jenkinsSlave"}
+The plugin can authenticate with a [DC/OS](https://docs.d2iq.com/mesosphere/dcos/1.13/security/ent/service-auth/) enterprise cluster. Simply check `Authorization` and enter the
+service user name, the DC/OS root URL and paste the servive user secret.
 
-### Mesos authentication ###
-
-By default the plugin (a Mesos framework) registers with Mesos master without authentication. To enable authentication:
-
-  1. Click on the Add button next Set the `Framework principal` and `Framework Secret` fields in the plugin configuration page.
-
-  2. Ensure the same credentials (`principal` and `secret`) are setup on the Mesos master via `"--credentials"` command line flag (See `./mesos-master.sh --help` for details).
-
-
-### Checkpointing ###
-
-Checkpointing can now be enabled by setting the "Checkpointing" option to yes in the cloud config. This will allow the Jenkins
-master to finish running its slave jobs even if the Mesos slave process temporarily goes down. Note that Mesos slave(s) should
-have checkpointing enabled for this to work. See [agent-recovery](http://mesos.apache.org/documentation/latest/agent-recovery/)
-for more details.
-
-### Configuring Jenkins jobs ###
+### Configuring Jenkins Jobs ###
 
 Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`) 
 to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific slave type inside Mesos cluster.
 
-### Docker containers ###
+### Docker Containers ###
 
-By default, the Jenkins slaves are run in the default Mesos container. To run the Jenkins slave inside a Docker container, there are two options.
+By default, the Jenkins slaves are run in the default Mesos container. To run the Jenkins agent inside a Docker container, there are two options.
 
 	1) "Use Native Docker Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=docker" (recommended).
 
@@ -122,18 +129,10 @@ Build the plugin as follows:
 
     $ ./gradlew check
 
-This should build the Mesos plugin (mesos.hpi) in the `target` folder. A test Jenkins server can be
+This should build the Mesos plugin as `mesos.hpi` in the `target` folder. A test Jenkins server can be
 started with
 
     $ ./gradlew server 
 
 The code is formatted following the [Google Style Guide](https://github.com/google/styleguide).
 
-### Vagrant ###
-
-If you are just looking to play with Mesos and this plugin in a single self contained VM, you could do so with the included Vagrantfile.
-
-		$ vagrant up
-		$ vagrant ssh
-
-_Please join the [jenkins-mesos](https://groups.google.com/d/forum/jenkins-mesos) mailing list or #jenkins-mesos on irc.freenode.net for discussions/questions!_
