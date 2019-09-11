@@ -958,6 +958,11 @@ public class JenkinsScheduler implements Scheduler {
                 containerInfoBuilder
                         .setType(MESOS)
                         .setMesos(ContainerInfo.MesosInfo.newBuilder().setImage(dockerImage).build());
+
+                  containerInfoBuilder.addVolumes(Volume.newBuilder()
+                                                    .setContainerPath("/var/lib/docker")
+                                                    .setHostPath("docker")
+                                                    .setMode(Mode.RW));       
                 break;
 
             default:
@@ -1032,12 +1037,13 @@ public class JenkinsScheduler implements Scheduler {
             }
 
             LOGGER.fine( String.format( "About to use custom shell: %s " , customShell));
-            commandBuilder.setShell(false);
-            commandBuilder.setValue(customShell);
+            //commandBuilder.setShell(false);
+            //commandBuilder.setValue(customShell);
             List args = new ArrayList();
+            args.add(customShell);
+            args.add("&&");
             args.add(jenkinsCommand2Run);
-            commandBuilder.addAllArguments( args );
-
+            commandBuilder.setValue(StringUtils.join(args, " "));
         } else {
             LOGGER.fine("About to use default shell ....");
             commandBuilder.setValue(jenkinsCommand2Run);
