@@ -61,8 +61,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MesosCloud extends Cloud {
-  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
-  public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5;
+  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600"; // 10 mins.
+  public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5; //5 seconds
   private String nativeLibraryPath;
   private String master;
   private String description;
@@ -726,7 +726,7 @@ public void setJenkinsURL(String jenkinsURL) {
   public void setDeclineOfferDuration(String declineOfferDuration) {
     try {
       if (declineOfferDuration == null) {
-        LOGGER.fine("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+        LOGGER.fine("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " s.");
         this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
       } else {
         double duration = Double.parseDouble(declineOfferDuration);
@@ -734,13 +734,13 @@ public void setJenkinsURL(String jenkinsURL) {
           this.declineOfferDuration = declineOfferDuration;
         } else {
           LOGGER.warning("Minimum declineOfferDuration (1000) > " + declineOfferDuration
-              + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+              + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " s.");
           this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
         }
       }
     } catch (NumberFormatException e) {
       LOGGER.warning("Unable to parse declineOfferDuration: " + declineOfferDuration
-          + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
+          + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " s.");
       this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
     }
   }
