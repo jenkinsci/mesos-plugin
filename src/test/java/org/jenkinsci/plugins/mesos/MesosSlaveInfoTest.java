@@ -64,6 +64,7 @@ public class MesosSlaveInfoTest {
                 "",
                 Boolean.FALSE,
                 Boolean.FALSE,
+                Boolean.FALSE,
                 customizable,
                 false,
                 "",

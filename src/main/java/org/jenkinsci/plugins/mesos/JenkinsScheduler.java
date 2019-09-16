@@ -955,14 +955,17 @@ public class JenkinsScheduler implements Scheduler {
                                     .setDocker(Image.Docker.newBuilder().setName(containerInfo.getDockerImage()).build())
                                     .build();
 
+
                 containerInfoBuilder
                         .setType(MESOS)
                         .setMesos(ContainerInfo.MesosInfo.newBuilder().setImage(dockerImage).build());
 
-                  containerInfoBuilder.addVolumes(Volume.newBuilder()
-                                                    .setContainerPath("/var/lib/docker")
-                                                    .setHostPath("docker")
-                                                    .setMode(Mode.RW));       
+                if (containerInfo.getIsDind()) {
+                    containerInfoBuilder.addVolumes(Volume.newBuilder()
+                            .setContainerPath("/var/lib/docker")
+                            .setHostPath("docker")
+                            .setMode(Mode.RW));
+                }
                 break;
 
             default:
@@ -1037,13 +1040,19 @@ public class JenkinsScheduler implements Scheduler {
             }
 
             LOGGER.fine( String.format( "About to use custom shell: %s " , customShell));
-            //commandBuilder.setShell(false);
-            //commandBuilder.setValue(customShell);
-            List args = new ArrayList();
-            args.add(customShell);
-            args.add("&&");
-            args.add(jenkinsCommand2Run);
-            commandBuilder.setValue(StringUtils.join(args, " "));
+            if (request.request.slaveInfo.getContainerInfo().getIsDind()) {
+                List args = new ArrayList();
+                args.add(customShell);
+                args.add("&&");
+                args.add(jenkinsCommand2Run);
+                commandBuilder.setValue(StringUtils.join(args, " "));
+            } else {
+                commandBuilder.setShell(false);
+                commandBuilder.setValue(customShell);
+                List args = new ArrayList();
+                args.add(jenkinsCommand2Run);
+                commandBuilder.addAllArguments( args );
+            }
         } else {
             LOGGER.fine("About to use default shell ....");
             commandBuilder.setValue(jenkinsCommand2Run);
