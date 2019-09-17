@@ -18,6 +18,10 @@
         <f:radioBlock name="type" title="${%Mesos}" value="MESOS" inline="true" checked="${instance.type == 'MESOS'}"></f:radioBlock>
     </f:entry>
 
+    <f:entry title="${%Docker in Docker image}" field="isDind" >
+        <f:checkbox/>
+    </f:entry>
+
     <f:entry title="${%Use custom docker command shell}" field="useCustomDockerCommandShell" >
         <f:checkbox/>
     </f:entry>

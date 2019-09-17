@@ -460,10 +460,12 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
         private final boolean dockerPrivilegedMode;
         private final boolean dockerForcePullImage;
         private final boolean dockerImageCustomizable;
+        private final boolean isDind;
 
         @DataBoundConstructor
         public ContainerInfo(String type,
                              String dockerImage,
+                             boolean isDind,
                              boolean dockerPrivilegedMode,
                              boolean dockerForcePullImage,
                              boolean dockerImageCustomizable,
@@ -484,6 +486,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
             this.volumes = volumes;
             this.parameters = parameters;
             this.networkInfos = networkInfos;
+            this.isDind = isDind;
 
             if (networking == null) {
                 this.networking = DEFAULT_NETWORKING;
@@ -502,6 +505,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
             return new ContainerInfo(
                     type,
                     dockerImage,  // custom docker image
+                    isDind,
                     dockerPrivilegedMode,
                     dockerForcePullImage,
                     dockerImageCustomizable,
@@ -514,6 +518,8 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
                     networkInfos
             );
         }
+
+        public boolean getIsDind() { return isDind; }
 
         public String getType() {
             return type;

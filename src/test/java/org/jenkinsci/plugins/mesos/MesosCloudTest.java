@@ -43,7 +43,7 @@ public class MesosCloudTest {
         MesosCloud cloud = new MesosCloud(
             "<nativeLibraryPath>", "<master>", "<description>", "<frameworkName>", "<role>", "<slavesUser>", "", "<principal>", /* TODO why is secret still in the DBC?? */null,
             Collections.singletonList(new MesosSlaveInfo("<labelString>", Node.Mode.NORMAL, "4", "1024", "1", "1", "1", "0.0", "1024", "<remoteFSRoot>", "1", slaveAttributes, "<jvmArgs>", "<jnlpArgs>", "<defaultSlave>",
-                    new MesosSlaveInfo.ContainerInfo(/* not actually used, should really be using f:optionalProperty */"DOCKER", "<dockerImage>", true, true, true, true, "<customDockerCommandShell>",
+                    new MesosSlaveInfo.ContainerInfo(/* not actually used, should really be using f:optionalProperty */"DOCKER", "<dockerImage>", true,true, true, true, true, "<customDockerCommandShell>",
                             Collections.singletonList(new MesosSlaveInfo.Volume("<containerPath>", "<hostPath>", true)),
                             Collections.singletonList(new MesosSlaveInfo.Parameter("<key>", "<value>")),
                             "BRIDGE",
@@ -64,7 +64,7 @@ public class MesosCloudTest {
         MesosCloud cloud = new MesosCloud(
                 "<nativeLibraryPath>", "<master>", "<description>", "<frameworkName>", "<role>", "<slavesUser>", "", "<principal>", /* TODO why is secret still in the DBC?? */null,
                 Collections.singletonList(new MesosSlaveInfo("<labelString>", Node.Mode.NORMAL, "4", "1024", "1", "1", "1", "0.0", "1024", "<remoteFSRoot>", "1", slaveAttributes, "<jvmArgs>", "<jnlpArgs>", "<defaultSlave>",
-                        new MesosSlaveInfo.ContainerInfo(/* not actually used, should really be using f:optionalProperty */"MESOS", "<dockerImage>", true, true, true, true, "<customDockerCommandShell>",
+                        new MesosSlaveInfo.ContainerInfo(/* not actually used, should really be using f:optionalProperty */"MESOS", "<dockerImage>", true, true, true, true, true, "<customDockerCommandShell>",
                                 Collections.singletonList(new MesosSlaveInfo.Volume("<containerPath>", "<hostPath>", true)),
                                 Collections.singletonList(new MesosSlaveInfo.Parameter("<key>", "<value>")),
                                 "BRIDGE",

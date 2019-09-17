@@ -475,6 +475,7 @@ public class JenkinsSchedulerTest {
             containerInfo = new MesosSlaveInfo.ContainerInfo(
                     "docker",
                     "test-docker-in-docker-image",
+                    Boolean.FALSE,
                     Boolean.TRUE,
                     Boolean.TRUE,
                     Boolean.FALSE,
