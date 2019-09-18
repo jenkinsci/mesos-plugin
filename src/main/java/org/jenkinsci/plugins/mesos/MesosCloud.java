@@ -12,11 +12,13 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +29,7 @@ import java.util.concurrent.*;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -61,32 +64,14 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
-  public static class CustomSsl {
-
-    private String sslCert;
-
-    @DataBoundConstructor
-    public CustomSsl(String sslCert) {
-      this.sslCert = sslCert;
-    }
-
-    public String getSslCert() {
-      return this.sslCert;
-    }
-  }
-
   public static class DcosAuthorization {
 
     private String secret;
     private String uid;
-    private String dcosRoot;
 
-    @DataBoundConstructor
-    public DcosAuthorization(String uid, String dcosRoot, String secret)
-        throws MalformedURLException {
+    public DcosAuthorization(String uid, String secret) {
       this.uid = uid;
       this.secret = secret;
-      this.dcosRoot = dcosRoot;
     }
 
     public String getSecret() {
@@ -95,10 +80,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
     public String getUid() {
       return this.uid;
-    }
-
-    public String getDcosRoot() {
-      return this.dcosRoot;
     }
   }
 
@@ -109,10 +90,8 @@ public class MesosCloud extends AbstractCloudImpl {
       String role,
       String agentUser,
       String jenkinsUrl,
-      CustomSsl customSsl, // TODO: the SSL certificate should be provided by a credential provider.
-      DcosAuthorization authorization, // TODO: use secret from credential provider.
       List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates)
-      throws InterruptedException, ExecutionException {
+      throws InterruptedException, ExecutionException, IOException {
     super("MesosCloud", null);
 
     try {
@@ -122,8 +101,14 @@ public class MesosCloud extends AbstractCloudImpl {
       throw new RuntimeException("Mesos Cloud URL validation failed", e);
     }
 
-    this.sslCert = (customSsl != null) ? Optional.of(customSsl.getSslCert()) : Optional.empty();
-    this.dcosAuthorization = Optional.ofNullable(authorization);
+    if (selfIsMesosTask()) {
+      String mesosSandbox = System.getenv("MESOS_SANDBOX");
+      this.sslCert = Optional.ofNullable(loadDcosCert(mesosSandbox));
+      this.dcosAuthorization = Optional.ofNullable(loadDcosAuthorization());
+    } else {
+      this.sslCert = Optional.empty();
+      this.dcosAuthorization = Optional.empty();
+    }
 
     this.agentUser = agentUser;
     this.role = role;
@@ -223,6 +208,8 @@ public class MesosCloud extends AbstractCloudImpl {
 
   /** @return the {@link MesosAgentSpecTemplate} for passed label or empty optional. */
   private Optional<MesosAgentSpecTemplate> getSpecForLabel(Label label) {
+    if (label == null) return Optional.empty();
+
     for (MesosAgentSpecTemplate spec : this.mesosAgentSpecTemplates) {
       if (label.matches(spec.getLabelSet())) {
         return Optional.of(spec);
@@ -267,6 +254,44 @@ public class MesosCloud extends AbstractCloudImpl {
               }
             })
         .toCompletableFuture();
+  }
+
+  /**
+   * Checks whether the Jenkins master itself is running as a Mesos task and thus has the env var
+   * MESOS_SANDBOX defined.
+   *
+   * @return
+   */
+  private static boolean selfIsMesosTask() {
+    return System.getenv("MESOS_SANDBOX") != null;
+  }
+
+  /**
+   * Loads the DC/OS SSL certificate in a Mesos task on an enterprise cluster.
+   *
+   * @param mesosSandbox The resolved MESOS_SANDBOX environment variable.
+   * @return The certificate or null if the file does not exist.
+   * @throws IOException
+   */
+  @CheckForNull
+  private static String loadDcosCert(String mesosSandbox) throws IOException {
+    final File sslCertFile = new File(mesosSandbox, ".ssl/ca-bundle.crt");
+    if (sslCertFile.exists()) {
+      return FileUtils.readFileToString(sslCertFile, StandardCharsets.US_ASCII);
+    } else {
+      return null;
+    }
+  }
+
+  @CheckForNull
+  private static DcosAuthorization loadDcosAuthorization() throws IOException {
+    final String user = System.getenv("DCOS_SERVICE_ACCOUNT");
+    final String privateKey = System.getenv("DCOS_SERVICE_ACCOUNT_PRIVATE_KEY");
+    if (user != null && privateKey != null) {
+      return new DcosAuthorization(user, privateKey);
+    } else {
+      return null;
+    }
   }
 
   @Extension
@@ -440,14 +465,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
   public String getRole() {
     return this.role;
-  }
-
-  public CustomSsl getCustomSsl() {
-    return this.sslCert.map(CustomSsl::new).orElse(null);
-  }
-
-  public DcosAuthorization getAuthentication() {
-    return this.dcosAuthorization.orElse(null);
   }
 
   /** @return Number of launching agents that are not connected yet. */

@@ -22,28 +22,6 @@
         <f:textbox/>
     </f:entry>
 
-    <!-- TODO: Use credential selection instead. -->
-    <f:optionalBlock name="customSsl" title="Use a custom SSL certificate">
-      <f:entry title="SSL Certificate">
-        <f:textarea name="sslCert" value="${it.sslCert}"/>
-      </f:entry>
-    </f:optionalBlock>
-
-    <!-- TODO: Make the type selectable from None, DC/OS and Basic Authentication. -->
-    <f:optionalBlock name="authorization" title="Authorization">
-      <f:entry title="User">
-        <f:textbox name="uid" value="${it.uid}"/>
-      </f:entry>
-
-      <f:entry title="DC/OS Root URL">
-        <f:textbox name="dcosRoot" value="${it.dcosRoot}"/>
-      </f:entry>
-
-      <f:entry title="Secret">
-        <f:textarea name="secret" value="${it.secret}"/>
-      </f:entry>
-    </f:optionalBlock>
-
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="mesosMasterUrl"/>
 
     <f:advanced>

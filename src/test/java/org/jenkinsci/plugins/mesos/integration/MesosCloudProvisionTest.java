@@ -79,8 +79,6 @@ public class MesosCloudProvisionTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            null,
-            null,
             specTemplates);
 
     int workload = 3;
@@ -132,8 +130,6 @@ public class MesosCloudProvisionTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            null,
-            null,
             specTemplates);
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();

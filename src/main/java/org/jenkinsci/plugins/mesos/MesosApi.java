@@ -87,7 +87,7 @@ public class MesosApi {
       String frameworkId,
       String role,
       Optional<String> sslCert,
-      Optional<DcosAuthorization> authorization) // TODO: Use a different type.
+      Optional<DcosAuthorization> authorization)
       throws InterruptedException, ExecutionException {
     this.frameworkName = frameworkName;
     this.frameworkId = frameworkId;
@@ -132,7 +132,7 @@ public class MesosApi {
                     new DcosServiceAccountProvider(
                         auth.getUid(),
                         auth.getSecret(),
-                        new URL(auth.getDcosRoot()),
+                        new URL("https://master.mesos"), // TODO: do not hardcode DC/OS URL.
                         this.system,
                         this.materializer,
                         this.context);
@@ -274,6 +274,7 @@ public class MesosApi {
         .thenApply(
             result -> {
               if (result == QueueOfferResult.enqueued()) {
+                logger.info("Queued new agent {}", name);
                 return mesosJenkinsAgent;
               } else if (result == QueueOfferResult.dropped()) {
                 logger.warn("USI command queue is full. Fail provisioning for {}", name);
@@ -337,6 +338,8 @@ public class MesosApi {
                 slave.update(podStateEvent);
                 return slave;
               });
+
+      // TODO: Remove failed nodes and restart.
 
       // The agent, ie the pod, is not terminal and unknown to us. Kill it.
       boolean terminal = podStateEvent.newStatus().forall(PodStatus::isTerminalOrUnreachable);
