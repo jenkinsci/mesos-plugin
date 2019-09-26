@@ -59,8 +59,8 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private final URL jenkinsUrl;
 
-  private final Optional<String> sslCert;
-  private final Optional<DcosAuthorization> dcosAuthorization;
+  private transient Optional<String> sslCert;
+  private transient Optional<DcosAuthorization> dcosAuthorization;
 
   private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
@@ -129,7 +129,17 @@ public class MesosCloud extends AbstractCloudImpl {
     logger.info("Initialized Mesos API object.");
   }
 
-  private Object readResolve() {
+  private Object readResolve() throws IOException {
+
+    if (selfIsMesosTask()) {
+      String mesosSandbox = System.getenv("MESOS_SANDBOX");
+      this.sslCert = Optional.ofNullable(loadDcosCert(mesosSandbox));
+      this.dcosAuthorization = Optional.ofNullable(loadDcosAuthorization());
+    } else {
+      this.sslCert = Optional.empty();
+      this.dcosAuthorization = Optional.empty();
+    }
+
     try {
       this.mesosApi =
           new MesosApi(

@@ -73,8 +73,9 @@ and light weight jobs can be assigned label 'light_weight_slave'(which has  'Sla
 
 ### DC/OS Authentication ###
 
-The plugin can authenticate with a [DC/OS](https://docs.d2iq.com/mesosphere/dcos/1.13/security/ent/service-auth/) enterprise cluster. Simply check `Authorization` and enter the
-service user name, the DC/OS root URL and paste the servive user secret.
+The plugin can authenticate with a [DC/OS](https://docs.d2iq.com/mesosphere/dcos/1.13/security/ent/service-auth/) enterprise cluster. 
+Simply run the environment variables `DCOS_SERVICE_ACCOUNT` containing the service account name and
+`DCOS_SERVICE_ACCOUNT_PRIVATE_KEY` containing the private key for the service account. See [On DC/OS Enterprise](#on-dcos-enterprise) for details.
 
 ### Configuring Jenkins Jobs ###
 
@@ -154,13 +155,7 @@ account to run. To setup one up with the DC/OS CLI
    ```
    dcos security secrets create -f ./jenkins.private.pem jenkins/private_key
    ```
-4. Grant `jenkins-user` access:
-   ```
-   curl -L -X PUT -k -H "Authorization: token=$(dcos config show core.dcos_acs_token)" \
-     "$(dcos config show core.dcos_url)/acs/api/v1/acls/dcos:superuser/users/jenkins-user/full"
-   ```
-   
-   or 
+4. Grant `jenkins` service account rights to start Mesos tasks:
    ```
    dcos security org users grant jenkins dcos:mesos:master:task:user:nobody create
    ```

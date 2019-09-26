@@ -34,8 +34,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int minExecutors;
   private final int maxExecutors;
   private final int executorMem;
-  private final String remoteFsRoot;
-  private final String jvmArgs;
+  private final String jvmArgs; // TODO: remove since it's not used.
   private final String jnlpArgs;
   private final boolean defaultAgent;
   private String agentAttributes;
@@ -53,7 +52,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       String maxExecutors,
       String disk,
       String executorMem,
-      String remoteFsRoot,
       String agentAttributes,
       String jvmArgs,
       String jnlpArgs,
@@ -71,7 +69,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.maxExecutors = Integer.parseInt(maxExecutors);
     this.disk = Double.parseDouble(disk);
     this.executorMem = Integer.parseInt(executorMem);
-    this.remoteFsRoot = StringUtils.isNotBlank(remoteFsRoot) ? remoteFsRoot.trim() : "jenkins";
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
     this.defaultAgent = Boolean.valueOf(defaultAgent);
     this.agentAttributes = agentAttributes != null ? agentAttributes.toString() : null;
@@ -192,10 +189,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
   public int getExecutorMem() {
     return executorMem;
-  }
-
-  public String getRemoteFsRoot() {
-    return remoteFsRoot;
   }
 
   public String getJvmArgs() {

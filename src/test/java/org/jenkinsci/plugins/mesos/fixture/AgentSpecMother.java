@@ -12,22 +12,7 @@ public class AgentSpecMother {
 
   public static final MesosAgentSpecTemplate simple =
       new MesosAgentSpecTemplate(
-          "label",
-          Mode.EXCLUSIVE,
-          "0.1",
-          "32",
-          "1",
-          "1",
-          "1",
-          "0",
-          "0",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "");
+          "label", Mode.EXCLUSIVE, "0.1", "32", "1", "1", "1", "0", "0", "", "", "", "", "", "");
 
   public static final MesosAgentSpecTemplate docker =
       new MesosAgentSpecTemplate(
@@ -39,7 +24,6 @@ public class AgentSpecMother {
           "1",
           "1",
           "1",
-          "0",
           "0",
           "",
           "",

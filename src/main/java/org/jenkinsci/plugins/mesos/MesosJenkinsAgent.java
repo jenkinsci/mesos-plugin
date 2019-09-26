@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos.TaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,12 +150,10 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   @Override
   protected void _terminate(TaskListener listener) {
     try {
-      logger.info("killing task {}", this.podId);
-      // create a terminating spec for this pod
-      Jenkins.get().removeNode(this);
+      logger.info("Killing task {}", this.podId);
       this.api.killAgent(this.podId);
     } catch (Exception ex) {
-      logger.warn("error when killing task {}", this.podId, ex);
+      logger.warn("Error when killing task {}", this.podId, ex);
     }
   }
 
