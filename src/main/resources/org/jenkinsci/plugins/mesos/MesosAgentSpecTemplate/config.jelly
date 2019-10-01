@@ -34,24 +34,12 @@
              <f:textbox clazz="required" default="0.0"/>
          </f:entry>
 
-         <f:entry title="${%Mesos Offer Selection Attributes}" field="agentAttributes">
-                 <f:textbox/>
-         </f:entry>
-
-         <f:entry title="${%Additional Jenkins Agent JVM arguments}" field="jvmArgs">
-              <f:textbox default="-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"/>
-         </f:entry>
-
          <f:entry title="${%Additional Jenkins Agent Agent JNLP arguments}" field="jnlpArgs">
              <f:textbox default="-noReconnect"/>
          </f:entry>
 
           <f:entry title="${%Mark this Agent Info as default for all Jobs}" field="defaultAgent">
                  <f:checkbox onclick="checkDefaultSlave(this)"/>
-          </f:entry>
-
-         <f:entry title="${%Jenkins Executor Memory in MB}" field="executorMem">
-              <f:number clazz="required positive-number" default="128"/>
           </f:entry>
 
           <f:entry title="Docker image" field="containerImage">
