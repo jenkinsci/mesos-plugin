@@ -83,7 +83,7 @@
           "extract": true
       }
    ],{{/advanced.docker-credentials-uri}}
-   "acceptedResourceRoles": [ "{{roles.jenkins-master-role}}" ],
+   "role": "{{roles.jenkins-master-role}}",
    "healthChecks": [
     {
       "path": "/service/{{service.name}}",

@@ -1,9 +1,8 @@
-
 {
     "packagingVersion": "3.0",
     "name": "jenkins",
     "version": "{{package-version}}",
-    "minDcosReleaseVersion": "1.10",
+    "minDcosReleaseVersion": "1.14",
     "scm": "https://github.com/mesosphere/dcos-jenkins-service.git",
     "maintainer": "support@mesosphere.io",
     "website": "https://jenkins.io",
@@ -28,4 +27,4 @@
       }
     ],
     "selected": true
-  }
+}

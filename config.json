@@ -84,16 +84,16 @@
             }
         },
         "roles": {
-            "description": "Role configuration properties for Jenkins on DC/OS.",
+            "description": "Role configuration properties for Jenkins on DC/OS. These properties are overriden when Marathon's enforceRole is enabled for top-level groups.",
             "type": "object",
             "properties": {
                 "jenkins-master-role": {
-                    "description": "The accepted resource roles that the Jenkins master itself runs as using Marathon. By default, this will deploy to any agents with the * role. For example, to deploy to a public DC/OS agent, set this to 'slave_public'.",
+                    "description": "The role that the Jenkins master itself runs as using Marathon. Overriden by value of group-role when enforceRole is enabled at top-level group.",
                     "type": "string",
-                    "default": "*"
+                    "default": "slave_public"
                 },
                 "jenkins-agent-role": {
-                    "description": "The role passed to the internal Jenkins configuration that denotes which resources to launch Jenkins agents on.",
+                    "description": "The role passed to the internal Jenkins configuration that denotes which role to launch Jenkins agents as. Overriden by value of group-role when enforceRole is enabled at top-level group.",
                     "type": "string",
                     "default": "*"
                   }
