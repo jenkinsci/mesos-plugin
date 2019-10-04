@@ -460,7 +460,7 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
         private final boolean dockerPrivilegedMode;
         private final boolean dockerForcePullImage;
         private final boolean dockerImageCustomizable;
-        private final boolean isDind;
+        private Boolean isDind;
 
         @DataBoundConstructor
         public ContainerInfo(String type,
@@ -499,6 +499,13 @@ public class MesosSlaveInfo extends AbstractDescribableImpl<MesosSlaveInfo> {
             } else {
                 this.portMappings = portMappings;
             }
+        }
+
+        private Object readResolve() throws IOException {
+            if (this.isDind == null) {
+                this.isDind = false;
+            }
+            return this;
         }
 
         public ContainerInfo copyWithDockerImage(String dockerImage) throws FormException {
