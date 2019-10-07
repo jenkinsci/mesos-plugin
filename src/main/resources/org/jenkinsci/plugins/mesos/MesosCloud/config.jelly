@@ -18,7 +18,7 @@
         <f:textbox default=""/>
     </f:entry>
 
-    <f:entry title="Jenkins URL" field="jenkinsUrl">
+    <f:entry title="Jenkins URL" field="jenkinsURL">
         <f:textbox/>
     </f:entry>
 

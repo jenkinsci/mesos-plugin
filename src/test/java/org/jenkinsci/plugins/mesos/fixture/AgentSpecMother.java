@@ -12,7 +12,7 @@ public class AgentSpecMother {
 
   public static final MesosAgentSpecTemplate simple =
       new MesosAgentSpecTemplate(
-          "label", Mode.EXCLUSIVE, "0.1", "32", "1", "1", "1", "0", "", "", "", "");
+          "label", Mode.EXCLUSIVE, "0.1", "32", 1, 1, 1, "0", "", false, "", "");
 
   public static final MesosAgentSpecTemplate docker =
       new MesosAgentSpecTemplate(
@@ -20,12 +20,12 @@ public class AgentSpecMother {
           Mode.EXCLUSIVE,
           "0.1",
           "32",
-          "1",
-          "1",
-          "1",
+          1,
+          1,
+          1,
           "1",
           "",
-          "",
+          false,
           "",
           "mesosphere/jenkins-dind:0.6.0-alpine");
 }

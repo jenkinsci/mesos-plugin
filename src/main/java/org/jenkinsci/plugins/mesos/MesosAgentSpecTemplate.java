@@ -44,26 +44,26 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       Node.Mode mode,
       String cpus,
       String mem,
-      String idleTerminationMinutes,
-      String minExecutors,
-      String maxExecutors,
+      int idleTerminationMinutes,
+      int minExecutors,
+      int maxExecutors,
       String disk,
       String jnlpArgs,
-      String defaultAgent,
+      boolean defaultAgent,
       String additionalURIs,
       String containerImage) {
     this.label = label;
     this.labelSet = Label.parse(label);
     this.mode = mode;
-    this.idleTerminationMinutes = Integer.parseInt(idleTerminationMinutes);
+    this.idleTerminationMinutes = idleTerminationMinutes;
     this.reusable = false; // TODO: DCOS_OSS-5048.
     this.cpus = Double.parseDouble(cpus);
     this.mem = Integer.parseInt(mem);
-    this.minExecutors = Integer.parseInt(minExecutors) < 1 ? 1 : Integer.parseInt(minExecutors);
-    this.maxExecutors = Integer.parseInt(maxExecutors);
+    this.minExecutors = minExecutors;
+    this.maxExecutors = maxExecutors;
     this.disk = Double.parseDouble(disk);
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
-    this.defaultAgent = Boolean.valueOf(defaultAgent);
+    this.defaultAgent = defaultAgent;
     this.additionalURIs = additionalURIs;
     this.containerImage = containerImage;
     validate();
@@ -112,8 +112,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withDisk(this.getDisk())
         .withName(name)
         .withJenkinsUrl(jenkinsUrl)
-        .withImage(Optional.ofNullable(this.containerImage).filter(s -> !s.isEmpty()))
-        .withJnlpArguments(this.jnlpArgs)
+        .withImage(Optional.ofNullable(this.getContainerImage()).filter(s -> !s.isEmpty()))
+        .withJnlpArguments(this.getJnlpArgs())
         .build();
   }
 
