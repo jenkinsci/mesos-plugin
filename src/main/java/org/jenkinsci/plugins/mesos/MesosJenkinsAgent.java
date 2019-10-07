@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.mesos;
 
 import akka.NotUsed;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitches;
+import akka.stream.SharedKillSwitch;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.mesosphere.usi.core.models.*;
@@ -39,6 +41,8 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   private final URL jenkinsUrl;
 
+  private final SharedKillSwitch waitUntilOnlineKillSwitch;
+
   public MesosJenkinsAgent(
       MesosApi api,
       String name,
@@ -66,6 +70,9 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     this.podId = name;
     this.jenkinsUrl = jenkinsUrl;
     this.onlineTimeout = agentTimeout;
+
+    this.waitUntilOnlineKillSwitch =
+        KillSwitches.shared(String.format("wait-until-online-{}", name));
   }
 
   /**
@@ -76,6 +83,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
    */
   public CompletableFuture<Node> waitUntilOnlineAsync(ActorMaterializer materializer) {
     return Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(1), NotUsed.notUsed())
+        .via(this.waitUntilOnlineKillSwitch.flow())
         .completionTimeout(onlineTimeout)
         .filter(ignored -> this.isOnline())
         .map(ignored -> this.asNode())
@@ -109,6 +117,11 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     }
   }
 
+  /** @return whether the agent is terminal or unreachable. */
+  public synchronized boolean isTerminalOrUnreachable() {
+    return currentStatus.map(PodStatus::isTerminalOrUnreachable).orElse(false);
+  }
+
   /** @return whether the Jenkins agent connected and is online. */
   public synchronized boolean isOnline() {
     final Computer computer = this.toComputer();
@@ -122,11 +135,11 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   /** @return whether the agent is launching and not connected yet. */
   public synchronized boolean isPending() {
-    return (!isKilled() && !isOnline());
+    return (!isTerminalOrUnreachable() && !isOnline());
   }
 
   /**
-   * Updates the state of the slave.
+   * Updates the state of the slave and takes action on certain events.
    *
    * @param event The state event from USI which informs about the task status.
    */
@@ -134,6 +147,17 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
     if (event.newStatus().isDefined()) {
       logger.info("Received new status for {}", event.id().value());
       this.currentStatus = Optional.of(event.newStatus().get());
+
+      // Handle state change.
+      if (this.isTerminalOrUnreachable()) {
+        String message =
+            String.format(
+                "Agent %s became %s: %s",
+                this.getNodeName(),
+                this.currentStatus.get().taskStatuses().values().head().getState(),
+                this.currentStatus.get().taskStatuses().values().head().getMessage());
+        waitUntilOnlineKillSwitch.abort(new IllegalStateException(message));
+      }
     }
   }
 

@@ -334,17 +334,18 @@ public class MesosApi {
       MesosJenkinsAgent updated =
           stateMap.computeIfPresent(
               podStateEvent.id(),
-              (id, slave) -> {
-                slave.update(podStateEvent);
-                return slave;
+              (id, agent) -> {
+                agent.update(podStateEvent);
+                return agent;
               });
-
-      // TODO: Remove failed nodes and restart.
 
       // The agent, ie the pod, is not terminal and unknown to us. Kill it.
       boolean terminal = podStateEvent.newStatus().forall(PodStatus::isTerminalOrUnreachable);
       if (updated == null && !terminal) {
         killAgent(podStateEvent.id());
+      }
+      if (terminal) {
+        stateMap.remove(podStateEvent.id());
       }
     }
   }
