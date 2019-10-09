@@ -6,10 +6,10 @@
             "type": "object",
             "properties": {
                 "name": {
-                  "description": "Unique name for the service instance consisting of a series of words separated by slashes. Each word must be at least 1 alphanumeric character and may only contain digits (`0-9`), dashes (`-`), dots (`.`), and lowercase letters (`a-z`). The word may not begin or end with a dash",
-                  "type": "string",
-                  "pattern": "^(\\/?((\\.\\.)|(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9]))?($|\\/))+$",
-                  "default": "jenkins"
+                    "description": "Unique name for the service instance consisting of a series of words separated by slashes. Each word must be at least 1 alphanumeric character and may only contain digits (`0-9`), dashes (`-`), dots (`.`), and lowercase letters (`a-z`). The word may not begin or end with a dash",
+                    "type": "string",
+                    "pattern": "^(\\/?((\\.\\.)|(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9]))?($|\\/))+$",
+                    "default": "jenkins"
                 },
                 "cpus": {
                     "description": "CPU shares to allocate to each Jenkins master.",
@@ -27,6 +27,11 @@
                     "description": "The user that the service will run as. In 'strict' security mode, running tasks as root is disabled by default. Ensure that this user exists on each of the agents in your DC/OS cluster.",
                     "type": "string",
                     "default": "root"
+                },
+                "marathon-name": {
+                    "description": "The name of the Marathon framework the Jenkins master is deployed from. Change when using a MoM (Marathon on Marathon).",
+                    "type": "string",
+                    "default": "marathon"
                 }
             },
             "required": [
@@ -43,23 +48,9 @@
                     "description": "The location of a volume on the host to be used for persisting Jenkins configuration and build data. The final location will be derived from this value plus the name set in `name` (e.g. `/mnt/host_volume/jenkins`). Note that this path must be the same on all DC/OS agents.",
                     "type": "string"
                 },
-                "local-persistent-volume-size": {
-                    "description": "Size of the persistent volume. This is applicable only when host-volume is not set",
-                    "type": "number",
-                    "default": 5120
-                },
                 "pinned-hostname": {
                     "description": "An optional DC/OS agent hostname to run this Jenkins instance on (e.g. 10.0.0.1).",
-                    "type" : "string"
-                },
-                "external-persistent-volume-name": {
-                    "description": "Name of the persistent volume. This is applicable only when host-volume is not set and local persistent volume is not used",
                     "type": "string"
-                },
-                "external-persistent-volume-size": {
-                    "description": "Size of the external persistent volume. This is applicable only when host-volume is not set",
-                    "type": "number",
-                    "default": 16
                 }
             }
         },
@@ -80,6 +71,11 @@
                     "description": "Whether Marathon-lb should redirect HTTP traffic to HTTPS. This requires 'virtual-host' to be set. By default, this is false.",
                     "type": "boolean",
                     "default": false
+                },
+                "agent-port": {
+                    "description": "The port that Jenkins agents will use to connect to the master. The default port is set to 50000; a value of 0 will result in a random port being chosen.",
+                    "type": "integer",
+                    "default": 50000
                 }
             }
         },
@@ -96,9 +92,9 @@
                     "description": "The role passed to the internal Jenkins configuration that denotes which role to launch Jenkins agents as. Overriden by value of group-role when enforceRole is enabled at top-level group.",
                     "type": "string",
                     "default": "*"
-                  }
-              }
-          },
+                }
+            }
+        },
         "security": {
             "description": "Security configuration properties for Jenkins on DC/OS.",
             "type": "object",
@@ -112,6 +108,32 @@
                     "description": "Name of the Secret Store credentials to use for DC/OS service authentication. This should be left empty unless service authentication is needed.",
                     "type": "string",
                     "default": ""
+                }
+            }
+        },
+        "health-checks": {
+            "description": "Mesos health-check properties for Jenkins on DC/OS.",
+            "type": "object",
+            "properties": {
+                "grace-period": {
+                    "description": "Health check failures are ignored within this number of seconds or until the task becomes healthy for the first time.",
+                    "type": "integer",
+                    "default": 30
+                },
+                "interval": {
+                    "description": "Number of seconds to wait between health checks.",
+                    "type": "integer",
+                    "default": 60
+                },
+                "timeout": {
+                    "description": "Number of seconds after which a health check is considered a failure regardless of the response.",
+                    "type": "integer",
+                    "default": 20
+                },
+                "max-consecutive-failures": {
+                    "description": "Number of consecutive health check failures after which the unhealthy task should be killed.",
+                    "type": "integer",
+                    "default": 3
                 }
             }
         },
