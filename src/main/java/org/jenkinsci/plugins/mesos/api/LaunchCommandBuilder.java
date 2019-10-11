@@ -1,7 +1,11 @@
 package org.jenkinsci.plugins.mesos.api;
 
-import com.mesosphere.usi.core.models.*;
+import com.mesosphere.usi.core.models.PodId;
+import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
+import com.mesosphere.usi.core.models.template.FetchUri;
+import com.mesosphere.usi.core.models.template.RunTemplate;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory$;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,8 +22,8 @@ import scala.collection.Seq;
 import scala.compat.java8.OptionConverters;
 
 /**
- * A simpler factory for building {@link com.mesosphere.usi.core.models.LaunchPod} for Jenkins
- * agents.
+ * A simpler factory for building {@link com.mesosphere.usi.core.models.commands.LaunchPod} for
+ * Jenkins agents.
  */
 public class LaunchCommandBuilder {
 
@@ -105,7 +109,7 @@ public class LaunchCommandBuilder {
 
   public LaunchPod build() throws MalformedURLException, URISyntaxException {
     final RunTemplate runTemplate =
-        new RunTemplate(
+        SimpleRunTemplateFactory$.MODULE$.apply(
             convertListToSeq(Arrays.asList(this.cpus, this.memory, this.disk)),
             this.buildCommand(),
             this.role,
@@ -125,7 +129,7 @@ public class LaunchCommandBuilder {
         buildJnlpUrl());
   }
 
-  private String buildJnlpSecret() {
+  public String buildJnlpSecret() {
     String jnlpSecret = "";
     if (getJenkins().isUseSecurity()) {
       jnlpSecret =

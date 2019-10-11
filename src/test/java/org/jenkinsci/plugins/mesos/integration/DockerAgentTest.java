@@ -35,7 +35,9 @@ public class DockerAgentTest {
           "linux",
           "mesos",
           Option.apply("filesystem/linux,docker/runtime"),
-          Option.apply("docker"));
+          Option.apply("docker"),
+          Option.empty(),
+          Option.empty());
 
   @RegisterExtension
   static MesosClusterExtension mesosCluster =

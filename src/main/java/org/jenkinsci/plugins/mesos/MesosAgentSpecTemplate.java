@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
-import com.mesosphere.usi.core.models.LaunchPod;
+import com.mesosphere.usi.core.models.commands.LaunchPod;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
