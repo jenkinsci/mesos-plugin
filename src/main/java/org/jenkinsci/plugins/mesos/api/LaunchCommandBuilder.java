@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.mesos.api;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
@@ -12,6 +13,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import jenkins.model.Jenkins;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -41,6 +44,7 @@ public class LaunchCommandBuilder {
   private ScalarRequirement memory = null;
   private ScalarRequirement disk = null;
   private String role = "test";
+  private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
 
   private int xmx = 0;
@@ -99,6 +103,12 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withAdditionalFetchUris(List<FetchUri> additionalFetchUris) {
+
+    this.additionalFetchUris = additionalFetchUris;
+    return this;
+  }
+
   public LaunchCommandBuilder withJnlpArguments(String args) {
     this.jnlpArgString = args;
     return this;
@@ -111,7 +121,7 @@ public class LaunchCommandBuilder {
             Arrays.asList(this.cpus, this.memory, this.disk),
             this.buildCommand(),
             this.role,
-            Arrays.asList(this.buildFetchUri()),
+            this.buildFetchUris(),
             this.containerInfo);
     return new LaunchPod(this.id, runTemplate);
   }
@@ -155,8 +165,13 @@ public class LaunchCommandBuilder {
   }
 
   /** @return the {@link FetchUri} for the Jenkins agent jar file. */
-  private FetchUri buildFetchUri() throws MalformedURLException, URISyntaxException {
+  private List<FetchUri> buildFetchUris() throws MalformedURLException, URISyntaxException {
     final URI uri = new URL(this.jenkinsMaster, AGENT_JAR_URI_SUFFIX).toURI();
-    return new FetchUri(uri, false, false, false, Option.empty());
+    final FetchUri jenkinsAgentFetchUri = new FetchUri(uri, false, false, false, Option.empty());
+
+    return ImmutableList.<FetchUri>builder()
+        .addAll(this.additionalFetchUris)
+        .add(jenkinsAgentFetchUri)
+        .build();
   }
 }
