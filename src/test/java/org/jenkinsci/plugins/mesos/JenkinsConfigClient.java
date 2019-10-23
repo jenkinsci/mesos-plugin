@@ -80,7 +80,7 @@ public class JenkinsConfigClient {
                                     .add("disk", "0")
                                     .add("jnlpArgs", "")
                                     .add("defaultAgent", false)
-                                    .add("additionalUris", "")
+                                    .add("additionalUris", Json.createArrayBuilder().build())
                                     .add("containerImage", "")
                                     .build())
                             .add("stapler-class", "org.jenkinsci.plugins.mesos.MesosCloud")

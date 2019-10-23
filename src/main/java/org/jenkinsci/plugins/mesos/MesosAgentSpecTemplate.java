@@ -1,6 +1,8 @@
 package org.jenkinsci.plugins.mesos;
 
 import com.mesosphere.usi.core.models.commands.LaunchPod;
+import com.mesosphere.usi.core.models.template.FetchUri;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -11,16 +13,25 @@ import hudson.util.FormValidation;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.Option;
 
 /** This is the Mesos agent pod spec config set by a user. */
 public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSpecTemplate> {
+
+  private static final Logger logger = LoggerFactory.getLogger(MesosAgentSpecTemplate.class);
 
   private final String label;
   private final Set<LabelAtom> labelSet;
@@ -34,9 +45,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int minExecutors;
   private final int maxExecutors;
   private final String jnlpArgs;
-  private final boolean defaultAgent;
-  private final String additionalURIs;
-  private String containerImage;
+  private final List<MesosSlaveInfo.URI> additionalURIs;
+  private final ContainerInfo containerInfo;
 
   @DataBoundConstructor
   public MesosAgentSpecTemplate(
@@ -49,9 +59,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       int maxExecutors,
       String disk,
       String jnlpArgs,
-      boolean defaultAgent,
-      String additionalURIs,
-      String containerImage) {
+      List<MesosSlaveInfo.URI> additionalURIs,
+      ContainerInfo containerInfo) {
     this.label = label;
     this.labelSet = Label.parse(label);
     this.mode = mode;
@@ -63,9 +72,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.maxExecutors = maxExecutors;
     this.disk = Double.parseDouble(disk);
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
-    this.defaultAgent = defaultAgent;
-    this.additionalURIs = additionalURIs;
-    this.containerImage = containerImage;
+    this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
+    this.containerInfo = containerInfo;
     validate();
   }
 
@@ -106,14 +114,34 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
    */
   public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
       throws MalformedURLException, URISyntaxException {
+    List<FetchUri> fetchUris =
+        additionalURIs.stream()
+            .map(
+                uri -> {
+                  try {
+                    return new FetchUri(
+                        new java.net.URI(uri.getValue()),
+                        uri.isExtract(),
+                        uri.isExecutable(),
+                        false,
+                        Option.empty());
+                  } catch (URISyntaxException e) {
+                    logger.warn(String.format("Could not migrate URI: %s", uri.getValue()), e);
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
     return new LaunchCommandBuilder()
         .withCpu(this.getCpu())
         .withMemory(this.getMemory())
         .withDisk(this.getDisk())
         .withName(name)
         .withJenkinsUrl(jenkinsUrl)
-        .withImage(Optional.ofNullable(this.getContainerImage()).filter(s -> !s.isEmpty()))
+        .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
         .withJnlpArguments(this.getJnlpArgs())
+        .withAdditionalFetchUris(fetchUris)
         .build();
   }
 
@@ -158,11 +186,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.reusable;
   }
 
-  public boolean isDefaultAgent() {
-    return defaultAgent;
-  }
-
-  public String getAdditionalURIs() {
+  public List<MesosSlaveInfo.URI> getAdditionalURIs() {
     return additionalURIs;
   }
 
@@ -178,7 +202,124 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return jnlpArgs;
   }
 
-  public String getContainerImage() {
-    return this.containerImage;
+  public ContainerInfo getContainerInfo() {
+    return this.containerInfo;
+  }
+
+  public static class ContainerInfo extends AbstractDescribableImpl<ContainerInfo> {
+
+    private final String type;
+    private final String dockerImage;
+    private final List<Volume> volumes;
+    private final boolean dockerPrivilegedMode;
+    private final boolean dockerForcePullImage;
+    private boolean isDind;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient String networking;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient List<Object> portMappings;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient boolean dockerImageCustomizable;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient List<Object> parameters;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient List<Object> networkInfos;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient boolean useCustomDockerCommandShell;
+
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient String customDockerCommandShell;
+
+    @DataBoundConstructor
+    public ContainerInfo(
+        String type,
+        String dockerImage,
+        boolean isDind,
+        boolean dockerPrivilegedMode,
+        boolean dockerForcePullImage,
+        List<Volume> volumes) {
+      this.type = type;
+      this.dockerImage = dockerImage;
+      this.dockerPrivilegedMode = dockerPrivilegedMode;
+      this.dockerForcePullImage = dockerForcePullImage;
+      this.volumes = volumes;
+      this.isDind = isDind;
+    }
+
+    public boolean getIsDind() {
+      return this.isDind;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public String getDockerImage() {
+      return dockerImage;
+    }
+
+    public boolean getDockerPrivilegedMode() {
+      return dockerPrivilegedMode;
+    }
+
+    public boolean getDockerForcePullImage() {
+      return dockerForcePullImage;
+    }
+
+    public List<Volume> getVolumes() {
+      return volumes;
+    }
+
+    public List<Volume> getVolumesOrEmpty() {
+      return (this.volumes != null) ? this.volumes : Collections.emptyList();
+    }
+
+    @Extension
+    public static final class DescriptorImpl extends Descriptor<ContainerInfo> {
+
+      public DescriptorImpl() {
+        load();
+      }
+    }
+  }
+
+  public static class Volume extends AbstractDescribableImpl<Volume> {
+
+    private final String containerPath;
+    private final String hostPath;
+    private final boolean readOnly;
+
+    @DataBoundConstructor
+    public Volume(String containerPath, String hostPath, boolean readOnly) {
+      this.containerPath = containerPath;
+      this.hostPath = hostPath;
+      this.readOnly = readOnly;
+    }
+
+    public String getContainerPath() {
+      return containerPath;
+    }
+
+    public String getHostPath() {
+      return hostPath;
+    }
+
+    public boolean isReadOnly() {
+      return readOnly;
+    }
+
+    @Extension
+    public static final class DescriptorImpl extends Descriptor<Volume> {
+
+      public DescriptorImpl() {
+        load();
+      }
+    }
   }
 }

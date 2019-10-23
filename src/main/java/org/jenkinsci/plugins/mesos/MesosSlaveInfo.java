@@ -1,10 +1,15 @@
 package org.jenkinsci.plugins.mesos;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 import hudson.model.Node;
-import java.util.Collections;
 import java.util.List;
-import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
+import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This POJO describes a Jenkins agent for Mesos on 0.x and 1.x of the plugin. It is used to migrate
@@ -13,13 +18,18 @@ import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
  */
 public class MesosSlaveInfo {
 
-  //  ???       <nodeProperties/>
+  private static final Logger logger = LoggerFactory.getLogger(MesosSlaveInfo.class);
+
   private transient Node.Mode mode;
   private transient String labelString;
   private transient Double slaveCpus;
   private transient Double diskNeeded;
   private transient int slaveMem;
+  private transient List<URI> additionalURIs;
+  private transient ContainerInfo containerInfo;
+  private transient String jnlpArgs;
 
+  // The following fields are dropped during the migration.
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
   private transient Double executorCpus;
 
@@ -37,18 +47,13 @@ public class MesosSlaveInfo {
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
   private transient String jvmArgs;
 
-  private transient String jnlpArgs;
-  private transient boolean defaultSlave;
-
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
-  private transient List<URI> additionalURIs;
-
-  private transient ContainerInfo containerInfo;
+  private transient boolean defaultSlave;
 
   /**
    * Resolves the old agent configuration after deserialization.
    *
-   * @return the agent configt as a {@link MesosAgentSpecTemplate}.
+   * @return the agent config as a {@link MesosAgentSpecTemplate}.
    */
   private Object readResolve() {
 
@@ -63,17 +68,23 @@ public class MesosSlaveInfo {
         this.maxExecutors,
         this.diskNeeded.toString(),
         this.jnlpArgs,
-        this.defaultSlave,
-        "", // TODO: support additional URIs in MesosAgentSpecTemplate
-        this.containerInfo.dockerImage);
+        this.additionalURIs,
+        this.containerInfo);
   }
 
-  public static class URI {
+  public static class URI extends AbstractDescribableImpl<URI> {
+    @Extension
+    public static class DescriptorImpl extends Descriptor<URI> {
+      public String getDisplayName() {
+        return "";
+      }
+    }
 
     private final String value;
     private final boolean executable;
     private final boolean extract;
 
+    @DataBoundConstructor
     public URI(String value, boolean executable, boolean extract) {
       this.value = value;
       this.executable = executable;
@@ -83,106 +94,13 @@ public class MesosSlaveInfo {
     public String getValue() {
       return value;
     }
-  }
 
-  public static class ContainerInfo {
-
-    private final String type;
-    private final String dockerImage;
-    private final List<Volume> volumes;
-    private final List<Parameter> parameters;
-    private final String networking;
-    private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
-    private final List<PortMapping> portMappings;
-    private final List<NetworkInfo> networkInfos;
-    private final boolean useCustomDockerCommandShell;
-    private final String customDockerCommandShell;
-    private final boolean dockerPrivilegedMode;
-    private final boolean dockerForcePullImage;
-    private final boolean dockerImageCustomizable;
-
-    private ContainerInfo(
-        String type,
-        String dockerImage,
-        boolean dockerPrivilegedMode,
-        boolean dockerForcePullImage,
-        boolean dockerImageCustomizable,
-        boolean useCustomDockerCommandShell,
-        String customDockerCommandShell,
-        List<Volume> volumes,
-        List<Parameter> parameters,
-        String networking,
-        List<PortMapping> portMappings,
-        List<NetworkInfo> networkInfos) {
-      this.type = type;
-      this.dockerImage = dockerImage;
-      this.dockerPrivilegedMode = dockerPrivilegedMode;
-      this.dockerForcePullImage = dockerForcePullImage;
-      this.dockerImageCustomizable = dockerImageCustomizable;
-      this.useCustomDockerCommandShell = useCustomDockerCommandShell;
-      this.customDockerCommandShell = customDockerCommandShell;
-      this.volumes = volumes;
-      this.parameters = parameters;
-      this.networkInfos = networkInfos;
-
-      if (networking == null) {
-        this.networking = DEFAULT_NETWORKING;
-      } else {
-        this.networking = networking;
-      }
-
-      if (Network.HOST.equals(Network.valueOf(networking))) {
-        this.portMappings = Collections.emptyList();
-      } else {
-        this.portMappings = portMappings;
-      }
+    public boolean isExecutable() {
+      return executable;
     }
-  }
 
-  public static class Parameter {
-
-    private final String key;
-    private final String value;
-
-    public Parameter(String key, String value) {
-      this.key = key;
-      this.value = value;
-    }
-  }
-
-  static class Volume {
-
-    private final String containerPath;
-    private final String hostPath;
-    private final boolean readOnly;
-
-    private Volume(String containerPath, String hostPath, boolean readOnly) {
-      this.containerPath = containerPath;
-      this.hostPath = hostPath;
-      this.readOnly = readOnly;
-    }
-  }
-
-  static class PortMapping {
-
-    // TODO validate 1 to 65535
-    private final Integer containerPort;
-    private final Integer hostPort;
-    private final String protocol;
-
-    private PortMapping(Integer containerPort, Integer hostPort, String protocol) {
-      this.containerPort = containerPort;
-      this.hostPort = hostPort;
-      this.protocol = protocol;
-    }
-  }
-
-  static class NetworkInfo {
-
-    private final String networkName;
-
-    private NetworkInfo(String networkName) {
-      this.networkName = networkName;
+    public boolean isExtract() {
+      return extract;
     }
   }
 }

@@ -33,7 +33,7 @@ public class DockerAgentTest {
   static MesosAgentConfig config =
       new MesosAgentConfig(
           "linux",
-          "mesos",
+          "mesos,docker",
           Option.apply("filesystem/linux,docker/runtime"),
           Option.apply("docker"),
           Option.empty(),
@@ -43,7 +43,7 @@ public class DockerAgentTest {
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-          .withLogPrefix(MesosApiTest.class.getCanonicalName())
+          .withLogPrefix(DockerAgentTest.class.getCanonicalName())
           .withAgentConfig(config)
           .build(system, materializer);
 
@@ -65,7 +65,6 @@ public class DockerAgentTest {
     final String name = "jenkins-docker-agent";
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
-    agent.waitUntilOnlineAsync(materializer).get();
 
     // verify slave is running when the future completes;
     assertThat(agent.isRunning(), is(true));
