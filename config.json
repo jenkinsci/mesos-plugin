@@ -25,8 +25,7 @@
                 },
                 "user": {
                     "description": "The user that the service will run as. In 'strict' security mode, running tasks as root is disabled by default. Ensure that this user exists on each of the agents in your DC/OS cluster.",
-                    "type": "string",
-                    "default": "root"
+                    "type": "string"
                 },
                 "marathon-name": {
                     "description": "The name of the Marathon framework the Jenkins master is deployed from. Change when using a MoM (Marathon on Marathon).",
@@ -155,6 +154,11 @@
                     "description": "Optional arguments to pass to Jenkins.",
                     "type": "string"
                 },
+                "jenkins-agent-user": {
+                    "description": "The user that the jenkins agent task will run as.",
+                    "type": "string",
+                    "default": "root"
+                },
                 "docker-image": {
                     "description": "The Docker image to use for the Jenkins service. By default, this package will use the Jenkins image in the Mesosphere organization on Docker Hub, which you must be authenticated against. Otherwise, specify the host, image, and tag for the Jenkins image on your private Docker Registry.",
                     "type": "string"
@@ -162,6 +166,12 @@
                 "docker-credentials-uri": {
                     "description": "An optional URI to be fetched and extracted that contains docker credentials (e.g. file:///etc/docker/docker.tar.gz).",
                     "type": "string"
+                },
+                "containerizer": {
+                    "description": "The containerizer used to deploy the Jenkins master.",
+                    "type": "string",
+                    "enum": ["MESOS", "DOCKER"],
+                    "default": "DOCKER"
                 },
                 "prometheus-endpoint": {
                     "description": "An optional, relative URL path to be used by Prometheus. (e.g. 'prometheus/metrics')",

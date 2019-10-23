@@ -3,6 +3,9 @@
   "cpus": {{service.cpus}},
   "mem": {{service.mem}},
   "instances": 1,
+  {{#service.user}}
+  "user":"{{service.user}}",
+  {{/service.user}}
   {{#security.secret-name}}
   "secrets": {
       "serviceCredential": {
@@ -12,7 +15,7 @@
   {{/security.secret-name}}
   "env": {
       "JENKINS_AGENT_ROLE": "{{roles.jenkins-agent-role}}",
-      "JENKINS_AGENT_USER": "{{service.user}}",
+      "JENKINS_AGENT_USER": "{{advanced.jenkins-agent-user}}",
       "JENKINS_FRAMEWORK_NAME": "{{service.name}}",
       "MARATHON_NAME": "{{service.marathon-name}}",
       {{#security.secret-name}}
@@ -38,14 +41,14 @@
       {"port": {{networking.agent-port}}, "protocol": "tcp", "name": "agent"}
   ],
   "container": {
-        "type": "MESOS",
+        "type": "{{advanced.containerizer}}",
         "docker": {
          {{#advanced.docker-image}}
              "image": "{{advanced.docker-image}}"
          {{/advanced.docker-image}}
          {{^advanced.docker-image}}
              "image": "{{resource.assets.container.docker.jenkins}}"
-         {{/advanced.docker-image}}
+         {{/advanced.docker-image}} 
         },
         "volumes": [
           {{^storage.host-volume}}
