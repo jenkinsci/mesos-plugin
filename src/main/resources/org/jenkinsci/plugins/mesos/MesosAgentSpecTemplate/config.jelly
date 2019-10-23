@@ -38,13 +38,7 @@
              <f:textbox default="-noReconnect"/>
          </f:entry>
 
-          <f:entry title="${%Mark this Agent Info as default for all Jobs}" field="defaultAgent">
-                 <f:checkbox onclick="checkDefaultSlave(this)"/>
-          </f:entry>
-
-          <f:entry title="Docker image" field="containerImage">
-              <f:textbox default="amazoncorretto:8"/>
-          </f:entry>
+         <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
     </table>
 

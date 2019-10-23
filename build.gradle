@@ -69,6 +69,15 @@ jenkinsPlugin {
     }
 }
 
+task zipSandboxes(type: Zip) {
+    def buildTag = System.getenv("BUILD_TAG") ?: "undefined"
+
+    from 'sandboxes/'
+    exclude '**/provisioner'
+    archiveName "sandboxes-${buildTag.replaceAll("[^a-zA-Z0-9\\.\\-]", "-")}.zip"
+}
+
+
 tasks.withType(com.github.spotbugs.SpotBugsTask) {
     reports {
         xml.enabled = false

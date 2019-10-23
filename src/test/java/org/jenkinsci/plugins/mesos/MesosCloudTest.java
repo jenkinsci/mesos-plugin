@@ -49,7 +49,7 @@ public class MesosCloudTest {
     MesosCloud cloud = (MesosCloud) xstream.fromXML(oldConfig);
 
     assertThat(cloud.getMesosMasterUrl(), is(equalTo(mesosCluster.getMesosUrl().toString())));
-    assertThat(cloud.getMesosAgentSpecTemplates(), hasSize(38));
+    assertThat(cloud.getMesosAgentSpecTemplates(), hasSize(39));
     cloud
         .getMesosAgentSpecTemplates()
         .forEach(

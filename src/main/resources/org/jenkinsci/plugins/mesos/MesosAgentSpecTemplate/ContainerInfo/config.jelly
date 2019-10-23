@@ -1,0 +1,31 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <f:entry title="${%Container Type}" field="type">
+      <f:entry title="${%Docker Image}" field="dockerImage" description="Image to be run under UCR or DOCKER.">
+          <f:textbox clazz="required" default="amazoncorretto:8"/>
+      </f:entry>
+        <f:radioBlock name="type" title="${%Docker}" value="DOCKER" inline="true" checked="${instance.type == null || instance.type == 'DOCKER'}">
+            <f:entry title="${%Docker Privileged Mode}" field="dockerPrivilegedMode" description="This will start the image using Docker's privileged mode.">
+                <f:checkbox/>
+            </f:entry>
+            <f:entry title="${%Docker Force Pull Image}" field="dockerForcePullImage" description="This will force a pull of the Docker Image regardless of whether it exists locally.">
+                <f:checkbox/>
+            </f:entry>
+        </f:radioBlock>
+        <f:radioBlock name="type" title="${%Mesos}" value="MESOS" inline="true" checked="${instance.type == 'MESOS'}"></f:radioBlock>
+    </f:entry>
+
+    <f:entry title="${%Docker in Docker image}" field="isDind" >
+        <f:checkbox/>
+    </f:entry>
+
+    <f:entry title="${%Volumes}">
+        <f:repeatableProperty field="volumes" add="${%Add Volume}" minimum="0">
+            <f:entry>
+                <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                    <f:repeatableDeleteButton value="${%Delete Volume}" /><br/>
+                </div>
+            </f:entry>
+        </f:repeatableProperty>
+    </f:entry>
+</j:jelly>

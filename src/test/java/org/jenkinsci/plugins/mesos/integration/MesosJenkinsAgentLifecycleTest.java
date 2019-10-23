@@ -13,7 +13,7 @@ import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Slave;
 import hudson.slaves.SlaveComputer;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.*;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.mesos.*;
@@ -46,7 +46,7 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            new ArrayList<>());
+            Collections.emptyList());
 
     final String name = "jenkins-lifecycle";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
@@ -74,7 +74,7 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            new ArrayList<>());
+            Collections.emptyList());
 
     final String name = "jenkins-node-terminate";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
@@ -104,7 +104,7 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            new ArrayList<>());
+            Collections.emptyList());
 
     final String name = "jenkins-node-delete";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
@@ -132,7 +132,7 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            new ArrayList<>());
+            Collections.emptyList());
 
     final String name = "jenkins-node-delete";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
@@ -160,7 +160,7 @@ public class MesosJenkinsAgentLifecycleTest {
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
-            new ArrayList<>());
+            Collections.emptyList());
 
     cloud.getMesosApi().setAgentTimeout(Duration.ofSeconds(1));
 
