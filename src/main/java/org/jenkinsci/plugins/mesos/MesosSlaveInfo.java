@@ -2,9 +2,8 @@ package org.jenkinsci.plugins.mesos;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Node;
-import java.util.Collections;
 import java.util.List;
-import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network;
+import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 
 /**
  * This POJO describes a Jenkins agent for Mesos on 0.x and 1.x of the plugin. It is used to migrate
@@ -38,6 +37,8 @@ public class MesosSlaveInfo {
   private transient String jvmArgs;
 
   private transient String jnlpArgs;
+
+  @SuppressFBWarnings("UUF_UNUSED_FIELD")
   private transient boolean defaultSlave;
 
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
@@ -63,9 +64,9 @@ public class MesosSlaveInfo {
         this.maxExecutors,
         this.diskNeeded.toString(),
         this.jnlpArgs,
-        this.defaultSlave,
-        "", // TODO: support additional URIs in MesosAgentSpecTemplate
-        this.containerInfo.dockerImage);
+        "", // TODO: support additional URIs in MesosAgentSpecTemplate see
+        // https://github.com/mesosphere/jenkins-mesos-plugin/pull/70
+        this.containerInfo);
   }
 
   public static class URI {
@@ -82,107 +83,6 @@ public class MesosSlaveInfo {
 
     public String getValue() {
       return value;
-    }
-  }
-
-  public static class ContainerInfo {
-
-    private final String type;
-    private final String dockerImage;
-    private final List<Volume> volumes;
-    private final List<Parameter> parameters;
-    private final String networking;
-    private static final String DEFAULT_NETWORKING = Network.BRIDGE.name();
-    private final List<PortMapping> portMappings;
-    private final List<NetworkInfo> networkInfos;
-    private final boolean useCustomDockerCommandShell;
-    private final String customDockerCommandShell;
-    private final boolean dockerPrivilegedMode;
-    private final boolean dockerForcePullImage;
-    private final boolean dockerImageCustomizable;
-
-    private ContainerInfo(
-        String type,
-        String dockerImage,
-        boolean dockerPrivilegedMode,
-        boolean dockerForcePullImage,
-        boolean dockerImageCustomizable,
-        boolean useCustomDockerCommandShell,
-        String customDockerCommandShell,
-        List<Volume> volumes,
-        List<Parameter> parameters,
-        String networking,
-        List<PortMapping> portMappings,
-        List<NetworkInfo> networkInfos) {
-      this.type = type;
-      this.dockerImage = dockerImage;
-      this.dockerPrivilegedMode = dockerPrivilegedMode;
-      this.dockerForcePullImage = dockerForcePullImage;
-      this.dockerImageCustomizable = dockerImageCustomizable;
-      this.useCustomDockerCommandShell = useCustomDockerCommandShell;
-      this.customDockerCommandShell = customDockerCommandShell;
-      this.volumes = volumes;
-      this.parameters = parameters;
-      this.networkInfos = networkInfos;
-
-      if (networking == null) {
-        this.networking = DEFAULT_NETWORKING;
-      } else {
-        this.networking = networking;
-      }
-
-      if (Network.HOST.equals(Network.valueOf(networking))) {
-        this.portMappings = Collections.emptyList();
-      } else {
-        this.portMappings = portMappings;
-      }
-    }
-  }
-
-  public static class Parameter {
-
-    private final String key;
-    private final String value;
-
-    public Parameter(String key, String value) {
-      this.key = key;
-      this.value = value;
-    }
-  }
-
-  static class Volume {
-
-    private final String containerPath;
-    private final String hostPath;
-    private final boolean readOnly;
-
-    private Volume(String containerPath, String hostPath, boolean readOnly) {
-      this.containerPath = containerPath;
-      this.hostPath = hostPath;
-      this.readOnly = readOnly;
-    }
-  }
-
-  static class PortMapping {
-
-    // TODO validate 1 to 65535
-    private final Integer containerPort;
-    private final Integer hostPort;
-    private final String protocol;
-
-    private PortMapping(Integer containerPort, Integer hostPort, String protocol) {
-      this.containerPort = containerPort;
-      this.hostPort = hostPort;
-      this.protocol = protocol;
-    }
-  }
-
-  static class NetworkInfo {
-
-    private final String networkName;
-
-    private NetworkInfo(String networkName) {
-      this.networkName = networkName;
     }
   }
 }
