@@ -13,7 +13,8 @@ import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 public class AgentSpecMother {
 
   public static final MesosAgentSpecTemplate simple =
-      new MesosAgentSpecTemplate("label", Mode.EXCLUSIVE, "0.1", "32", 1, 1, 1, "0", "", "", null);
+      new MesosAgentSpecTemplate(
+          "label", Mode.EXCLUSIVE, "0.1", "32", 1, 1, 1, "0", "", Collections.emptyList(), null);
 
   public static final MesosAgentSpecTemplate docker =
       new MesosAgentSpecTemplate(
@@ -26,7 +27,7 @@ public class AgentSpecMother {
           1,
           "1",
           "",
-          "",
+          Collections.emptyList(),
           new ContainerInfo(
               "DOCKER",
               "mesosphere/jenkins-dind:0.6.0-alpine",

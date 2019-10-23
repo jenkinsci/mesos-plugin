@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.mesos;
 
 import com.mesosphere.usi.core.models.commands.LaunchPod;
+import com.mesosphere.usi.core.models.template.FetchUri;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -14,16 +15,23 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.Option;
 
 /** This is the Mesos agent pod spec config set by a user. */
 public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSpecTemplate> {
+
+  private static final Logger logger = LoggerFactory.getLogger(MesosAgentSpecTemplate.class);
 
   private final String label;
   private final Set<LabelAtom> labelSet;
@@ -37,7 +45,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int minExecutors;
   private final int maxExecutors;
   private final String jnlpArgs;
-  private final String additionalURIs;
+  private final List<MesosSlaveInfo.URI> additionalURIs;
   private final ContainerInfo containerInfo;
 
   @DataBoundConstructor
@@ -51,7 +59,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       int maxExecutors,
       String disk,
       String jnlpArgs,
-      String additionalURIs,
+      List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo) {
     this.label = label;
     this.labelSet = Label.parse(label);
@@ -64,7 +72,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.maxExecutors = maxExecutors;
     this.disk = Double.parseDouble(disk);
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
-    this.additionalURIs = additionalURIs;
+    this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
     validate();
   }
@@ -106,6 +114,25 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
    */
   public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
       throws MalformedURLException, URISyntaxException {
+    List<FetchUri> fetchUris =
+        additionalURIs.stream()
+            .map(
+                uri -> {
+                  try {
+                    return new FetchUri(
+                        new java.net.URI(uri.getValue()),
+                        uri.isExtract(),
+                        uri.isExecutable(),
+                        false,
+                        Option.empty());
+                  } catch (URISyntaxException e) {
+                    logger.warn(String.format("Could not migrate URI: %s", uri.getValue()), e);
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
     return new LaunchCommandBuilder()
         .withCpu(this.getCpu())
         .withMemory(this.getMemory())
@@ -114,6 +141,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withJenkinsUrl(jenkinsUrl)
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
         .withJnlpArguments(this.getJnlpArgs())
+        .withAdditionalFetchUris(fetchUris)
         .build();
   }
 
@@ -158,7 +186,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.reusable;
   }
 
-  public String getAdditionalURIs() {
+  public List<MesosSlaveInfo.URI> getAdditionalURIs() {
     return additionalURIs;
   }
 
