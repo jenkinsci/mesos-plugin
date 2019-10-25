@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos;
 
 import static java.lang.Math.toIntExact;
 
+import com.codahale.metrics.Timer;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -212,6 +214,10 @@ public class MesosCloud extends AbstractCloudImpl {
    */
   @Override
   public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+    Metrics.metricRegistry()
+        .meter(getMetricName(label, "provision", "request"))
+        .mark(excessWorkload);
+
     List<NodeProvisioner.PlannedNode> nodes = new ArrayList<>();
     final MesosAgentSpecTemplate spec =
         getSpecForLabel(label).get(); // TODO: handle case when optional is empty.
@@ -281,16 +287,26 @@ public class MesosCloud extends AbstractCloudImpl {
               try {
                 Jenkins.get().addNode(mesosAgent);
                 logger.info("waiting for node {} to come online...", mesosAgent.getNodeName());
+
+                Timer.Context provisionToReady =
+                    Metrics.metricRegistry()
+                        .timer(getMetricName(spec.getLabel(), "provision", "ready"))
+                        .time();
+
                 return mesosAgent
                     .waitUntilOnlineAsync(mesosApi.getMaterializer())
                     .thenApply(
                         node -> {
                           logger.info("Agent {} is online", name);
+                          provisionToReady.stop();
+
                           return node;
                         })
                     .exceptionally(
                         e -> {
                           logger.info("Agent {} failed to come online", name);
+                          provisionToReady.stop();
+
                           mesosApi.killAgent(name);
                           throw new CompletionException(e);
                         });
@@ -309,6 +325,23 @@ public class MesosCloud extends AbstractCloudImpl {
    */
   private static boolean selfIsMesosTask() {
     return System.getenv("MESOS_SANDBOX") != null;
+  }
+
+  /**
+   * Constructs a metrics string.
+   *
+   * @param label The label of a node to launch.
+   * @param method The method called.
+   * @param metric The metric of the method.
+   * @return The metric string for this cloud plugin.
+   */
+  private String getMetricName(Label label, String method, String metric) {
+    String labelText = (label == null) ? "nolabel" : label.getDisplayName();
+    return getMetricName(labelText, method, metric);
+  }
+
+  private String getMetricName(String label, String method, String metric) {
+    return String.format("mesos.cloud.%s.%s.%s", label, method, metric);
   }
 
   /**

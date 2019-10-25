@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import jenkins.metrics.api.Metrics;
 import org.apache.mesos.v1.Protos.TaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,6 +151,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
       // Handle state change.
       if (this.isTerminalOrUnreachable()) {
+        Metrics.metricRegistry().meter("mesos.agent.terminal").mark();
         String message =
             String.format(
                 "Agent %s became %s: %s",

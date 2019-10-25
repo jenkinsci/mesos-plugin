@@ -176,4 +176,10 @@ class MesosApiTest {
       assertThat(ex.getCause().getMessage(), is("Kill command for agent3 was dropped."));
     }
   }
+
+  @Test
+  void metricsPrefixSanitization() {
+    final String prefix = "I'm an invalid pref$x!.1";
+    assertThat(MesosApi.sanitize(prefix), is("I-m-an-invalid-pref-x-.1"));
+  }
 }
