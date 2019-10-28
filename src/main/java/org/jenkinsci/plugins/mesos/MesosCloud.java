@@ -49,7 +49,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
 
-  private URL mesosMasterUrl;
+  private String master;
 
   @Nonnull private transient MesosApi mesosApi;
 
@@ -87,7 +87,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
   // Legacy 1.x fields required for backwards compatibility
   private transient String nativeLibraryPath;
-  private transient String master;
   private transient String description;
   private transient String slavesUser;
   private transient String credentialsId;
@@ -109,14 +108,10 @@ public class MesosCloud extends AbstractCloudImpl {
     super("MesosCloud", null);
 
     try {
-      this.mesosMasterUrl = new URL(mesosMasterUrl);
+      this.master = mesosMasterUrl;
       this.jenkinsURL = new URL(jenkinsURL);
     } catch (MalformedURLException e) {
-      throw new RuntimeException(
-          String.format(
-              "Mesos Cloud URL validation failed for Mesos %s, Jenkins %s",
-              mesosMasterUrl, jenkinsURL),
-          e);
+      throw new RuntimeException(String.format("Mesos Cloud URL validation failed for Jenkins %s", jenkinsURL), e);
     }
 
     if (selfIsMesosTask()) {
@@ -136,7 +131,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.mesosApi =
         new MesosApi(
-            this.mesosMasterUrl,
+            this.master,
             this.jenkinsURL,
             this.agentUser,
             this.frameworkName,
@@ -158,11 +153,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
     if (this.frameworkId == null) {
       this.frameworkId = "???"; // Is this this.cloudID?
-    }
-
-    if (this.mesosMasterUrl == null) {
-      // TODO: infer from zk this.master
-      this.mesosMasterUrl = new URL(this.master);
     }
 
     if (this.mesosAgentSpecTemplates == null && this.slaveInfos != null) {

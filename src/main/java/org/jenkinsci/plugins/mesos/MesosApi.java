@@ -75,7 +75,11 @@ public class MesosApi {
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
    * MesosJenkinsAgent} instances.
    *
-   * @param masterUrl The Mesos master address to connect to.
+   * @param masterUrl The Mesos master address to connect to. Should be one of
+   *                  host:port
+   *                  http://host:port
+   *                  zk://host1:port1,host2:port2,.../path
+   *                  zk://username:password@host1:port1,host2:port2,.../path
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
    * @param agentUser The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
@@ -87,7 +91,7 @@ public class MesosApi {
    * @throws ExecutionException
    */
   public MesosApi(
-      URL masterUrl,
+      String master,
       URL jenkinsUrl,
       String agentUser,
       String frameworkName,
@@ -116,6 +120,8 @@ public class MesosApi {
     } else {
       conf = ConfigFactory.load(classLoader);
     }
+
+    URL masterUrl = MasterDetector.apply(master).getMaster();
 
     MesosClientSettings clientSettings =
         MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
