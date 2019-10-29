@@ -171,7 +171,7 @@
                     "description": "The containerizer used to deploy the Jenkins master.",
                     "type": "string",
                     "enum": ["MESOS", "DOCKER"],
-                    "default": "DOCKER"
+                    "default": "MESOS"
                 },
                 "prometheus-endpoint": {
                     "description": "An optional, relative URL path to be used by Prometheus. (e.g. 'prometheus/metrics')",
