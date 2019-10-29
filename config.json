@@ -25,7 +25,8 @@
                 },
                 "user": {
                     "description": "The user that the service will run as. In 'strict' security mode, running tasks as root is disabled by default. Ensure that this user exists on each of the agents in your DC/OS cluster.",
-                    "type": "string"
+                    "type": "string",
+                    "default": "nobody"
                 },
                 "marathon-name": {
                     "description": "The name of the Marathon framework the Jenkins master is deployed from. Change when using a MoM (Marathon on Marathon).",
