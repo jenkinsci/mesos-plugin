@@ -386,7 +386,8 @@ public class MesosCloud extends AbstractCloudImpl {
       if (MasterDetector$.MODULE$.apply(mesosMasterUrl).isValid()) {
         return FormValidation.ok();
       } else {
-        return FormValidation.error(mesosMasterUrl + " is not a valid URL or Zookeeper connection string.");
+        return FormValidation.error(
+            mesosMasterUrl + " is not a valid URL or Zookeeper connection string.");
       }
     }
 
