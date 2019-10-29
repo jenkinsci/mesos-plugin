@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.mesos;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
+import com.mesosphere.mesos.client.MasterDetector$;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -382,11 +383,10 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the URL is valid or not.
      */
     public FormValidation doCheckMesosMasterUrl(@QueryParameter String mesosMasterUrl) {
-      // This will change with https://jira.mesosphere.com/browse/DCOS-53671.
-      if (isValidUrl(mesosMasterUrl)) {
+      if (MasterDetector$.MODULE$.apply(mesosMasterUrl).isValid()) {
         return FormValidation.ok();
       } else {
-        return FormValidation.error(mesosMasterUrl + " is not a valid URL.");
+        return FormValidation.error(mesosMasterUrl + " is not a valid URL or Zookeeper connection string.");
       }
     }
 

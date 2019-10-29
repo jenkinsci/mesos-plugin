@@ -20,7 +20,7 @@ repositories {
 }
 
 ext {
-    usiVersion= '0.1.14-4d9dcbd-SNAPSHOT'
+    usiVersion= '0.1.14-858c3d0-SNAPSHOT'
     scalaVersion = '2.12'
     akkaVersion = '2.5.19'
 }
