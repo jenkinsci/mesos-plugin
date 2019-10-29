@@ -56,7 +56,7 @@ class MesosApiTest {
 
     URL jenkinsUrl = j.getURL();
 
-    URL mesosUrl = mesosCluster.getMesosUrl();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
     MesosApi api =
         new MesosApi(
             mesosUrl,
@@ -79,7 +79,7 @@ class MesosApiTest {
   @Test
   public void stopAgent(JenkinsRule j) throws Exception {
 
-    URL mesosUrl = mesosCluster.getMesosUrl();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
     URL jenkinsUrl = j.getURL();
     MesosApi api =
         new MesosApi(

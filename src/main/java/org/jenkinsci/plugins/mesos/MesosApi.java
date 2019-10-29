@@ -8,6 +8,7 @@ import akka.stream.QueueOfferResult;
 import akka.stream.javadsl.*;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
+import com.mesosphere.mesos.client.MasterDetector$;
 import com.mesosphere.mesos.client.MesosClient;
 import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
@@ -75,11 +76,9 @@ public class MesosApi {
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
    * MesosJenkinsAgent} instances.
    *
-   * @param masterUrl The Mesos master address to connect to. Should be one of
-   *                  host:port
-   *                  http://host:port
-   *                  zk://host1:port1,host2:port2,.../path
-   *                  zk://username:password@host1:port1,host2:port2,.../path
+   * @param masterUrl The Mesos master address to connect to. Should be one of host:port
+   *     http://host:port zk://host1:port1,host2:port2,.../path
+   *     zk://username:password@host1:port1,host2:port2,.../path
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
    * @param agentUser The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
@@ -121,17 +120,18 @@ public class MesosApi {
       conf = ConfigFactory.load(classLoader);
     }
 
-    URL masterUrl = MasterDetector.apply(master).getMaster();
+    // Create actor system.
+    this.system = ActorSystem.create("mesos-scheduler", conf, classLoader);
+    this.materializer = ActorMaterializer.create(system);
+    this.context = system.dispatcher();
+
+    URL masterUrl =
+        MasterDetector$.MODULE$.apply(master).getMaster(context).toCompletableFuture().get();
 
     MesosClientSettings clientSettings =
         MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
     SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
     this.operationalSettings = Settings.load(classLoader);
-
-    // Create actor system.
-    this.system = ActorSystem.create("mesos-scheduler", conf, classLoader);
-    this.materializer = ActorMaterializer.create(system);
-    this.context = system.dispatcher();
 
     // Initialize state.
     this.stateMap = new ConcurrentHashMap<>();

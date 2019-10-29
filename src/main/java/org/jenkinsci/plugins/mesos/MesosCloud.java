@@ -111,7 +111,8 @@ public class MesosCloud extends AbstractCloudImpl {
       this.master = mesosMasterUrl;
       this.jenkinsURL = new URL(jenkinsURL);
     } catch (MalformedURLException e) {
-      throw new RuntimeException(String.format("Mesos Cloud URL validation failed for Jenkins %s", jenkinsURL), e);
+      throw new RuntimeException(
+          String.format("Mesos Cloud URL validation failed for Jenkins %s", jenkinsURL), e);
     }
 
     if (selfIsMesosTask()) {
@@ -174,7 +175,7 @@ public class MesosCloud extends AbstractCloudImpl {
     try {
       this.mesosApi =
           new MesosApi(
-              this.mesosMasterUrl,
+              this.master,
               this.jenkinsURL,
               this.agentUser,
               this.frameworkName,
@@ -516,7 +517,7 @@ public class MesosCloud extends AbstractCloudImpl {
   }
 
   public String getMesosMasterUrl() {
-    return this.mesosMasterUrl.toString();
+    return this.master;
   }
 
   public String getFrameworkName() {
