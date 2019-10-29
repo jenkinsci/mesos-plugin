@@ -38,6 +38,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.ExecutionContext.Implicits$;
 
 /**
  * Jenkins Cloud implementation for Mesos.
@@ -466,8 +467,8 @@ public class MesosCloud extends AbstractCloudImpl {
      * @param mesosMasterUrl The Mesos master URL set by the user.
      * @return Whether the URL is correct and reachable or a validation error.
      */
-    public FormValidation doTestConnection(
-        @QueryParameter("mesosMasterUrl") String mesosMasterUrl) {
+    public FormValidation doTestConnection(@QueryParameter("mesosMasterUrl") String mesosMasterUrl)
+        throws ExecutionException, InterruptedException {
       FormValidation urlValidation = doCheckMesosMasterUrl(mesosMasterUrl);
       if (urlValidation.kind == Kind.ERROR) {
         return urlValidation;
@@ -476,7 +477,13 @@ public class MesosCloud extends AbstractCloudImpl {
       mesosMasterUrl = mesosMasterUrl.trim();
       @CheckForNull HttpURLConnection urlConn = null;
       try {
-        urlConn = (HttpURLConnection) new URL(mesosMasterUrl).openConnection();
+        URL masterUrl =
+            MasterDetector$.MODULE$
+                .apply(mesosMasterUrl)
+                .getMaster(Implicits$.MODULE$.global())
+                .toCompletableFuture()
+                .get();
+        urlConn = (HttpURLConnection) masterUrl.openConnection();
         urlConn.connect();
         int code = urlConn.getResponseCode();
 
