@@ -13,5 +13,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: Provision
+      run: sudo ./ci/provision.sh 1.7.0
     - name: Build with Gradle
-      run: gradle check checkTocs --info
+      run: sudo gradle check checkTocs --info
