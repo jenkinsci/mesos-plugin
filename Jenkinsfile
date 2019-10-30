@@ -1,13 +1,12 @@
 #!/usr/bin/env groovy
-node('docker') {
+node('JenkinsMarathonCI-Debian9-2018-12-17') {
     stage('Build') {
       try {
         checkout scm
         // Verify Docker is running.
         sh 'sudo -E docker --version'
 
-        sh 'sudo -E ./ci/provision.sh 1.7.0'
-        sh 'sudo -E ./gradlew check checkTocs --info'
+        sh 'sudo -E docker run --rm --privileged -v "$(pwd):/var/build" -w /var/build mesos/mesos-mini:1.9.x ci/run.sh'
       } finally {
         junit allowEmptyResults: true, testResults: 'build/test-results/test/*.xml'
 
