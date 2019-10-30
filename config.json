@@ -178,6 +178,10 @@
                     "description": "An optional, relative URL path to be used by Prometheus. (e.g. 'prometheus/metrics')",
                     "type": "string",
                     "default": "v1/metrics/prometheus"
+                },
+                "additional-plugins": {
+                    "description": "Space seperated list of additional plugins to be installed into the Jenkins Service. eg 'gradle:1.34 cvs:2.14 handlebars:1.1.1'",
+                    "type": "string"
                 }
             }
         }

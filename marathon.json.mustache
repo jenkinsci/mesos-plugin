@@ -33,6 +33,9 @@
       "JVM_OPTS": "{{advanced.jvm-opts}}",
       "JENKINS_OPTS": "{{advanced.jenkins-opts}}",
       "PROMETHEUS_ENDPOINT": "{{advanced.prometheus-endpoint}}",
+      {{#advanced.additional-plugins}}
+      "JENKINS_OPT_ADDITIONAL_PLUGINS": "{{advanced.additional-plugins}}",
+      {{/advanced.additional-plugins}}
       "SSH_KNOWN_HOSTS": "{{networking.known-hosts}}"
   },
   "portDefinitions": [
