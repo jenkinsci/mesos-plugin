@@ -10,9 +10,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Provision
-      run: sudo docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x
-    - name: Build and Test with Gradle
-      run: sudo docker exec -w /var/build mini ci/run.sh
+    - name: Run
+      run: sudo ci/github.sh
     - name: Cleanup
       run: sudo docker kill mini
