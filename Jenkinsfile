@@ -3,11 +3,10 @@ node('JenkinsMarathonCI-Debian9-2018-12-17') {
     stage('Build') {
       try {
         checkout scm
-        // Verify Docker is running.
-        sh 'sudo -E docker --version'
-
-        sh 'sudo -E docker run --rm --privileged -v "$(pwd):/var/build" -w /var/build mesos/mesos-mini:1.9.x ci/run.sh'
+        sh 'sudo -E docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x'
+        sh 'sudo -E docker exec -w /var/build -it mini ci/run.sh'
       } finally {
+        sh 'sudo docker kill mini'
         junit allowEmptyResults: true, testResults: 'build/test-results/test/*.xml'
 
         // Compress and archive sandboxes.
