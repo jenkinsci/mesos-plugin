@@ -10,11 +10,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
     - name: Provision
-      run: sudo ./ci/provision.sh 1.8.0
-    - name: Build with Gradle
-      run: sudo gradle check checkTocs --info
+      run: sudo docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x
+    - name: Build and Test with Gradle
+      run: sudo docker exec -w /var/build mini ci/run.sh
+    - name: Cleanup
+      run: sudo docker kill mini
