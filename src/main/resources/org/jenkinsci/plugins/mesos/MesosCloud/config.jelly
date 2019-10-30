@@ -2,7 +2,7 @@
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <f:entry title="Mesos Master [hostname:port]" field="mesosMasterUrl">
+    <f:entry title="Mesos Master" field="mesosMasterUrl">
         <f:textbox clazz="required"/>
     </f:entry>
 
