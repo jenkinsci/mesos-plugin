@@ -2,7 +2,7 @@
 set -o errexit -o nounset -o pipefail
 
 systemctl stop mesos-master
-systemctl stop mesos-agent
+systemctl stop mesos-slave
 
 # Java
 yum install -y wget
