@@ -1,27 +1,12 @@
 #!/usr/bin/env groovy
-
-@Library('sec_ci_libs@v2-latest') _
-
-def master_branches = ["master", ] as String[]
-
-ansiColor('xterm') {
-  // using shakedown node because it's a lightweight alpine docker image instead of full VM
-  node('shakedown') {
-    stage("Verify author") {
-      user_is_authorized(master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#eng-jenkins-builds')
-    }
-  }
-  //node('mesos-med') {
-  node('JenkinsMarathonCI-Debian9-2018-12-17') {
+node('docker') {
     stage('Build') {
       try {
         checkout scm
-        // Verify Docker is running.
-        sh 'sudo -E docker --version'
-
-        sh 'sudo -E ./ci/provision.sh 1.7.0'
-        sh 'sudo -E ./gradlew check checkTocs --info'
+        sh 'sudo -E docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x'
+        sh 'sudo -E docker exec -w /var/build mini ci/run.sh'
       } finally {
+        sh 'sudo docker kill mini'
         junit allowEmptyResults: true, testResults: 'build/test-results/test/*.xml'
 
         // Compress and archive sandboxes.
@@ -32,6 +17,5 @@ ansiColor('xterm') {
         publishHTML (target: [ alwaysLinkToLastBuild: false, keepAll: true, reportDir: 'build/reports/spotbugs/', reportFiles: '*.html', reportName: 'SpotBugs' ])
       }
     } 
-  }
 }
 

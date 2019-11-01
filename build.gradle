@@ -37,6 +37,7 @@ dependencies {
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:metrics:4.0.2.5@jar'
+    jenkinsServer 'org.jenkins-ci.plugins:metrics:4.0.2.5'
     testRuntimeOnly 'org.jenkins-ci.plugins:metrics:4.0.2.5'
 
     // Test dependencies
