@@ -1,0 +1,70 @@
+{
+  "id": "/jenkins",
+  "cmd": null,
+  "cpus": 1,
+  "mem": 2048,
+  "disk": 0,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "forcePullImage": true,
+      "image": "mesosphere/jenkins:testing",
+      "parameters": [],
+      "privileged": false
+    },
+    "volumes": [
+      {
+        "containerPath": "/var/jenkins_home",
+        "hostPath": "/tmp/jenkins",
+        "mode": "RW"
+      }
+    ]
+  },
+  "secrets": {
+    "private_key": {
+      "source": "jenkins/private_key"
+    }
+  },
+  "env": {
+    "SSH_KNOWN_HOSTS": "github.com",
+    "JENKINS_CONTEXT": "/service/jenkins",
+    "JENKINS_SLAVE_AGENT_PORT": "50000",
+    "JENKINS_AGENT_ROLE": "*",
+    "JVM_OPTS": "-Xms1024m -Xmx1024m",
+    "JENKINS_AGENT_USER": "root",
+    "JENKINS_OPTS": "",
+    "JENKINS_FRAMEWORK_NAME": "jenkins",
+    "MARATHON_NAME": "marathon",
+    "DCOS_SERVICE_ACCOUNT": "jenkins",
+    "DCOS_SERVICE_ACCOUNT_PRIVATE_KEY": {
+      "secret": "private_key"
+    }
+  },
+  "labels": {
+    "DCOS_SERVICE_SCHEME": "http",
+    "DCOS_SERVICE_NAME": "jenkins",
+    "DCOS_SERVICE_PORT_INDEX": "0",
+    "MARATHON_SINGLE_INSTANCE_APP": "true"
+  },
+  "portDefinitions": [
+    {
+      "port": 10000,
+      "name": "nginx",
+      "protocol": "tcp"
+    },
+    {
+      "port": 10001,
+      "name": "jenkins",
+      "protocol": "tcp"
+    }
+  ],
+  "maxLaunchDelaySeconds": 300,
+  "upgradeStrategy": {
+    "maximumOverCapacity": 0,
+    "minimumHealthCapacity": 0
+  }
+}
