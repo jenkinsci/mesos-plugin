@@ -3,12 +3,10 @@ node('docker') {
     stage('Build') {
       try {
         checkout scm
-        // Verify Docker is running.
-        sh 'sudo -E docker --version'
-
-        sh 'sudo -E ./ci/provision.sh 1.7.0'
-        sh 'sudo -E ./gradlew check checkTocs --info'
+        sh 'sudo -E docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x'
+        sh 'sudo -E docker exec -w /var/build mini ci/run.sh'
       } finally {
+        sh 'sudo docker kill mini'
         junit allowEmptyResults: true, testResults: 'build/test-results/test/*.xml'
 
         // Compress and archive sandboxes.
