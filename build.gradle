@@ -20,7 +20,7 @@ repositories {
 }
 
 ext {
-    usiVersion= '0.1.14-858c3d0-SNAPSHOT'
+    usiVersion= '0.1.15'
     scalaVersion = '2.12'
     akkaVersion = '2.5.19'
 }
@@ -32,6 +32,7 @@ dependencies {
     api group: 'com.mesosphere.usi', name: 'core', version: usiVersion
     api group: 'com.mesosphere.usi', name: 'core-models', version: usiVersion
     api group: 'com.mesosphere.usi', name: 'mesos-client', version: usiVersion
+    api group: 'com.mesosphere.usi', name: 'mesos-master-detector', version: usiVersion
     api group: 'com.mesosphere.usi', name: 'metrics-dropwizard', version: usiVersion
     api group: 'com.mesosphere.usi', name: 'persistence', version: usiVersion
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
