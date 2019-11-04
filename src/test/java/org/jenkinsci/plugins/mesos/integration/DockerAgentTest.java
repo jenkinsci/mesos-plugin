@@ -10,6 +10,7 @@ import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosCloud;
 import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
@@ -21,6 +22,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import scala.Option;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
 public class DockerAgentTest {
@@ -37,7 +40,9 @@ public class DockerAgentTest {
           Option.apply("filesystem/linux,docker/runtime"),
           Option.apply("docker"),
           Option.empty(),
-          Option.empty());
+          Option.empty(),
+          Option.apply(new FiniteDuration(7, TimeUnit.MINUTES)),
+          Option.apply(new FiniteDuration(5, TimeUnit.MINUTES)));
 
   @RegisterExtension
   static MesosClusterExtension mesosCluster =
