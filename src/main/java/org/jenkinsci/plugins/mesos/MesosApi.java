@@ -6,6 +6,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.QueueOfferResult;
 import akka.stream.javadsl.*;
+import com.mesosphere.mesos.MasterDetector$;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
 import com.mesosphere.mesos.client.MesosClient;
@@ -17,8 +18,6 @@ import com.mesosphere.usi.core.models.*;
 import com.mesosphere.usi.core.models.commands.KillPod;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.commands.SchedulerCommand;
-import com.mesosphere.usi.metrics.dropwizard.conf.HistorgramSettings;
-import com.mesosphere.usi.metrics.dropwizard.conf.MetricsSettings;
 import com.mesosphere.usi.repository.PodRecordRepository;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -35,14 +34,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
-import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos;
 import org.jenkinsci.plugins.mesos.MesosCloud.DcosAuthorization;
 import org.jenkinsci.plugins.mesos.api.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 import scala.compat.java8.OptionConverters;
 import scala.concurrent.ExecutionContext;
 
@@ -75,7 +72,9 @@ public class MesosApi {
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
    * MesosJenkinsAgent} instances.
    *
-   * @param masterUrl The Mesos master address to connect to.
+   * @param masterUrl The Mesos master address to connect to. Should be one of host:port
+   *     http://host:port zk://host1:port1,host2:port2,.../path
+   *     zk://username:password@host1:port1,host2:port2,.../path
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
    * @param agentUser The username used for executing Mesos tasks.
    * @param frameworkName The name of the framework the Mesos client should register as.
@@ -87,7 +86,7 @@ public class MesosApi {
    * @throws ExecutionException
    */
   public MesosApi(
-      URL masterUrl,
+      String master,
       URL jenkinsUrl,
       String agentUser,
       String frameworkName,
@@ -117,36 +116,28 @@ public class MesosApi {
       conf = ConfigFactory.load(classLoader);
     }
 
-    MesosClientSettings clientSettings =
-        MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
-    SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
-    this.operationalSettings = Settings.load(classLoader);
-
     // Create actor system.
     this.system = ActorSystem.create("mesos-scheduler", conf, classLoader);
     this.materializer = ActorMaterializer.create(system);
     this.context = system.dispatcher();
+
+    URL masterUrl =
+        MasterDetector$.MODULE$
+            .apply(master, Metrics.getInstance(frameworkName))
+            .getMaster(context)
+            .toCompletableFuture()
+            .get();
+
+    MesosClientSettings clientSettings =
+        MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
+    SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
+    this.operationalSettings = Settings.load(classLoader);
 
     // Initialize state.
     this.stateMap = new ConcurrentHashMap<>();
     this.repository = new MesosPodRecordRepository();
 
     // Inject metrics and credentials provider.
-    MetricsSettings metricsSettings =
-        new MetricsSettings(
-            sanitize(frameworkName),
-            HistorgramSettings.apply(
-                HistorgramSettings.apply$default$1(),
-                HistorgramSettings.apply$default$2(),
-                HistorgramSettings.apply$default$3(),
-                HistorgramSettings.apply$default$4(),
-                HistorgramSettings.apply$default$5()),
-            Option.empty(),
-            Option.empty());
-    final com.mesosphere.usi.metrics.Metrics metrics =
-        new com.mesosphere.usi.metrics.dropwizard.DropwizardMetrics(
-            metricsSettings, Metrics.metricRegistry());
-
     Optional<CredentialsProvider> provider =
         authorization.map(
             auth -> {
@@ -170,7 +161,9 @@ public class MesosApi {
     commands =
         connectClient(clientSettings, provider)
             .thenCompose(
-                client -> Scheduler.fromClient(client, repository, metrics, schedulerSettings))
+                client ->
+                    Scheduler.fromClient(
+                        client, repository, Metrics.getInstance(frameworkName), schedulerSettings))
             .thenApply(builder -> runScheduler(builder.getFlow(), materializer))
             .get();
 
@@ -372,11 +365,6 @@ public class MesosApi {
         stateMap.remove(podStateEvent.id());
       }
     }
-  }
-
-  /** @return a santized prefix for Dropwizard metrics. */
-  public static String sanitize(String prefix) {
-    return prefix.replaceAll("[^a-zA-Z0-9\\-\\.]", "-");
   }
 
   /** test method to set the agent timeout duration */

@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.mesos;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
+import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -37,6 +38,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.ExecutionContext.Implicits$;
 
 /**
  * Jenkins Cloud implementation for Mesos.
@@ -49,7 +51,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
 
-  private URL mesosMasterUrl;
+  private String master;
 
   @Nonnull private transient MesosApi mesosApi;
 
@@ -87,7 +89,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
   // Legacy 1.x fields required for backwards compatibility
   private transient String nativeLibraryPath;
-  private transient String master;
   private transient String description;
   private transient String slavesUser;
   private transient String credentialsId;
@@ -109,14 +110,11 @@ public class MesosCloud extends AbstractCloudImpl {
     super("MesosCloud", null);
 
     try {
-      this.mesosMasterUrl = new URL(mesosMasterUrl);
+      this.master = mesosMasterUrl;
       this.jenkinsURL = new URL(jenkinsURL);
     } catch (MalformedURLException e) {
       throw new RuntimeException(
-          String.format(
-              "Mesos Cloud URL validation failed for Mesos %s, Jenkins %s",
-              mesosMasterUrl, jenkinsURL),
-          e);
+          String.format("Mesos Cloud URL validation failed for Jenkins %s", jenkinsURL), e);
     }
 
     if (selfIsMesosTask()) {
@@ -136,7 +134,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.mesosApi =
         new MesosApi(
-            this.mesosMasterUrl,
+            this.master,
             this.jenkinsURL,
             this.agentUser,
             this.frameworkName,
@@ -160,11 +158,6 @@ public class MesosCloud extends AbstractCloudImpl {
       this.frameworkId = "???"; // Is this this.cloudID?
     }
 
-    if (this.mesosMasterUrl == null) {
-      // TODO: infer from zk this.master
-      this.mesosMasterUrl = new URL(this.master);
-    }
-
     if (this.mesosAgentSpecTemplates == null && this.slaveInfos != null) {
       this.mesosAgentSpecTemplates = this.slaveInfos;
     } else if (this.mesosAgentSpecTemplates == null) {
@@ -184,7 +177,7 @@ public class MesosCloud extends AbstractCloudImpl {
     try {
       this.mesosApi =
           new MesosApi(
-              this.mesosMasterUrl,
+              this.master,
               this.jenkinsURL,
               this.agentUser,
               this.frameworkName,
@@ -391,11 +384,13 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the URL is valid or not.
      */
     public FormValidation doCheckMesosMasterUrl(@QueryParameter String mesosMasterUrl) {
-      // This will change with https://jira.mesosphere.com/browse/DCOS-53671.
-      if (isValidUrl(mesosMasterUrl)) {
+      if (MasterDetector$.MODULE$
+          .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
+          .isValid()) {
         return FormValidation.ok();
       } else {
-        return FormValidation.error(mesosMasterUrl + " is not a valid URL.");
+        return FormValidation.error(
+            mesosMasterUrl + " is not a valid URL or Zookeeper connection string.");
       }
     }
 
@@ -474,8 +469,8 @@ public class MesosCloud extends AbstractCloudImpl {
      * @param mesosMasterUrl The Mesos master URL set by the user.
      * @return Whether the URL is correct and reachable or a validation error.
      */
-    public FormValidation doTestConnection(
-        @QueryParameter("mesosMasterUrl") String mesosMasterUrl) {
+    public FormValidation doTestConnection(@QueryParameter("mesosMasterUrl") String mesosMasterUrl)
+        throws ExecutionException, InterruptedException {
       FormValidation urlValidation = doCheckMesosMasterUrl(mesosMasterUrl);
       if (urlValidation.kind == Kind.ERROR) {
         return urlValidation;
@@ -484,7 +479,13 @@ public class MesosCloud extends AbstractCloudImpl {
       mesosMasterUrl = mesosMasterUrl.trim();
       @CheckForNull HttpURLConnection urlConn = null;
       try {
-        urlConn = (HttpURLConnection) new URL(mesosMasterUrl).openConnection();
+        URL masterUrl =
+            MasterDetector$.MODULE$
+                .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
+                .getMaster(Implicits$.MODULE$.global())
+                .toCompletableFuture()
+                .get();
+        urlConn = (HttpURLConnection) masterUrl.openConnection();
         urlConn.connect();
         int code = urlConn.getResponseCode();
 
@@ -526,7 +527,7 @@ public class MesosCloud extends AbstractCloudImpl {
   }
 
   public String getMesosMasterUrl() {
-    return this.mesosMasterUrl.toString();
+    return this.master;
   }
 
   public String getFrameworkName() {

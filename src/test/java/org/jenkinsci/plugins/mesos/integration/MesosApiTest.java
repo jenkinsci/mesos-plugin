@@ -56,7 +56,7 @@ class MesosApiTest {
 
     URL jenkinsUrl = j.getURL();
 
-    URL mesosUrl = mesosCluster.getMesosUrl();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
     MesosApi api =
         new MesosApi(
             mesosUrl,
@@ -79,7 +79,7 @@ class MesosApiTest {
   @Test
   public void stopAgent(JenkinsRule j) throws Exception {
 
-    URL mesosUrl = mesosCluster.getMesosUrl();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
     URL jenkinsUrl = j.getURL();
     MesosApi api =
         new MesosApi(
@@ -175,11 +175,5 @@ class MesosApiTest {
       assertThat(ex.getCause(), is(instanceOf(IllegalStateException.class)));
       assertThat(ex.getCause().getMessage(), is("Kill command for agent3 was dropped."));
     }
-  }
-
-  @Test
-  void metricsPrefixSanitization() {
-    final String prefix = "I'm an invalid pref$x!.1";
-    assertThat(MesosApi.sanitize(prefix), is("I-m-an-invalid-pref-x-.1"));
   }
 }
