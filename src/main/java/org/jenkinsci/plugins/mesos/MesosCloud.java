@@ -384,7 +384,9 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the URL is valid or not.
      */
     public FormValidation doCheckMesosMasterUrl(@QueryParameter String mesosMasterUrl) {
-      if (MasterDetector$.MODULE$.apply(mesosMasterUrl, null).isValid()) {
+      if (MasterDetector$.MODULE$
+          .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
+          .isValid()) {
         return FormValidation.ok();
       } else {
         return FormValidation.error(
@@ -479,7 +481,7 @@ public class MesosCloud extends AbstractCloudImpl {
       try {
         URL masterUrl =
             MasterDetector$.MODULE$
-                .apply(mesosMasterUrl, null)
+                .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
                 .getMaster(Implicits$.MODULE$.global())
                 .toCompletableFuture()
                 .get();
