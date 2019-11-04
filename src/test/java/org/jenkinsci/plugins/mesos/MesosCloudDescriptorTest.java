@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.is;
 
 import hudson.util.FormValidation.Kind;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import org.jenkinsci.plugins.mesos.MesosCloud.DescriptorImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,9 @@ public class MesosCloudDescriptorTest {
   void validateMesosMasterUrl(TestUtils.JenkinsRule j) {
     MesosCloud.DescriptorImpl descriptor = new DescriptorImpl();
     assertThat(descriptor.doCheckMesosMasterUrl("http/other").kind, is(Kind.ERROR));
-    assertThat(descriptor.doCheckMesosMasterUrl("zk://localhost:5050").kind, is(Kind.ERROR));
+    assertThat(
+        descriptor.doCheckMesosMasterUrl("zk://user@pass@localhost:5050").kind, is(Kind.ERROR));
+    assertThat(descriptor.doCheckMesosMasterUrl("zk://localhost:5050").kind, is(Kind.OK));
     assertThat(descriptor.doCheckMesosMasterUrl("http://localhost:5050").kind, is(Kind.OK));
     assertThat(descriptor.doCheckMesosMasterUrl("https://localhost:5050").kind, is(Kind.OK));
   }
@@ -65,7 +68,8 @@ public class MesosCloudDescriptorTest {
   }
 
   @Test
-  void connectionTest(TestUtils.JenkinsRule j) throws IOException {
+  void connectionTest(TestUtils.JenkinsRule j)
+      throws ExecutionException, InterruptedException, IOException {
     MesosCloud.DescriptorImpl descriptor = new DescriptorImpl();
     assertThat(descriptor.doTestConnection("invalid url").kind, is(Kind.ERROR));
     assertThat(descriptor.doTestConnection("http://unknownhost.foo").kind, is(Kind.ERROR));
