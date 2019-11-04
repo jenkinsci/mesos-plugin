@@ -3,7 +3,7 @@ package org.jenkinsci.plugins.mesos;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
-import com.mesosphere.mesos.client.MasterDetector$;
+import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
@@ -384,7 +384,7 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the URL is valid or not.
      */
     public FormValidation doCheckMesosMasterUrl(@QueryParameter String mesosMasterUrl) {
-      if (MasterDetector$.MODULE$.apply(mesosMasterUrl).isValid()) {
+      if (MasterDetector$.MODULE$.apply(mesosMasterUrl, null).isValid()) {
         return FormValidation.ok();
       } else {
         return FormValidation.error(
@@ -479,7 +479,7 @@ public class MesosCloud extends AbstractCloudImpl {
       try {
         URL masterUrl =
             MasterDetector$.MODULE$
-                .apply(mesosMasterUrl)
+                .apply(mesosMasterUrl, null)
                 .getMaster(Implicits$.MODULE$.global())
                 .toCompletableFuture()
                 .get();

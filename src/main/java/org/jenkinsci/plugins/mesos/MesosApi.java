@@ -6,9 +6,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.QueueOfferResult;
 import akka.stream.javadsl.*;
+import com.mesosphere.mesos.MasterDetector$;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
-import com.mesosphere.mesos.client.MasterDetector$;
 import com.mesosphere.mesos.client.MesosClient;
 import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
@@ -125,19 +125,7 @@ public class MesosApi {
     this.materializer = ActorMaterializer.create(system);
     this.context = system.dispatcher();
 
-    URL masterUrl =
-        MasterDetector$.MODULE$.apply(master).getMaster(context).toCompletableFuture().get();
-
-    MesosClientSettings clientSettings =
-        MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
-    SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
-    this.operationalSettings = Settings.load(classLoader);
-
-    // Initialize state.
-    this.stateMap = new ConcurrentHashMap<>();
-    this.repository = new MesosPodRecordRepository();
-
-    // Inject metrics and credentials provider.
+    // Construct metrics
     MetricsSettings metricsSettings =
         new MetricsSettings(
             sanitize(frameworkName),
@@ -153,6 +141,23 @@ public class MesosApi {
         new com.mesosphere.usi.metrics.dropwizard.DropwizardMetrics(
             metricsSettings, Metrics.metricRegistry());
 
+    URL masterUrl =
+        MasterDetector$.MODULE$
+            .apply(master, metrics)
+            .getMaster(context)
+            .toCompletableFuture()
+            .get();
+
+    MesosClientSettings clientSettings =
+        MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
+    SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
+    this.operationalSettings = Settings.load(classLoader);
+
+    // Initialize state.
+    this.stateMap = new ConcurrentHashMap<>();
+    this.repository = new MesosPodRecordRepository();
+
+    // Inject metrics and credentials provider.
     Optional<CredentialsProvider> provider =
         authorization.map(
             auth -> {
