@@ -7,8 +7,7 @@ import hudson.slaves.RetentionStrategy;
 /** A strategy to terminate idle {@link MesosComputer} */
 public class MesosRetentionStrategy extends CloudRetentionStrategy {
   /**
-   * Constructs a new {@link hudson.slaves.CloudRetentionStrategy}. This is called by {@link
-   * MesosJenkinsAgent()}.
+   * Constructs a new {@link hudson.slaves.CloudRetentionStrategy}.
    *
    * @param idleMinutes The number of minutes to wait before calling getNode().terminate() on an
    *     idle {@link MesosComputer}

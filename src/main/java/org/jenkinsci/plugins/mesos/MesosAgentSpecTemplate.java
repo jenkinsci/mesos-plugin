@@ -111,6 +111,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
    * @param jenkinsUrl the URL of the jenkins master.
    * @param name The name of the node to launch.
    * @return a LaunchPod command to be passed to USI.
+   * @throws MalformedURLException If a fetch URL is not well formed.
+   * @throws URISyntaxException IF the fetch URL cannot be converted into a proper URI.
    */
   public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
       throws MalformedURLException, URISyntaxException {
