@@ -72,7 +72,7 @@ public class MesosApi {
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
    * MesosJenkinsAgent} instances.
    *
-   * @param masterUrl The Mesos master address to connect to. Should be one of host:port
+   * @param master The Mesos master address to connect to. Should be one of host:port
    *     http://host:port zk://host1:port1,host2:port2,.../path
    *     zk://username:password@host1:port1,host2:port2,.../path
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
@@ -178,10 +178,10 @@ public class MesosApi {
    * @param frameworkName The name of the framework the Mesos client should register as.
    * @param frameworkId Unique identifier of the framework in Mesos.
    * @param role The Mesos role to assume.
-   * @param schedulerFlow The USI scheduler flow constructed by {@link Scheduler#fromClient()}
+   * @param schedulerFlow The USI scheduler flow constructed by {@link
+   *     com.mesosphere.usi.core.japi.Scheduler#fromClient(MesosClient, PodRecordRepository,
+   *     com.mesosphere.usi.metrics.Metrics, SchedulerSettings)}
    * @param operationalSettings Operation settings for this plugin.
-   * @param clientSettings The settings used to connect to USI.
-   * @param schedulerSettings The settings used to created the scheduler flow.
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.
    */

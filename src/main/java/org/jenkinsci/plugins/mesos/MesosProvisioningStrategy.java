@@ -29,7 +29,7 @@ public class MesosProvisioningStrategy extends NodeProvisioner.Strategy {
    * Provision as soon as possible.
    *
    * @param strategyState Provisioning state to make decisions.
-   * @return Whether {@link NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED} or not.
+   * @return Whether {@link NodeProvisioner.StrategyDecision#PROVISIONING_COMPLETED} or not.
    */
   @Nonnull
   @Override

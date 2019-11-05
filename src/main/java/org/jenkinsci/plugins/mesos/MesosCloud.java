@@ -43,9 +43,8 @@ import scala.concurrent.ExecutionContext.Implicits$;
 /**
  * Jenkins Cloud implementation for Mesos.
  *
- * <p>The layout is inspired by the Nomad Plugin.
- *
- * @see https://github.com/jenkinsci/nomad-plugin
+ * <p>The layout is inspired by the <a href="https://github.com/jenkinsci/nomad-plugin">Nomad
+ * Plugin</a>.
  */
 public class MesosCloud extends AbstractCloudImpl {
 
