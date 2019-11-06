@@ -2,7 +2,8 @@ package org.jenkinsci.plugins.mesos;
 
 import com.codahale.metrics.health.HealthCheck;
 import com.google.common.base.Joiner;
-import jenkins.model.Jenkins;
+
+import static org.jenkinsci.plugins.mesos.MesosAdministrativeMonitor.getAdministrativeMonitor;
 
 public class MesosHealthCheck extends HealthCheck {
     @Override
@@ -16,13 +17,5 @@ public class MesosHealthCheck extends HealthCheck {
             }
         }
         return Result.healthy();
-    }
-
-    private MesosAdministrativeMonitor getAdministrativeMonitor() {
-        Jenkins instance = Jenkins.getInstance();
-        if (instance == null) {
-            return null;
-        }
-        return (MesosAdministrativeMonitor) instance.getAdministrativeMonitor(MesosAdministrativeMonitor.class.getName());
     }
 }

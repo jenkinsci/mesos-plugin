@@ -14,7 +14,10 @@ public class MesosHealthCheckProvider extends HealthCheckProvider {
     @Override
     public Map<String, HealthCheck> getHealthChecks() {
         Map<String, HealthCheck> result = new HashMap<String, HealthCheck>();
-        result.put("mesos", new MesosHealthCheck());
+        final MesosCloud mesosCloud = MesosCloud.get();
+        if (mesosCloud != null && mesosCloud.getEnableMetricsHealthcheck()) {
+            result.put("mesos", new MesosHealthCheck());
+        }
         return result;
     }
 }
