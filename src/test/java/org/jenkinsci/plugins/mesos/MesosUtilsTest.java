@@ -17,4 +17,13 @@ public class MesosUtilsTest {
         assertTrue(nodeName.length() <= 63);
         assertFalse(nodeName.contains(" "));
     }
+
+    //https://github.com/jenkinsci/mesos-plugin/issues/251
+    @Test
+    public void nodeNameShouldntHaveInvalidChars() {
+        String nodeName = MesosUtils.buildNodeName("similar/to:dockertags");
+        assertTrue(nodeName.length() <= 63);
+        assertFalse(nodeName.contains("/"));
+        assertFalse(nodeName.contains(":"));
+    }
 }
