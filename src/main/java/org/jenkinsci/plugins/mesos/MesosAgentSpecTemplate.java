@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.v1.Protos.DomainInfo;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
@@ -350,7 +349,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
     @Override
     public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
-      throw new NotImplementedException();
+      return this.region == nodeDomain.getFaultDomain().getRegion().getName()
+          && this.zone == nodeDomain.getFaultDomain().getZone().getName();
     }
 
     @Extension

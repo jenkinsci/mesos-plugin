@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import jenkins.model.Jenkins;
+import org.apache.mesos.v1.Protos.DomainInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 import scala.Option;
@@ -48,7 +49,7 @@ public class LaunchCommandBuilder {
   private String role = "test";
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
-  private DomainFilter domainInfoFilter = HomeRegionFilter$.MODULE$;
+  private DomainFilter domainInfoFilter = ANY_DOMAIN;
 
   private int xmx = 0;
 
@@ -182,4 +183,12 @@ public class LaunchCommandBuilder {
         .add(jenkinsAgentFetchUri)
         .build();
   }
+
+  private static DomainFilter ANY_DOMAIN =
+      new DomainFilter() {
+        @Override
+        public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
+          return true;
+        }
+      };
 }
