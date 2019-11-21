@@ -2,8 +2,6 @@ package org.jenkinsci.plugins.mesos;
 
 import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
-import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter;
-import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
@@ -338,7 +336,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     }
   }
 
-  public static class DomainFilterImpl extends AbstractDescribableImpl<DomainFilterImpl> implements DomainFilter {
+  public static class DomainFilterImpl extends AbstractDescribableImpl<DomainFilterImpl>
+      implements DomainFilter {
 
     private final String region;
     private final String zone;
