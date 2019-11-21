@@ -69,7 +69,8 @@ public class MesosSlaveInfo {
         this.diskNeeded.toString(),
         this.jnlpArgs,
         this.additionalURIs,
-        this.containerInfo);
+        this.containerInfo,
+        null);
   }
 
   public static class URI extends AbstractDescribableImpl<URI> {

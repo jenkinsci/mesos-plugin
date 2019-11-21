@@ -4,6 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
+import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
+import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.RunTemplate;
@@ -46,6 +48,7 @@ public class LaunchCommandBuilder {
   private String role = "test";
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
+  private DomainFilter domainInfoFilter = HomeRegionFilter$.MODULE$;
 
   private int xmx = 0;
 
@@ -103,6 +106,11 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withDomainInfoFilter(Optional<DomainFilter> domainInfoFilter) {
+    this.domainInfoFilter = domainInfoFilter.orElse(HomeRegionFilter$.MODULE$);
+    return this;
+  }
+
   public LaunchCommandBuilder withAdditionalFetchUris(List<FetchUri> additionalFetchUris) {
 
     this.additionalFetchUris = additionalFetchUris;
@@ -123,7 +131,7 @@ public class LaunchCommandBuilder {
             this.role,
             this.buildFetchUris(),
             this.containerInfo);
-    return new LaunchPod(this.id, runTemplate);
+    return new LaunchPod(this.id, runTemplate, this.domainInfoFilter);
   }
 
   /** @return the agent shell command for the Mesos task. */
