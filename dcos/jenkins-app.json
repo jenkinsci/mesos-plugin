@@ -12,7 +12,7 @@
     "type": "DOCKER",
     "docker": {
       "forcePullImage": true,
-      "image": "mesosphere/jenkins:testing",
+      "image": "mesosphere/jenkins:unstable",
       "parameters": [],
       "privileged": false
     },

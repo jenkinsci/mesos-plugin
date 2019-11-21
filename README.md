@@ -140,27 +140,4 @@ The code is formatted following the [Google Style Guide](https://github.com/goog
 
 ### On DC/OS Enterprise
 
-The `Dockerfile.dcos` defines a Docker image that supports DC/OS strict mode. It requires a service
-account to run. To setup one up with the DC/OS CLI
-
-1. Create service account secrets with
-   ```
-   dcos security org service-accounts keypair jenkins.private.pem jenkins.pub.pem
-   ```
-2. Create the actual service account called `jenkins`
-   ```
-   dcos security org service-accounts create -p jenkins.pub.pem -d "Jenkins Service Account" jenkins 
-   ```
-3. Store private key as secret so that the Jenkins master can access it
-   ```
-   dcos security secrets create -f ./jenkins.private.pem jenkins/private_key
-   ```
-4. Grant `jenkins` service account rights to start Mesos tasks:
-   ```
-   dcos security org users grant jenkins dcos:mesos:master:task:user:nobody create
-   ```
-5. Deploy the Jenkins app defined in `dcos/jenkins-app.json`
-   ```
-   dcos marathon app add dcos/jenkins-app.json
-   ```
-
+See the [dcos folder](dcos/README.md).
