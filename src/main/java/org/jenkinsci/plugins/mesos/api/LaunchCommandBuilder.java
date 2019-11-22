@@ -137,13 +137,19 @@ public class LaunchCommandBuilder {
 
   /** @return the agent shell command for the Mesos task. */
   private String buildCommand() throws MalformedURLException {
-    return String.format(
-        AGENT_COMMAND_FORMAT,
-        this.xmx,
-        this.jvmArgString,
-        this.jnlpArgString,
-        buildJnlpSecret(),
-        buildJnlpUrl());
+    // Check if command is overriden
+    if (this.containerInfo.isPresent()
+        && this.containerInfo.get().getCustomDockerCommandShell() != null) {
+      return this.containerInfo.get().getCustomDockerCommandShell();
+    } else {
+      return String.format(
+          AGENT_COMMAND_FORMAT,
+          this.xmx,
+          this.jvmArgString,
+          this.jnlpArgString,
+          buildJnlpSecret(),
+          buildJnlpUrl());
+    }
   }
 
   @VisibleForTesting

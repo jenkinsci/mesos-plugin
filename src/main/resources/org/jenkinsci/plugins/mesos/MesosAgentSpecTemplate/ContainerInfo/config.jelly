@@ -15,6 +15,16 @@
         <f:radioBlock name="type" title="${%Mesos}" value="MESOS" inline="true" checked="${instance.type == 'MESOS'}"></f:radioBlock>
     </f:entry>
 
+    <f:block>
+      <table>
+      <f:optionalBlock name="overrideShellCommand" title="${%Override Default Shell Command}">
+        <f:entry title="Shell Command" field="customDockerCommandShell">
+            <f:textbox clazz="required"/>
+        </f:entry>
+      </f:optionalBlock>
+      </table>
+    </f:block>
+
     <f:entry title="${%Docker in Docker image}" field="isDind" >
         <f:checkbox/>
     </f:entry>

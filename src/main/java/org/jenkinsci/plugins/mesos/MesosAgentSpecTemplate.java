@@ -225,6 +225,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     private final List<Volume> volumes;
     private final boolean dockerPrivilegedMode;
     private final boolean dockerForcePullImage;
+    private final String customDockerCommandShell;
     private boolean isDind;
 
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
@@ -245,13 +246,11 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
     private transient boolean useCustomDockerCommandShell;
 
-    @SuppressFBWarnings("UUF_UNUSED_FIELD")
-    private transient String customDockerCommandShell;
-
     @DataBoundConstructor
     public ContainerInfo(
         String type,
         String dockerImage,
+        String customDockerCommandShell,
         boolean isDind,
         boolean dockerPrivilegedMode,
         boolean dockerForcePullImage,
@@ -261,7 +260,12 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.dockerForcePullImage = dockerForcePullImage;
       this.volumes = volumes;
+      this.customDockerCommandShell = customDockerCommandShell;
       this.isDind = isDind;
+    }
+
+    public String getCustomDockerCommandShell() {
+      return this.customDockerCommandShell;
     }
 
     public boolean getIsDind() {
@@ -297,6 +301,28 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
       public DescriptorImpl() {
         load();
+      }
+    }
+
+    /**
+     * Migrate older fields from 0.x and 1.x of the plugin.
+     *
+     * @return The migrated container info.
+     */
+    private Object readResolve() {
+
+      // No custom shell command should be used the shell command field must be null.
+      if (!this.useCustomDockerCommandShell) {
+        return new ContainerInfo(
+            this.type,
+            this.dockerImage,
+            null,
+            this.isDind,
+            this.dockerPrivilegedMode,
+            this.dockerForcePullImage,
+            this.volumes);
+      } else {
+        return this;
       }
     }
   }
