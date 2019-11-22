@@ -40,6 +40,8 @@
 
          <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
+         <f:optionalProperty title="${%Filter Fault Domain}" field="domainInfoFilter"/>
+
           <f:entry title="${%Additional URIs}">
               <f:repeatableProperty field="additionalURIs" minimum="0" add="Add URI">
                   <f:entry>
