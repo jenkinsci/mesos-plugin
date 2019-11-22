@@ -4,8 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
+import com.mesosphere.usi.core.models.faultdomain.AnyDomain$;
 import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
-import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.RunTemplate;
@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import jenkins.model.Jenkins;
-import org.apache.mesos.v1.Protos.DomainInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 import scala.Option;
@@ -49,7 +48,7 @@ public class LaunchCommandBuilder {
   private String role = "test";
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
-  private DomainFilter domainInfoFilter = ANY_DOMAIN;
+  private DomainFilter domainInfoFilter = AnyDomain$.MODULE$;
 
   private int xmx = 0;
 
@@ -108,7 +107,7 @@ public class LaunchCommandBuilder {
   }
 
   public LaunchCommandBuilder withDomainInfoFilter(Optional<DomainFilter> domainInfoFilter) {
-    this.domainInfoFilter = domainInfoFilter.orElse(HomeRegionFilter$.MODULE$);
+    this.domainInfoFilter = domainInfoFilter.orElse(AnyDomain$.MODULE$);
     return this;
   }
 
@@ -183,12 +182,4 @@ public class LaunchCommandBuilder {
         .add(jenkinsAgentFetchUri)
         .build();
   }
-
-  private static DomainFilter ANY_DOMAIN =
-      new DomainFilter() {
-        @Override
-        public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
-          return true;
-        }
-      };
 }
