@@ -48,6 +48,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int maxExecutors;
   private final String jnlpArgs;
   private final List<MesosSlaveInfo.URI> additionalURIs;
+  private final LaunchCommandBuilder.AgentCommandStyle agentCommandStyle;
   private final ContainerInfo containerInfo;
   private final DomainFilterImpl domainInfoFilter;
 
@@ -64,6 +65,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       String jnlpArgs,
       List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo,
+      LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
       DomainFilterImpl domainInfoFilter) {
     this.label = label;
     this.labelSet = Label.parse(label);
@@ -79,6 +81,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
     this.domainInfoFilter = domainInfoFilter;
+    this.agentCommandStyle = agentCommandStyle;
     validate();
   }
 
@@ -149,6 +152,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
         .withDomainInfoFilter(Optional.ofNullable(this.getDomainInfoFilter()))
         .withJnlpArguments(this.getJnlpArgs())
+        .withAgentCommandStyle(Optional.ofNullable(this.agentCommandStyle))
         .withAdditionalFetchUris(fetchUris)
         .build();
   }
@@ -206,6 +210,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return maxExecutors;
   }
 
+  public LaunchCommandBuilder.AgentCommandStyle getAgentCommandStyle() {
+    return this.agentCommandStyle;
+  }
+
   public String getJnlpArgs() {
     return jnlpArgs;
   }
@@ -225,7 +233,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     private final List<Volume> volumes;
     private final boolean dockerPrivilegedMode;
     private final boolean dockerForcePullImage;
-    private final String customDockerCommandShell;
     private boolean isDind;
 
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
@@ -246,11 +253,13 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
     private transient boolean useCustomDockerCommandShell;
 
+    @SuppressFBWarnings("UUF_UNUSED_FIELD")
+    private transient String customDockerCommandShell;
+
     @DataBoundConstructor
     public ContainerInfo(
         String type,
         String dockerImage,
-        String customDockerCommandShell,
         boolean isDind,
         boolean dockerPrivilegedMode,
         boolean dockerForcePullImage,
@@ -262,10 +271,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       this.volumes = volumes;
       this.customDockerCommandShell = customDockerCommandShell;
       this.isDind = isDind;
-    }
-
-    public String getCustomDockerCommandShell() {
-      return this.customDockerCommandShell;
     }
 
     public boolean getIsDind() {
@@ -316,7 +321,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         return new ContainerInfo(
             this.type,
             this.dockerImage,
-            null,
             this.isDind,
             this.dockerPrivilegedMode,
             this.dockerForcePullImage,

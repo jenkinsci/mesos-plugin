@@ -40,6 +40,10 @@
 
          <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
+         <f:entry title="${%Agent Command Style}" field="agentCommandStyle">
+             <f:enum/>
+         </f:entry>
+
          <f:optionalProperty title="${%Filter Fault Domain}" field="domainInfoFilter"/>
 
           <f:entry title="${%Additional URIs}">
