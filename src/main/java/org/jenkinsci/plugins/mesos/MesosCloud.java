@@ -1,872 +1,557 @@
-/*
- * Copyright 2013 Twitter, Inc. and other contributors.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.jenkinsci.plugins.mesos;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import static java.lang.Math.toIntExact;
+
 import com.codahale.metrics.Timer;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
-import hudson.model.*;
-import hudson.security.ACL;
+import hudson.model.Descriptor;
+import hudson.model.Descriptor.FormException;
+import hudson.model.Label;
+import hudson.model.Node;
+import hudson.slaves.AbstractCloudImpl;
 import hudson.slaves.Cloud;
-import hudson.slaves.NodeProvisioner.PlannedNode;
+import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
-import hudson.util.Secret;
-import jenkins.metrics.api.Metrics;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.MesosNativeLibrary;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.DoNotUse;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-
-import javax.annotation.Nonnull;
-import javax.servlet.ServletException;
-
+import hudson.util.FormValidation.Kind;
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.*;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import jenkins.metrics.api.Metrics;
+import jenkins.model.Jenkins;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.concurrent.ExecutionContext.Implicits$;
 
-public class MesosCloud extends Cloud {
-  private static final String DEFAULT_DECLINE_OFFER_DURATION = "600000"; // 10 mins.
-  public static final double SHORT_DECLINE_OFFER_DURATION_SEC = 5;
-  private String nativeLibraryPath;
+/**
+ * Jenkins Cloud implementation for Mesos.
+ *
+ * <p>The layout is inspired by the <a href="https://github.com/jenkinsci/nomad-plugin">Nomad
+ * Plugin</a>.
+ */
+public class MesosCloud extends AbstractCloudImpl {
+
+  private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
+
   private String master;
-  private String description;
-  private String frameworkName;
-  private String role;
-  private String slavesUser;
-  private String credentialsId;
-  private String cloudID;
 
-  /**
-   * @deprecated Create credentials then use credentialsId instead.
-   */
-  @Deprecated
-  private transient String principal;
-  /**
-   * @deprecated Create credentials then use credentialsId instead.
-   */
-  @Deprecated
-  private transient String secret;
-  private final boolean checkpoint; // Set true to enable checkpointing. False by default.
-  private boolean onDemandRegistration; // If set true, this framework disconnects when there are no builds in the queue and re-registers when there are.
-  private boolean nfsRemoteFSRoot;
-  private String jenkinsURL;
-  private String declineOfferDuration;
+  @Nonnull private transient MesosApi mesosApi;
 
-  // Find the default values for these variables in
-  // src/main/resources/org/jenkinsci/plugins/mesos/MesosCloud/config.jelly.
-  private List<MesosSlaveInfo> slaveInfos;
+  private final String frameworkName;
+  private String frameworkId;
 
-  private static Map<String, String> staticMasters = new HashMap<String, String>();
+  private String agentUser;
+  private final String role;
 
-  private static final Logger LOGGER = Logger.getLogger(MesosCloud.class.getName());
+  private final URL jenkinsURL;
 
-  private static volatile boolean nativeLibraryLoaded = false;
+  private transient Optional<String> sslCert;
+  private transient Optional<DcosAuthorization> dcosAuthorization;
 
-  /**
-   * We want to start the Mesos scheduler as part of the initialization of Jenkins
-   * and after the cloud class values have been restored from persistence.If this is
-   * the very first time, this method will be NOOP as MesosCloud is not registered yet.
-   */
+  private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
-  @Initializer(after=InitMilestone.JOB_LOADED)
-  public static void init() {
+  public static class DcosAuthorization {
 
-    Jenkins jenkins = getJenkins();
-    List<Node> slaves = jenkins.getNodes();
+    private String secret;
+    private String uid;
 
-    // Turning the AUTOMATIC_SLAVE_LAUNCH flag off because the below slave removals
-    // causes computer launch in other slaves that have not been removed yet.
-    // To study how a slave removal updates the entire list, one can refer to
-    // Hudson NodeProvisioner class and follow this method chain removeNode() ->
-    // setNodes() -> updateComputerList() -> updateComputer().
-    Jenkins.AUTOMATIC_SLAVE_LAUNCH = false;
-    for (Node n : slaves) {
-      //Remove all slaves that were persisted when Jenkins shutdown.
-      if (n instanceof MesosSlave) {
-        ((MesosSlave)n).terminate();
-      }
+    public DcosAuthorization(String uid, String secret) {
+      this.uid = uid;
+      this.secret = secret;
     }
 
-    // Turn it back on for future real slaves.
-    Jenkins.AUTOMATIC_SLAVE_LAUNCH = true;
+    public String getSecret() {
+      return this.secret;
+    }
 
-    for (Cloud c : jenkins.clouds) {
-      if( c instanceof MesosCloud) {
-        // Register mesos framework on init, if on demand registration is not enabled.
-        if (!((MesosCloud) c).isOnDemandRegistration()) {
-          ((MesosCloud)c).restartMesos();
-        }
-      }
+    public String getUid() {
+      return this.uid;
     }
   }
 
-  @NonNull
-  private static Jenkins getJenkins() {
-    Jenkins jenkins = Jenkins.getInstance();
-    if (jenkins == null) {
-      throw new IllegalStateException("Jenkins is null");
-    }
-    return jenkins;
-  }
+  // Legacy 1.x fields required for backwards compatibility
+  private transient String nativeLibraryPath;
+  private transient String description;
+  private transient String slavesUser;
+  private transient String credentialsId;
+  private transient String cloudID;
+  private transient boolean checkpoint;
+  private transient boolean onDemandRegistration;
+  private transient int declineOfferDuration;
+  private transient List<MesosAgentSpecTemplate> slaveInfos;
 
   @DataBoundConstructor
   public MesosCloud(
-      String nativeLibraryPath,
-      String master,
-      String description,
+      String mesosMasterUrl,
       String frameworkName,
       String role,
-      String slavesUser,
-      String credentialsId,
-      String principal,
-      String secret,
-      List<MesosSlaveInfo> slaveInfos,
-      boolean checkpoint,
-      boolean onDemandRegistration,
-      boolean nfsRemoteFSRoot,
+      String agentUser,
       String jenkinsURL,
-      String declineOfferDuration,
-      String cloudID) throws NumberFormatException {
-    this("MesosCloud", nativeLibraryPath, master, description, frameworkName, role,
-         slavesUser, credentialsId, principal, secret, slaveInfos, checkpoint, onDemandRegistration,
-            nfsRemoteFSRoot, jenkinsURL, declineOfferDuration, cloudID);
-  }
-
-  /**
-   * Constructor, which also allows to specify a custom name.
-   * @throws NumberFormatException Numeric parameter parsing error
-   * @since 0.9.0
-   */
-  protected MesosCloud(
-      String cloudName,
-      String nativeLibraryPath,
-      String master,
-      String description,
-      String frameworkName,
-      String role,
-      String slavesUser,
-      String credentialsId,
-      String principal,
-      String secret,
-      List<MesosSlaveInfo> slaveInfos,
-      boolean checkpoint,
-      boolean onDemandRegistration,
-      boolean nfsRemoteFSRoot,
-      String jenkinsURL,
-      String declineOfferDuration,
-      String cloudID) throws NumberFormatException {
-    super(cloudName);
-
-    this.nativeLibraryPath = nativeLibraryPath;
-    this.master = master;
-    this.description = description;
-    this.frameworkName = frameworkName;
-    this.role = role;
-    this.slavesUser = slavesUser;
-    this.credentialsId = credentialsId;
-    this.principal = principal;
-    this.secret = secret;
-    migrateToCredentials();
-    this.slaveInfos = slaveInfos;
-    this.checkpoint = checkpoint;
-    this.onDemandRegistration = onDemandRegistration;
-    this.nfsRemoteFSRoot = nfsRemoteFSRoot;
-    this.setJenkinsURL(jenkinsURL);
-    this.setDeclineOfferDuration(declineOfferDuration);
-    this.setCloudID(cloudID);
-    if(!onDemandRegistration || Mesos.getInstance(this).isSchedulerRunning()) {
-	    JenkinsScheduler.SUPERVISOR_LOCK.lock();
-	    try {
-	      restartMesos();
-	    } finally {
-	      JenkinsScheduler.SUPERVISOR_LOCK.unlock();
-	    }
-    }
-  }
-
-  /**
-   * Copy constructor.
-   * Allows to create copies of the original mesos cloud. Since it's a singleton
-   * by design, this method also allows specifying a new name.
-   * @param name Name of the cloud to be created
-   * @param source Source Mesos cloud implementation
-   * @since 0.9.0
-   */
-  public MesosCloud(@Nonnull String name, @Nonnull MesosCloud source) {
-      this(name, source.nativeLibraryPath, source.master, source.description, source.frameworkName,
-           source.role, source.slavesUser, source.credentialsId, source.principal, source.secret, source.slaveInfos,
-           source.checkpoint, source.onDemandRegistration, source.nfsRemoteFSRoot, source.jenkinsURL, source.declineOfferDuration, source.cloudID);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    MesosCloud other = (MesosCloud) obj;
-    if (checkpoint != other.checkpoint)
-      return false;
-    if (credentialsId == null) {
-      if (other.credentialsId != null)
-        return false;
-    } else if (!credentialsId.equals(other.credentialsId))
-      return false;
-    if (declineOfferDuration == null) {
-      if (other.declineOfferDuration != null)
-        return false;
-    } else if (!declineOfferDuration.equals(other.declineOfferDuration))
-      return false;
-    if (description == null) {
-      if (other.description != null)
-        return false;
-    } else if (!description.equals(other.description))
-      return false;
-    if (frameworkName == null) {
-      if (other.frameworkName != null)
-        return false;
-    } else if (!frameworkName.equals(other.frameworkName))
-      return false;
-    if (jenkinsURL == null) {
-      if (other.jenkinsURL != null)
-        return false;
-    } else if (!jenkinsURL.equals(other.jenkinsURL))
-      return false;
-    if (master == null) {
-      if (other.master != null)
-        return false;
-    } else if (!master.equals(other.master))
-      return false;
-    if (nativeLibraryPath == null) {
-      if (other.nativeLibraryPath != null)
-        return false;
-    } else if (!nativeLibraryPath.equals(other.nativeLibraryPath))
-      return false;
-    if (onDemandRegistration != other.onDemandRegistration)
-      return false;
-    if (nfsRemoteFSRoot != other.nfsRemoteFSRoot)
-      return false;
-    if (role == null) {
-      if (other.role != null)
-        return false;
-    } else if (!role.equals(other.role))
-      return false;
-    if (slaveInfos == null) {
-      if (other.slaveInfos != null)
-        return false;
-    } else if (!slaveInfos.equals(other.slaveInfos))
-      return false;
-    if (slavesUser == null) {
-      if (other.slavesUser != null)
-        return false;
-    } else if (!slavesUser.equals(other.slavesUser))
-      return false;
-    return true;
-  }
-
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + (checkpoint ? 1231 : 1237);
-    result = prime * result + ((credentialsId == null) ? 0 : credentialsId.hashCode());
-    result =
-        prime * result + ((declineOfferDuration == null) ? 0 : declineOfferDuration.hashCode());
-    result = prime * result + ((description == null) ? 0 : description.hashCode());
-    result = prime * result + ((frameworkName == null) ? 0 : frameworkName.hashCode());
-    result = prime * result + ((jenkinsURL == null) ? 0 : jenkinsURL.hashCode());
-    result = prime * result + ((master == null) ? 0 : master.hashCode());
-    result = prime * result + ((nativeLibraryPath == null) ? 0 : nativeLibraryPath.hashCode());
-    result = prime * result + (onDemandRegistration ? 1231 : 1237);
-    result = prime * result + (nfsRemoteFSRoot ? 1231 : 1237);
-    result = prime * result + ((role == null) ? 0 : role.hashCode());
-    result = prime * result + ((slaveInfos == null) ? 0 : slaveInfos.hashCode());
-    result = prime * result + ((slavesUser == null) ? 0 : slavesUser.hashCode());
-    return result;
-  }
-
-  public void restartMesos() {
-    initNativeLibrary(nativeLibraryPath);
-
-    // Default to root URL in Jenkins global configuration.
-    String jenkinsRootURL = getJenkins().getRootUrl();
-
-    // If 'jenkinsURL' parameter is provided in mesos plugin configuration, then that should take precedence.
-    if(StringUtils.isNotBlank(jenkinsURL)) {
-      jenkinsRootURL = jenkinsURL;
-    }
-
-    // Restart the scheduler if the master has changed or a scheduler is not up.
-    if (!master.equals(getStaticMaster(getCloudID())) || !Mesos.getInstance(this).isSchedulerRunning()) {
-      if (!master.equals(getStaticMaster(getCloudID()))) {
-        LOGGER.info("Mesos master changed from '" + getStaticMaster(getCloudID()) + "' to '" + master + "'");
-        recordStaticMaster(getCloudID(), master);
-      } else {
-        LOGGER.info("Scheduler was down, restarting the scheduler");
-      }
-
-      Mesos.getInstance(this).stopScheduler(true);
-      Mesos.getInstance(this).startScheduler(jenkinsRootURL, this);
-
-      Metrics.metricRegistry().counter("mesos.cloud.restartMesos").inc();
-    } else {
-      Mesos.getInstance(this).updateScheduler(jenkinsRootURL, this);
-      if(onDemandRegistration) {
-        LOGGER.info("On-demand framework registration is enabled for future builds");
-      }
-      else {
-        LOGGER.info("Mesos master has not changed, leaving the scheduler running");
-      }
-    }
-
-  }
-
-  private static void recordStaticMaster(String cloudID, String master) {
-    staticMasters.put(cloudID, master);
-  }
-
-  private static String getStaticMaster(String cloudID) {
-    return staticMasters.get(cloudID);
-  }
-
-  private static void initNativeLibrary(String nativeLibraryPath) {
-    if(!nativeLibraryLoaded) {
-      // First, we attempt to load the library from the given path.
-      // If unsuccessful, we attempt to load using 'MesosNativeLibrary.load()'.
-      try {
-          MesosNativeLibrary.load(nativeLibraryPath);
-      } catch (UnsatisfiedLinkError error) {
-          LOGGER.warning("Failed to load native Mesos library from '" + nativeLibraryPath +
-                         "': " + error.getMessage());
-          MesosNativeLibrary.load();
-      }
-      nativeLibraryLoaded = true;
-    }
-  }
-
-  /**
-   * Returns the credentials object associated with the stored credentialsId.
-   *
-   * @return The credentials object associated with the stored credentialsId. May be null if credentialsId is null or
-   * if there is no credentials associated with the given id.
-   */
-  public StandardUsernamePasswordCredentials getCredentials() {
-    if (credentialsId == null) {
-      return null;
-    } else {
-      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
-              : URIRequirementBuilder.fromUri(master.trim()).build();
-      Jenkins jenkins = getJenkins();
-      return CredentialsMatchers.firstOrNull(CredentialsProvider
-                      .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
-              CredentialsMatchers.withId(credentialsId)
-      );
-    }
-  }
-
-  private String getMetricName(Label label, String method, String metric) {
-    String labelText = (label == null) ? "nolabel" : label.getDisplayName();
-    return String.format("mesos.cloud.%s.%s.%s", labelText, method, metric);
-  }
-
-  @Override
-  public Collection<PlannedNode> provision(Label label, int excessWorkload) {
-    Metrics.metricRegistry().meter(getMetricName(label, "provision", "request")).mark(excessWorkload);
-    LOGGER.info(String.format("Received request to provision %d executors for label %s", excessWorkload, label));
-
-    List<PlannedNode> list = new ArrayList<PlannedNode>();
-    final MesosSlaveInfo slaveInfo = getSlaveInfo(slaveInfos, label);
-    if (slaveInfo == null) {
-      return list;
-    }
-    int minExecutors = slaveInfo.getMinExecutors();
-    int maxExecutors = slaveInfo.getMaxExecutors();
+      List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates)
+      throws InterruptedException, ExecutionException, IOException {
+    super("MesosCloud", null);
 
     try {
-      while (excessWorkload > 0 && !getJenkins().isQuietingDown()) {
-        // Start the scheduler if it's not already running.
-        if (onDemandRegistration) {
-          JenkinsScheduler.SUPERVISOR_LOCK.lock();
-          try {
-            LOGGER.fine("Checking if scheduler is running");
-            if (!Mesos.getInstance(this).isSchedulerRunning()) {
-              restartMesos();
-            }
-          } finally {
-            JenkinsScheduler.SUPERVISOR_LOCK.unlock();
-          }
-        }
-        final int numExecutors = Math.max(minExecutors, Math.min(excessWorkload, maxExecutors));
-        excessWorkload -= numExecutors;
-        LOGGER.info("Provisioning Jenkins Slave on Mesos with " + numExecutors +
-                    " executors. Remaining excess workload: " + excessWorkload + " executors)");
-
-        MesosSlave mesosSlave = doProvision(numExecutors,
-                                            slaveInfo,
-                                            Metrics.metricRegistry().timer(getMetricName(label, "provision", "ready")).time(),
-                                            Metrics.metricRegistry().timer(getMetricName(label, "provision", "scheduler")).time(),
-                                            Metrics.metricRegistry().timer(getMetricName(label, "provision", "mesos")));
-        LOGGER.info(String.format("Slave to be provisioned is %s", mesosSlave.getUuid()));
-
-        list.add(new PlannedNode(this.getDisplayName(), Computer.threadPoolForRemoting
-            .submit(new Callable<Node>() {
-              public Node call() throws Exception {
-                // We do not need to explicitly add the Node here because that is handled by
-                // hudson.slaves.NodeProvisioner::update() that checks the result from the
-                // Future and adds the node. Though there is duplicate node addition check
-                // because of this early addition there is difference in job scheduling and
-                // best to avoid it.
-                LOGGER.info(String.format("Slave %s pulled by thread.", mesosSlave.getUuid()));
-                return mesosSlave;
-              }
-            }), numExecutors));
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to create instances on Mesos", e);
+      this.master = mesosMasterUrl;
+      this.jenkinsURL = new URL(jenkinsURL);
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(
+          String.format("Mesos Cloud URL validation failed for Jenkins %s", jenkinsURL), e);
     }
 
-    return list;
-  }
-
-  private MesosSlave doProvision(int numExecutors, MesosSlaveInfo slaveInfo, Timer.Context provisionToReady, Timer.Context provisionToMesos, Timer mesosToReady)
-      throws Descriptor.FormException, IOException {
-    return new MesosSlave(this, MesosUtils.buildNodeName(slaveInfo.getLabelString()), numExecutors, slaveInfo,
-        provisionToReady, provisionToMesos, mesosToReady);
-  }
-
-  public List<MesosSlaveInfo> getSlaveInfos() {
-    return slaveInfos;
-  }
-
-  public void setSlaveInfos(List<MesosSlaveInfo> slaveInfos) {
-    this.slaveInfos = slaveInfos;
-  }
-
-  @Override
-  public boolean canProvision(Label label) {
-    // Provisioning is simply creating a task for a jenkins slave.
-    // We can provision a Mesos slave as long as the job's label matches any
-    // item in the list of configured Mesos labels.
-    // TODO(vinod): The framework may not have the resources necessary
-    // to start a task when it comes time to launch the slave.
-    if (slaveInfos != null) {
-      for (MesosSlaveInfo slaveInfo : slaveInfos) {
-        if (slaveInfo.matchesLabel(label)) {
-          return true;
-        }
-      }
+    if (selfIsMesosTask()) {
+      String mesosSandbox = System.getenv("MESOS_SANDBOX");
+      this.sslCert = Optional.ofNullable(loadDcosCert(mesosSandbox));
+      this.dcosAuthorization = Optional.ofNullable(loadDcosAuthorization());
+    } else {
+      this.sslCert = Optional.empty();
+      this.dcosAuthorization = Optional.empty();
     }
-    return false;
-  }
 
-  public String getNativeLibraryPath() {
-    return this.nativeLibraryPath;
-  }
-
-  public void setNativeLibraryPath(String nativeLibraryPath) {
-    this.nativeLibraryPath = nativeLibraryPath;
-  }
-
-  public String getMaster() {
-    return this.master;
-  }
-
-  public void setMaster(String master) {
-    this.master = master;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getFrameworkName() {
-    return frameworkName;
-  }
-
-  public void setFrameworkName(String frameworkName) {
-    this.frameworkName = frameworkName;
-  }
-
-  public String getCloudID() {
-    if(this.cloudID == null || this.cloudID.isEmpty()) {
-      //Give each cloud a unique ID so it can be looked up after config changes
-      this.cloudID = UUID.randomUUID().toString();
-    }
-    return this.cloudID;
-  }
-
-  public void setCloudID(String cloudID) { this.cloudID = cloudID; }
-
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
+    this.agentUser = agentUser;
     this.role = role;
+    this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
+    this.frameworkName = frameworkName;
+    this.frameworkId = UUID.randomUUID().toString();
+
+    this.mesosApi =
+        new MesosApi(
+            this.master,
+            this.jenkinsURL,
+            this.agentUser,
+            this.frameworkName,
+            this.frameworkId,
+            this.role,
+            this.sslCert,
+            this.dcosAuthorization);
+    logger.info("Initialized Mesos API object.");
   }
 
-  public String getSlavesUser() {
-    return slavesUser;
-  }
+  private Object readResolve() throws IOException {
 
-  public void setSlavesUser(String slavesUser) {
-    this.slavesUser = slavesUser;
-  }
-
-  /**
-   * @deprecated Use MesosCloud#getCredentials().getUsername() instead.
-   * @return
-   */
-  @Deprecated
-  public String getPrincipal() {
-    StandardUsernamePasswordCredentials credentials = getCredentials();
-    return credentials == null ? "jenkins" : credentials.getUsername();
-  }
-
-  /**
-   * @deprecated Define credentials and use MesosCloud#setCredentialsId instead.
-   * @param principal
-   */
-  @Deprecated
-  public void setPrincipal(String principal) {
-    this.principal = principal;
-  }
-
-  /**
-   * @return The credentialsId to use for this mesos cloud
-   */
-  public String getCredentialsId() {
-    return credentialsId;
-  }
-
-  public void setCredentialsId(String credentialsId) {
-    this.credentialsId = credentialsId;
-  }
-
-  /**
-   * @deprecated Use MesosCloud#getCredentials().getPassword() instead.
-   * @return
-   */
-  @Deprecated
-  public String getSecret() {
-    StandardUsernamePasswordCredentials credentials = getCredentials();
-    return credentials == null ? "" : Secret.toString(credentials.getPassword());
-  }
-
-  /**
-   * @deprecated Define credentials and use MesosCloud#setCredentialsId instead.
-   * @param secret
-   */
-  @Deprecated
-  public void setSecret(String secret) {
-    this.secret = secret;
-  }
-
-  public boolean isOnDemandRegistration() {
-    return onDemandRegistration;
-  }
-
-  public void setOnDemandRegistration(boolean onDemandRegistration) {
-    this.onDemandRegistration = onDemandRegistration;
-  }
-
-  public boolean isNfsRemoteFSRoot() {
-    return nfsRemoteFSRoot;
-  }
-
-  public void setNfsRemoteFSRoot(boolean nfsRemoteFSRoot) {
-    this.nfsRemoteFSRoot = nfsRemoteFSRoot;
-  }
-
-  @Override
-  public DescriptorImpl getDescriptor() {
-    return (DescriptorImpl) super.getDescriptor();
-  }
-
-  public static MesosCloud get() {
-    return Hudson.getInstance().clouds.get(MesosCloud.class);
-  }
-
-  /**
-  * @return the checkpoint
-  */
-  public boolean isCheckpoint() {
-    return checkpoint;
-  }
-
-  private MesosSlaveInfo getSlaveInfo(List<MesosSlaveInfo> slaveInfos, Label label) {
-    for (MesosSlaveInfo slaveInfo : slaveInfos) {
-      MesosSlaveInfo slaveInfoForLabel = slaveInfo.getMesosSlaveInfoForLabel(label);
-      if (slaveInfoForLabel != null) {
-        return slaveInfoForLabel;
-      }
+    // Migration from 1.x
+    if (this.agentUser == null && this.slavesUser != null) {
+      this.agentUser = this.slavesUser;
+    } else {
+      this.agentUser = "nobody";
     }
-    return null;
-  }
 
-  /**
-  * Retrieves the slaveattribute corresponding to label name.
-  *
-  * @param labelName The Jenkins label name.
-  * @return slaveattribute as a JSONObject.
-  */
-
-  public JSONObject getSlaveAttributeForLabel(String labelName) {
-    for (MesosSlaveInfo slaveInfo : slaveInfos) {
-      if (StringUtils.equals(labelName, slaveInfo.getLabelString())) {
-          return slaveInfo.getSlaveAttributes();
-      }
+    if (this.frameworkId == null) {
+      this.frameworkId = "???"; // Is this this.cloudID?
     }
-    return null;
-  }
 
-  protected Object readResolve() {
-    migrateToCredentials();
-    if (role == null) {
-      role = "*";
+    if (this.mesosAgentSpecTemplates == null && this.slaveInfos != null) {
+      this.mesosAgentSpecTemplates = this.slaveInfos;
+    } else if (this.mesosAgentSpecTemplates == null) {
+      this.mesosAgentSpecTemplates = new ArrayList<>();
     }
+
+    // Load details if we are running in DC/OS.
+    if (selfIsMesosTask()) {
+      String mesosSandbox = System.getenv("MESOS_SANDBOX");
+      this.sslCert = Optional.ofNullable(loadDcosCert(mesosSandbox));
+      this.dcosAuthorization = Optional.ofNullable(loadDcosAuthorization());
+    } else {
+      this.sslCert = Optional.empty();
+      this.dcosAuthorization = Optional.empty();
+    }
+
+    try {
+      this.mesosApi =
+          new MesosApi(
+              this.master,
+              this.jenkinsURL,
+              this.agentUser,
+              this.frameworkName,
+              this.frameworkId,
+              this.role,
+              this.sslCert,
+              this.dcosAuthorization);
+      logger.info("Initialized Mesos API object after deserialization.");
+    } catch (InterruptedException | ExecutionException e) {
+      logger.error("Failed initialize Mesos API object", e);
+      throw new RuntimeException("Failed to initialize Mesos API object after deserialization.", e);
+    }
+
     return this;
   }
 
   /**
-   * Migrate principal/secret to credentials
+   * Provision one or more Jenkins nodes on Mesos.
+   *
+   * <p>The provisioning follows the Nomad plugin. The Jenkins agents is started as a Mesos task and
+   * added to the available Jenkins nodes. This differs from the old plugin when the provision
+   * method would return immediately.
+   *
+   * @param label
+   * @param excessWorkload
+   * @return A collection of future nodes.
    */
-  private void migrateToCredentials() {
-    if (principal != null) {
-      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
-        : URIRequirementBuilder.fromUri(master.trim()).build();
-      Jenkins jenkins = getJenkins();
-      // Look up existing credentials with the same username.
-      List<StandardUsernamePasswordCredentials> credentials = CredentialsMatchers.filter(CredentialsProvider
-        .lookupCredentials(StandardUsernamePasswordCredentials.class, jenkins, ACL.SYSTEM, domainRequirements),
-        CredentialsMatchers.withUsername(principal)
-      );
-      for (StandardUsernamePasswordCredentials cred: credentials) {
-        if (StringUtils.equals(secret, Secret.toString(cred.getPassword()))) {
-          // If some credentials have the same username/password, use those.
-          this.credentialsId = cred.getId();
-          break;
-        }
+  @Override
+  public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+    Metrics.metricRegistry()
+        .meter(getMetricName(label, "provision", "request"))
+        .mark(excessWorkload);
+
+    List<NodeProvisioner.PlannedNode> nodes = new ArrayList<>();
+    final MesosAgentSpecTemplate spec =
+        getSpecForLabel(label).get(); // TODO: handle case when optional is empty.
+
+    while (excessWorkload > 0) {
+      try {
+        int minExecutors = spec.getMinExecutors();
+        int maxExecutors = spec.getMaxExecutors();
+        int numExecutors = Math.max(minExecutors, Math.min(excessWorkload, maxExecutors));
+        logger.info(
+            "Excess workload of {} provisioning new Jenkins agent on Mesos cluster with {} executors",
+            excessWorkload,
+            numExecutors);
+        final String agentName = spec.generateName();
+        nodes.add(
+            new NodeProvisioner.PlannedNode(agentName, startAgent(agentName, spec), numExecutors));
+        excessWorkload -= numExecutors;
+      } catch (Exception ex) {
+        logger.warn("could not create planned node", ex);
       }
-      if (credentialsId == null) {
-        // If we couldn't find any existing credentials,
-        // create new credentials with the principal and secret and use it.
-        StandardUsernamePasswordCredentials newCredentials = new UsernamePasswordCredentialsImpl(
-          CredentialsScope.SYSTEM, null, null, principal, secret);
-        SystemCredentialsProvider.getInstance().getCredentials().add(newCredentials);
-        this.credentialsId = newCredentials.getId();
-      }
-      principal = null;
-      secret = null;
     }
+
+    logger.info("Done queuing {} nodes", nodes.size());
+
+    return nodes;
   }
 
-  public String getJenkinsURL() {
-	return jenkinsURL;
-}
+  /**
+   * Start a Jenkins agent.jar on Mesos.
+   *
+   * <p>The future completes when the agent.jar is running on Mesos and the agent became online.
+   *
+   * @return A future reference to the launched node.
+   */
+  @Override
+  public boolean canProvision(Label label) {
+    return getSpecForLabel(label).isPresent();
+  }
 
-public void setJenkinsURL(String jenkinsURL) {
-	this.jenkinsURL = jenkinsURL;
-}
+  /** @return the {@link MesosAgentSpecTemplate} for passed label or empty optional. */
+  private Optional<MesosAgentSpecTemplate> getSpecForLabel(Label label) {
+    if (label == null) return Optional.empty();
 
-  public String getDeclineOfferDuration() {
-    if (declineOfferDuration == null) {
-      return DEFAULT_DECLINE_OFFER_DURATION;
+    for (MesosAgentSpecTemplate spec : this.mesosAgentSpecTemplates) {
+      if (label.matches(spec.getLabelSet())) {
+        return Optional.of(spec);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Start a Jenkins agent.jar on Mesos.
+   *
+   * <p>Provide a callback for Jenkins to start a Node.
+   *
+   * @param name Name of the Jenkins name and Mesos task.
+   * @param spec The {@link MesosAgentSpecTemplate} that was configured for the Jenkins node.
+   * @return A future reference to the launched node.
+   */
+  public Future<Node> startAgent(String name, MesosAgentSpecTemplate spec)
+      throws IOException, FormException, URISyntaxException {
+    return mesosApi
+        .enqueueAgent(name, spec)
+        .thenCompose(
+            mesosAgent -> {
+              try {
+                Jenkins.get().addNode(mesosAgent);
+                logger.info("waiting for node {} to come online...", mesosAgent.getNodeName());
+
+                Timer.Context provisionToReady =
+                    Metrics.metricRegistry()
+                        .timer(getMetricName(spec.getLabel(), "provision", "ready"))
+                        .time();
+
+                return mesosAgent
+                    .waitUntilOnlineAsync(mesosApi.getMaterializer())
+                    .thenApply(
+                        node -> {
+                          logger.info("Agent {} is online", name);
+                          provisionToReady.stop();
+
+                          return node;
+                        })
+                    .exceptionally(
+                        e -> {
+                          logger.info("Agent {} failed to come online", name);
+                          provisionToReady.stop();
+
+                          mesosApi.killAgent(name);
+                          throw new CompletionException(e);
+                        });
+              } catch (Exception ex) {
+                throw new CompletionException(ex);
+              }
+            })
+        .toCompletableFuture();
+  }
+
+  /**
+   * Checks whether the Jenkins master itself is running as a Mesos task and thus has the env var
+   * MESOS_SANDBOX defined.
+   *
+   * @return
+   */
+  private static boolean selfIsMesosTask() {
+    return System.getenv("MESOS_SANDBOX") != null;
+  }
+
+  /**
+   * Constructs a metrics string.
+   *
+   * @param label The label of a node to launch.
+   * @param method The method called.
+   * @param metric The metric of the method.
+   * @return The metric string for this cloud plugin.
+   */
+  private String getMetricName(Label label, String method, String metric) {
+    String labelText = (label == null) ? "nolabel" : label.getDisplayName();
+    return getMetricName(labelText, method, metric);
+  }
+
+  private String getMetricName(String label, String method, String metric) {
+    return String.format("mesos.cloud.%s.%s.%s", label, method, metric);
+  }
+
+  /**
+   * Loads the DC/OS SSL certificate in a Mesos task on an enterprise cluster.
+   *
+   * @param mesosSandbox The resolved MESOS_SANDBOX environment variable.
+   * @return The certificate or null if the file does not exist.
+   * @throws IOException
+   */
+  @CheckForNull
+  private static String loadDcosCert(String mesosSandbox) throws IOException {
+    final File sslCertFile = new File(mesosSandbox, ".ssl/ca-bundle.crt");
+    if (sslCertFile.exists()) {
+      return FileUtils.readFileToString(sslCertFile, StandardCharsets.US_ASCII);
     } else {
-      return declineOfferDuration;
+      return null;
     }
   }
 
-  public double getDeclineOfferDurationDouble() {
-    return Double.parseDouble(getDeclineOfferDuration());
-  }
-
-  public void setDeclineOfferDuration(String declineOfferDuration) {
-    try {
-      if (declineOfferDuration == null) {
-        LOGGER.fine("Missing declineOfferDuration. Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
-        this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
-      } else {
-        double duration = Double.parseDouble(declineOfferDuration);
-        if (duration >= 1000) {
-          this.declineOfferDuration = declineOfferDuration;
-        } else {
-          LOGGER.warning("Minimum declineOfferDuration (1000) > " + declineOfferDuration
-              + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
-          this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
-        }
-      }
-    } catch (NumberFormatException e) {
-      LOGGER.warning("Unable to parse declineOfferDuration: " + declineOfferDuration
-          + ". Using default " + DEFAULT_DECLINE_OFFER_DURATION + " ms.");
-      this.declineOfferDuration = DEFAULT_DECLINE_OFFER_DURATION;
+  @CheckForNull
+  private static DcosAuthorization loadDcosAuthorization() throws IOException {
+    final String user = System.getenv("DCOS_SERVICE_ACCOUNT");
+    final String privateKey = System.getenv("DCOS_SERVICE_ACCOUNT_PRIVATE_KEY");
+    if (user != null && privateKey != null) {
+      return new DcosAuthorization(user, privateKey);
+    } else {
+      return null;
     }
   }
 
-@Extension
+  @Extension
   public static class DescriptorImpl extends Descriptor<Cloud> {
+
+    public DescriptorImpl() {
+      load();
+    }
 
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
     }
 
-    @Restricted(DoNotUse.class) // Stapler only.
-    @SuppressWarnings("unused") // Used by stapler.
-    @RequirePOST
-    public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item item, @QueryParameter String master) {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-      List<DomainRequirement> domainRequirements = (master == null) ? Collections.<DomainRequirement>emptyList()
-        : URIRequirementBuilder.fromUri(master.trim()).build();
-      return new StandardListBoxModel().withEmptySelection().withMatching(
-        CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class),
-        CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, item, null, domainRequirements)
-      );
+    /**
+     * Validates that the Mesos master URL is a valid URL.
+     *
+     * @param mesosMasterUrl The Mesos master URL supplied by the user.
+     * @return Whether the URL is valid or not.
+     */
+    public FormValidation doCheckMesosMasterUrl(@QueryParameter String mesosMasterUrl) {
+      if (MasterDetector$.MODULE$
+          .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
+          .isValid()) {
+        return FormValidation.ok();
+      } else {
+        return FormValidation.error(
+            mesosMasterUrl + " is not a valid URL or Zookeeper connection string.");
+      }
+    }
+
+    /**
+     * Validates that the framework name is not empty.
+     *
+     * @param frameworkName The framework name set by the user.
+     * @return Whether the framework name is empty or not.
+     */
+    public FormValidation doCheckFrameworkName(@QueryParameter String frameworkName) {
+      frameworkName = frameworkName.trim();
+      if (StringUtils.isEmpty(frameworkName)) {
+        return FormValidation.error("The framework name must not be empty.");
+      } else {
+        return FormValidation.ok();
+      }
+    }
+
+    /**
+     * Validates that the role is valid.
+     *
+     * @see <a href="http://mesos.apache.org/documentation/latest/roles/#invalid-role-names">Mesos
+     *     Roles</a>
+     * @param role The Mesos role supplied by the user.
+     * @return Whether the role is invalid or not.
+     */
+    public FormValidation doCheckRole(@QueryParameter String role) {
+      if (StringUtils.isEmpty(role)) {
+        return FormValidation.error("The role must not be empty.");
+      } else if (".".equals(role) || "..".equals(role)) {
+        return FormValidation.error("The role must not be '.' or '..'.");
+      } else if (role.startsWith("-")) {
+        return FormValidation.error("The role must not start with '-'.");
+      } else if (role.matches(".*(\\s+|/+|\\\\+).*")) {
+        return FormValidation.error(
+            "The role must not contain any slash, backslash, or whitespace character.");
+      } else {
+        return FormValidation.ok();
+      }
+    }
+
+    /**
+     * Validates that the agent user is not empty and a valid UNIX user name.
+     *
+     * @see <a href="https://www.unix.com/man-page/linux/8/useradd/">man useradd(8)</a>
+     * @param agentUser The agent user set by the user.
+     * @return Whether the agent user is empty or not.
+     */
+    public FormValidation doCheckAgentUser(@QueryParameter String agentUser) {
+      if (StringUtils.isEmpty(agentUser)) {
+        return FormValidation.error("The agent user must not be empty.");
+      } else if (!agentUser.matches("[a-z_][a-z0-9_-]*[$]?")) {
+        return FormValidation.error("The agent user must be a valid UNIX user name.");
+      } else {
+        return FormValidation.ok();
+      }
+    }
+
+    /**
+     * Validates that the Jenkins URL is a valid URL.
+     *
+     * @param jenkinsUrl The Jenkins URL supplied by the user.
+     * @return Whether the Jenkins URL is valid or not.
+     */
+    public FormValidation doCheckJenkinsUrl(@QueryParameter String jenkinsUrl) {
+      if (isValidUrl(jenkinsUrl)) {
+        return FormValidation.ok();
+      } else {
+        return FormValidation.error(jenkinsUrl + " is not a valid URL.");
+      }
     }
 
     /**
      * Test connection from configuration page.
+     *
+     * @param mesosMasterUrl The Mesos master URL set by the user.
+     * @return Whether the URL is correct and reachable or a validation error.
      */
-    @RequirePOST
-    public FormValidation doTestConnection(
-        @QueryParameter("master") String master,
-        @QueryParameter("nativeLibraryPath") String nativeLibraryPath)
-        throws IOException, ServletException {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-      master = master.trim();
-
-      if (master.equals("local")) {
-        return FormValidation.warning("'local' creates a local mesos cluster");
+    public FormValidation doTestConnection(@QueryParameter("mesosMasterUrl") String mesosMasterUrl)
+        throws ExecutionException, InterruptedException {
+      FormValidation urlValidation = doCheckMesosMasterUrl(mesosMasterUrl);
+      if (urlValidation.kind == Kind.ERROR) {
+        return urlValidation;
       }
 
-      if (master.startsWith("zk://")) {
-        return FormValidation.warning("Zookeeper paths can be used, but the connection cannot be " +
-            "tested prior to saving this page.");
-      }
-
-      if (master.startsWith("http://")) {
-        return FormValidation.error("Please omit 'http://'.");
-      }
-
-      if (!nativeLibraryPath.startsWith("/")) {
-        return FormValidation.error("Please provide an absolute path");
-      }
-
+      mesosMasterUrl = mesosMasterUrl.trim();
+      @CheckForNull HttpURLConnection urlConn = null;
       try {
-        // URL requires the protocol to be explicitly specified.
-        HttpURLConnection urlConn =
-          (HttpURLConnection) new URL("http://" + master).openConnection();
+        URL masterUrl =
+            MasterDetector$.MODULE$
+                .apply(mesosMasterUrl, org.jenkinsci.plugins.mesos.Metrics.getInstance("no_name"))
+                .getMaster(Implicits$.MODULE$.global())
+                .toCompletableFuture()
+                .get();
+        urlConn = (HttpURLConnection) masterUrl.openConnection();
         urlConn.connect();
         int code = urlConn.getResponseCode();
-        urlConn.disconnect();
 
-        if (code == 200) {
-          return FormValidation.ok("Connected to Mesos successfully");
+        // Response is OK or redirect.
+        if (code <= 400) {
+          return FormValidation.ok("Connected to Mesos successfully.");
         } else {
-          return FormValidation.error("Status returned from url was " + code);
+          return FormValidation.error("Status returned from url was: " + code);
         }
       } catch (IOException e) {
-        LOGGER.log(Level.WARNING, "Failed to connect to Mesos " + master, e);
+        logger.warn("Failed to connect to Mesos at {}", mesosMasterUrl, e);
         return FormValidation.error(e.getMessage());
-      }
-    }
-
-    public FormValidation doCheckSlaveCpus(@QueryParameter String value) {
-      return doCheckCpus(value);
-    }
-
-    public FormValidation doCheckExecutorCpus(@QueryParameter String value) {
-      return doCheckCpus(value);
-    }
-
-    public FormValidation doCheckDiskNeeded(@QueryParameter String value) {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-      boolean isValid = true;
-      String errorMessage = "Invalid disk space entered. It should be a positive decimal.";
-
-      if (StringUtils.isBlank(value)){
-        isValid = false;
-      }
-      else {
-        try {
-          if (Double.parseDouble(value) < 0)
-          {
-            isValid = false;
-          }
-        } catch (NumberFormatException e) {
-          isValid = false;
+      } finally {
+        if (urlConn != null) {
+          urlConn.disconnect();
         }
       }
-      return isValid ? FormValidation.ok() : FormValidation.error(errorMessage);
     }
 
-
-    private FormValidation doCheckCpus(@QueryParameter String value) {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-      boolean valid = true;
-      String errorMessage = "Invalid CPUs value, it should be a positive decimal.";
-
-      if (StringUtils.isBlank(value)) {
-        valid = false;
-      } else {
-        try {
-          if (Double.parseDouble(value) < 0) {
-            valid = false;
-          }
-        } catch (NumberFormatException e) {
-          valid = false;
-        }
+    /**
+     * Validate that given string is a proper URL.
+     *
+     * @param url The URL as a string.
+     * @return true if the string is a valid URL, false otherwise
+     */
+    private boolean isValidUrl(String url) {
+      try {
+        new URL(url);
+        return true;
+      } catch (MalformedURLException e) {
+        return false;
       }
-      return valid ? FormValidation.ok() : FormValidation.error(errorMessage);
     }
+  }
 
-    public FormValidation doCheckRemoteFSRoot(@QueryParameter String value) {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-      String errorMessage = "Invalid Remote FS Root - should be non-empty. It will be defaulted to \"jenkins\".";
+  // Getters
+  public List<MesosAgentSpecTemplate> getMesosAgentSpecTemplates() {
+    return Collections.unmodifiableList(this.mesosAgentSpecTemplates);
+  }
 
-      return StringUtils.isNotBlank(value) ? FormValidation.ok() : FormValidation.error(errorMessage);
-    }
+  public String getMesosMasterUrl() {
+    return this.master;
+  }
+
+  public String getFrameworkName() {
+    return this.frameworkName;
+  }
+
+  public String getJenkinsURL() {
+    return this.jenkinsURL.toString();
+  }
+
+  public String getAgentUser() {
+    return this.agentUser;
+  }
+
+  public String getRole() {
+    return this.role;
+  }
+
+  /** @return Number of launching agents that are not connected yet. */
+  public synchronized int getPending() {
+    return toIntExact(
+        mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
+  }
+
+  public MesosApi getMesosApi() {
+    return this.mesosApi;
   }
 }

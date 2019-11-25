@@ -1,6 +1,0 @@
-<div>
-    Specifies the additional JVM arguments to be used when invoking the Jenkins slave agent on the Mesos slave.
-    <b>NOTE:</b> Any references to the "Xmx" JVM argument will be removed so that the maximum heap size available to the slave will be set dynamically based on the available memory.
-    The total memory for the Mesos task or Docker container is derived from the following calculation:  Jenkins Slave Memory in MB + (number of Executors in Slave * Jenkins Executor Memory in MB).
-    Xmx is set to that number, both in the slave JVM and in _JAVA_OPTIONS environment variable.
-</div>
