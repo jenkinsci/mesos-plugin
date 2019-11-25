@@ -66,7 +66,8 @@ public class MesosSlaveInfo {
    * @return the agent config as a {@link MesosAgentSpecTemplate}.
    */
   private Object readResolve() {
-    this.agentAttributes = this.migrateAttributeFilter(this.parseSlaveAttributes(this.slaveAttributesString));
+    this.agentAttributes =
+        this.migrateAttributeFilter(this.parseSlaveAttributes(this.slaveAttributesString));
 
     // Migrate to 2.x spec template
     return new MesosAgentSpecTemplate(
@@ -91,7 +92,8 @@ public class MesosSlaveInfo {
       try {
         return (JSONObject) JSONSerializer.toJSON(slaveAttributes);
       } catch (JSONException e) {
-        logger.warn("Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
+        logger.warn(
+            "Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
       }
     }
 
