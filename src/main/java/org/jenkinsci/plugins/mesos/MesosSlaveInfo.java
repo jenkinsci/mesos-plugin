@@ -28,6 +28,7 @@ public class MesosSlaveInfo {
   private transient List<URI> additionalURIs;
   private transient ContainerInfo containerInfo;
   private transient String jnlpArgs;
+  private transient String agentAttributes;
 
   // The following fields are dropped during the migration.
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
@@ -68,6 +69,7 @@ public class MesosSlaveInfo {
         this.maxExecutors,
         this.diskNeeded.toString(),
         this.jnlpArgs,
+        this.agentAttributes,
         this.additionalURIs,
         this.containerInfo,
         null);

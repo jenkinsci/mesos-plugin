@@ -23,6 +23,7 @@ public class AgentSpecMother {
           1,
           "0",
           "",
+          "",
           Collections.emptyList(),
           null,
           null);
@@ -37,6 +38,7 @@ public class AgentSpecMother {
           1,
           1,
           "1",
+          "",
           "",
           Collections.emptyList(),
           new ContainerInfo(

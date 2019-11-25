@@ -63,6 +63,7 @@ public class MesosCloudProvisionTest {
             1,
             "0",
             "",
+            "",
             Collections.emptyList(),
             null,
             null);
@@ -109,6 +110,7 @@ public class MesosCloudProvisionTest {
             1,
             1,
             "0",
+            "",
             "",
             Collections.emptyList(),
             null,

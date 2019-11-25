@@ -38,6 +38,10 @@
              <f:textbox default="-noReconnect"/>
          </f:entry>
 
+         <f:entry title="${%Mesos Offer Selection Attributes}" field="agentAttributes">
+             <f:textbox default=""/>
+         </f:entry>
+
          <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
          <f:optionalProperty title="${%Filter Fault Domain}" field="domainInfoFilter"/>
