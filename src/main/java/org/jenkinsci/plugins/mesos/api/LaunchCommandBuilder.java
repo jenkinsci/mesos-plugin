@@ -37,7 +37,7 @@ public class LaunchCommandBuilder {
   // We allocate extra memory for the JVM
   private static final int JVM_XMX = 32;
 
-  public enum AgentCommandStyle {
+  public static enum AgentCommandStyle {
     Linux,
     Windows
   }
@@ -157,6 +157,9 @@ public class LaunchCommandBuilder {
         break;
       case Windows:
         template = WINDOWS_AGENT_COMMAND_TEMPLATE;
+        break;
+      default:
+        template = LINUX_AGENT_COMMAND_TEMPLATE;
         break;
     }
     return String.format(

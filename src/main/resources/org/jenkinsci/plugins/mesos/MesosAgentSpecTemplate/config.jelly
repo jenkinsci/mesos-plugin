@@ -41,7 +41,9 @@
          <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
          <f:entry title="${%Agent Command Style}" field="agentCommandStyle">
-             <f:enum/>
+             <f:enum field="agentCommandStyle">
+               ${it.toString()}
+             </f:enum>
          </f:entry>
 
          <f:optionalProperty title="${%Filter Fault Domain}" field="domainInfoFilter"/>

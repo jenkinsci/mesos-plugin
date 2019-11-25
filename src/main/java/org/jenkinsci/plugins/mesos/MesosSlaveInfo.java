@@ -70,6 +70,7 @@ public class MesosSlaveInfo {
         this.jnlpArgs,
         this.additionalURIs,
         this.containerInfo,
+        null,
         null);
   }
 
