@@ -23,7 +23,9 @@ public class AgentSpecMother {
           1,
           "0",
           "",
+          "",
           Collections.emptyList(),
+          null,
           null,
           null);
 
@@ -38,14 +40,15 @@ public class AgentSpecMother {
           1,
           "1",
           "",
+          "",
           Collections.emptyList(),
           new ContainerInfo(
               "DOCKER",
               "mesosphere/jenkins-dind:0.6.0-alpine",
-              null,
               true,
               true,
               false,
               Collections.emptyList()),
+          null,
           null);
 }

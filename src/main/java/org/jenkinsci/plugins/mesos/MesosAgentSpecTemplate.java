@@ -47,6 +47,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int minExecutors;
   private final int maxExecutors;
   private final String jnlpArgs;
+  private final String agentAttributes;
   private final List<MesosSlaveInfo.URI> additionalURIs;
   private final LaunchCommandBuilder.AgentCommandStyle agentCommandStyle;
   private final ContainerInfo containerInfo;
@@ -63,6 +64,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       int maxExecutors,
       String disk,
       String jnlpArgs,
+      String agentAttributes,
       List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo,
       LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
@@ -78,6 +80,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.maxExecutors = maxExecutors;
     this.disk = Double.parseDouble(disk);
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
+    this.agentAttributes = StringUtils.isNotBlank(agentAttributes) ? agentAttributes : "";
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
     this.domainInfoFilter = domainInfoFilter;
@@ -152,6 +155,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
         .withDomainInfoFilter(Optional.ofNullable(this.getDomainInfoFilter()))
         .withJnlpArguments(this.getJnlpArgs())
+        .withAgentAttribute(this.getAgentAttributes())
         .withAgentCommandStyle(Optional.ofNullable(this.agentCommandStyle))
         .withAdditionalFetchUris(fetchUris)
         .build();
@@ -218,6 +222,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return jnlpArgs;
   }
 
+  public String getAgentAttributes() {
+    return agentAttributes;
+  }
+
   public ContainerInfo getContainerInfo() {
     return this.containerInfo;
   }
@@ -269,7 +277,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.dockerForcePullImage = dockerForcePullImage;
       this.volumes = volumes;
-      this.customDockerCommandShell = customDockerCommandShell;
       this.isDind = isDind;
     }
 
