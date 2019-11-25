@@ -7,8 +7,8 @@ import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.constraints.AgentFilter;
 import com.mesosphere.usi.core.models.constraints.AgentStringAttributeFilter;
 import com.mesosphere.usi.core.models.constraints.DefaultAgentFilter$;
-import com.mesosphere.usi.core.models.faultdomain.AnyDomain$;
 import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
+import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.RunTemplate;
@@ -52,7 +52,7 @@ public class LaunchCommandBuilder {
   private String role = "test";
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
-  private DomainFilter domainInfoFilter = AnyDomain$.MODULE$;
+  private DomainFilter domainInfoFilter = HomeRegionFilter$.MODULE$;
 
   private int xmx = 0;
 
@@ -112,7 +112,7 @@ public class LaunchCommandBuilder {
   }
 
   public LaunchCommandBuilder withDomainInfoFilter(Optional<DomainFilter> domainInfoFilter) {
-    this.domainInfoFilter = domainInfoFilter.orElse(AnyDomain$.MODULE$);
+    this.domainInfoFilter = domainInfoFilter.orElse(HomeRegionFilter$.MODULE$);
     return this;
   }
 
