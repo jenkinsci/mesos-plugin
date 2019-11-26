@@ -83,6 +83,7 @@ public class MesosSlaveInfo {
         this.agentAttributes,
         this.additionalURIs,
         this.containerInfo,
+        null,
         null);
   }
 

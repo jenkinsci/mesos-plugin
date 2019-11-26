@@ -26,6 +26,7 @@ public class AgentSpecMother {
           "",
           Collections.emptyList(),
           null,
+          null,
           null);
 
   public static final MesosAgentSpecTemplate docker =
@@ -48,5 +49,6 @@ public class AgentSpecMother {
               true,
               false,
               Collections.emptyList()),
+          null,
           null);
 }

@@ -66,6 +66,7 @@ public class MesosCloudProvisionTest {
             "",
             Collections.emptyList(),
             null,
+            null,
             null);
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
 
@@ -113,6 +114,7 @@ public class MesosCloudProvisionTest {
             "",
             "",
             Collections.emptyList(),
+            null,
             null,
             null);
 

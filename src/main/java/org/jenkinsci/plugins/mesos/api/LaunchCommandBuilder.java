@@ -40,8 +40,15 @@ public class LaunchCommandBuilder {
   // We allocate extra memory for the JVM
   private static final int JVM_XMX = 32;
 
-  private static final String AGENT_COMMAND_FORMAT =
+  public static enum AgentCommandStyle {
+    Linux,
+    Windows
+  }
+
+  private static final String LINUX_AGENT_COMMAND_TEMPLATE =
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/agent.jar %s %s -jnlpUrl %s";
+  private static final String WINDOWS_AGENT_COMMAND_TEMPLATE =
+      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar %%MESOS_SANDBOX%%/agent.jar %s %s -jnlpUrl %s";
 
   private static final String JNLP_SECRET_FORMAT = "-secret %s";
 
@@ -52,6 +59,7 @@ public class LaunchCommandBuilder {
   private String role = "test";
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
+  private AgentCommandStyle agentCommandStyle = AgentCommandStyle.Linux;
   private DomainFilter domainInfoFilter = HomeRegionFilter$.MODULE$;
 
   private int xmx = 0;
@@ -122,6 +130,11 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withAgentCommandStyle(Optional<AgentCommandStyle> maybeStyle) {
+    maybeStyle.ifPresent(style -> this.agentCommandStyle = style);
+    return this;
+  }
+
   public LaunchCommandBuilder withJnlpArguments(String args) {
     this.jnlpArgString = args;
     return this;
@@ -147,8 +160,20 @@ public class LaunchCommandBuilder {
 
   /** @return the agent shell command for the Mesos task. */
   private String buildCommand() throws MalformedURLException {
+    final String template;
+    switch (this.agentCommandStyle) {
+      case Linux:
+        template = LINUX_AGENT_COMMAND_TEMPLATE;
+        break;
+      case Windows:
+        template = WINDOWS_AGENT_COMMAND_TEMPLATE;
+        break;
+      default:
+        template = LINUX_AGENT_COMMAND_TEMPLATE;
+        break;
+    }
     return String.format(
-        AGENT_COMMAND_FORMAT,
+        template,
         this.xmx,
         this.jvmArgString,
         this.jnlpArgString,

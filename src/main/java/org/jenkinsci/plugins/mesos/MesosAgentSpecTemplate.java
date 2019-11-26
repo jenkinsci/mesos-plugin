@@ -49,6 +49,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final String jnlpArgs;
   private final String agentAttributes;
   private final List<MesosSlaveInfo.URI> additionalURIs;
+  private final LaunchCommandBuilder.AgentCommandStyle agentCommandStyle;
   private final ContainerInfo containerInfo;
   private final DomainFilterImpl domainInfoFilter;
 
@@ -66,6 +67,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       String agentAttributes,
       List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo,
+      LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
       DomainFilterImpl domainInfoFilter) {
     this.label = label;
     this.labelSet = Label.parse(label);
@@ -82,6 +84,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
     this.domainInfoFilter = domainInfoFilter;
+    this.agentCommandStyle = agentCommandStyle;
     validate();
   }
 
@@ -153,6 +156,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withDomainInfoFilter(Optional.ofNullable(this.getDomainInfoFilter()))
         .withJnlpArguments(this.getJnlpArgs())
         .withAgentAttribute(this.getAgentAttributes())
+        .withAgentCommandStyle(Optional.ofNullable(this.agentCommandStyle))
         .withAdditionalFetchUris(fetchUris)
         .build();
   }
@@ -208,6 +212,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
   public int getMaxExecutors() {
     return maxExecutors;
+  }
+
+  public LaunchCommandBuilder.AgentCommandStyle getAgentCommandStyle() {
+    return this.agentCommandStyle;
   }
 
   public String getJnlpArgs() {
