@@ -315,27 +315,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         load();
       }
     }
-
-    /**
-     * Migrate older fields from 0.x and 1.x of the plugin.
-     *
-     * @return The migrated container info.
-     */
-    private Object readResolve() {
-
-      // No custom shell command should be used the shell command field must be null.
-      if (!this.useCustomDockerCommandShell) {
-        return new ContainerInfo(
-            this.type,
-            this.dockerImage,
-            this.isDind,
-            this.dockerPrivilegedMode,
-            this.dockerForcePullImage,
-            this.volumes);
-      } else {
-        return this;
-      }
-    }
   }
 
   public static class Volume extends AbstractDescribableImpl<Volume> {
