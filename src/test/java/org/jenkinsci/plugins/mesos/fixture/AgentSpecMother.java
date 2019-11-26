@@ -48,7 +48,8 @@ public class AgentSpecMother {
               true,
               true,
               false,
-              Collections.emptyList()),
+              Collections.emptyList(),
+              null),
           null,
           null);
 }

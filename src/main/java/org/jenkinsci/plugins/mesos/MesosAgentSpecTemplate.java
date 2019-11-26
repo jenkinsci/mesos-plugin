@@ -22,8 +22,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
+import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
 import org.apache.mesos.v1.Protos.DomainInfo;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
+import org.jenkinsci.plugins.mesos.api.RunTemplateFactory.ContainerInfoTaskInfoBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -239,12 +241,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     private final String type;
     private final String dockerImage;
     private final List<Volume> volumes;
+    private final Network networking;
     private final boolean dockerPrivilegedMode;
     private final boolean dockerForcePullImage;
     private boolean isDind;
-
-    @SuppressFBWarnings("UUF_UNUSED_FIELD")
-    private transient String networking;
 
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
     private transient List<Object> portMappings;
@@ -271,17 +271,24 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         boolean isDind,
         boolean dockerPrivilegedMode,
         boolean dockerForcePullImage,
-        List<Volume> volumes) {
+        List<Volume> volumes,
+        Network networking) {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.dockerForcePullImage = dockerForcePullImage;
       this.volumes = volumes;
       this.isDind = isDind;
+      this.networking =
+          (networking != null) ? networking : ContainerInfoTaskInfoBuilder.DEFAULT_NETWORKING;
     }
 
     public boolean getIsDind() {
       return this.isDind;
+    }
+
+    public Network getNetworking() {
+      return this.networking;
     }
 
     public String getType() {
