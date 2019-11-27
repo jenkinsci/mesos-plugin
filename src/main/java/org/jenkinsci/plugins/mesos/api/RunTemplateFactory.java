@@ -82,7 +82,7 @@ public class RunTemplateFactory {
 
     public static final String PORT_RESOURCE_NAME = "ports";
     public static final String MESOS_DEFAULT_ROLE = "*";
-    public static final Network DEFAULT_NETWORKING = Network.HOST;
+    public static final Network DEFAULT_NETWORKING = Network.BRIDGE;
 
     final TaskBuilder simpleTaskInfoBuilder;
     final MesosAgentSpecTemplate.ContainerInfo containerInfo;
@@ -144,7 +144,7 @@ public class RunTemplateFactory {
                   .setPrivileged(this.containerInfo.getDockerPrivilegedMode())
                   .setForcePullImage(this.containerInfo.getDockerForcePullImage());
 
-          dockerInfoBuilder.setNetwork(DEFAULT_NETWORKING);
+          dockerInfoBuilder.setNetwork(this.containerInfo.getNetworking());
 
           //  https://github.com/jenkinsci/mesos-plugin/issues/109
           if (dockerInfoBuilder.getNetwork() != Network.HOST) {
