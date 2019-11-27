@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos.fixture;
 
 import hudson.model.Node.Mode;
 import java.util.Collections;
+import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 
@@ -48,7 +49,8 @@ public class AgentSpecMother {
               true,
               true,
               false,
-              Collections.emptyList()),
+              Collections.emptyList(),
+              Network.HOST),
           null,
           null);
 }
