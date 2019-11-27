@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
 import com.mesosphere.usi.core.models.commands.LaunchPod;
-import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
@@ -23,9 +22,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
-import org.apache.mesos.v1.Protos.DomainInfo;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
 import org.jenkinsci.plugins.mesos.api.RunTemplateFactory.ContainerInfoTaskInfoBuilder;
+import org.jenkinsci.plugins.mesos.config.models.faultdomain.DomainFilterModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -53,7 +52,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final List<MesosSlaveInfo.URI> additionalURIs;
   private final LaunchCommandBuilder.AgentCommandStyle agentCommandStyle;
   private final ContainerInfo containerInfo;
-  private final DomainFilterImpl domainInfoFilter;
+  private final DomainFilterModel domainFilterModel;
 
   @DataBoundConstructor
   public MesosAgentSpecTemplate(
@@ -70,7 +69,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo,
       LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
-      DomainFilterImpl domainInfoFilter) {
+      DomainFilterModel domainFilterModel) {
     this.label = label;
     this.labelSet = Label.parse(label);
     this.mode = mode;
@@ -85,7 +84,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.agentAttributes = StringUtils.isNotBlank(agentAttributes) ? agentAttributes : "";
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
-    this.domainInfoFilter = domainInfoFilter;
+    this.domainFilterModel = domainFilterModel;
     this.agentCommandStyle = agentCommandStyle;
     validate();
   }
@@ -155,7 +154,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withName(name)
         .withJenkinsUrl(jenkinsUrl)
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
-        .withDomainInfoFilter(Optional.ofNullable(this.getDomainInfoFilter()))
+        .withDomainInfoFilter(
+            Optional.ofNullable(this.getDomainFilterModel()).map(model -> model.getFilter()))
         .withJnlpArguments(this.getJnlpArgs())
         .withAgentAttribute(this.getAgentAttributes())
         .withAgentCommandStyle(Optional.ofNullable(this.agentCommandStyle))
@@ -232,8 +232,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.containerInfo;
   }
 
-  public DomainFilterImpl getDomainInfoFilter() {
-    return this.domainInfoFilter;
+  public DomainFilterModel getDomainFilterModel() {
+    return this.domainFilterModel;
   }
 
   public static class ContainerInfo extends AbstractDescribableImpl<ContainerInfo> {
@@ -351,33 +351,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Volume> {
-
-      public DescriptorImpl() {
-        load();
-      }
-    }
-  }
-
-  public static class DomainFilterImpl extends AbstractDescribableImpl<DomainFilterImpl>
-      implements DomainFilter {
-
-    private final String region;
-    private final String zone;
-
-    @DataBoundConstructor
-    public DomainFilterImpl(String region, String zone) {
-      this.region = region;
-      this.zone = zone;
-    }
-
-    @Override
-    public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
-      return this.region == nodeDomain.getFaultDomain().getRegion().getName()
-          && this.zone == nodeDomain.getFaultDomain().getZone().getName();
-    }
-
-    @Extension
-    public static final class DescriptorImpl extends Descriptor<DomainFilterImpl> {
 
       public DescriptorImpl() {
         load();
