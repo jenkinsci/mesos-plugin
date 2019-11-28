@@ -52,6 +52,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private String master;
 
+  // The Mesos API instance is *not* persisted but re-create each time.
   @Nonnull private transient MesosApi mesosApi;
 
   private final String frameworkName;
@@ -129,7 +130,10 @@ public class MesosCloud extends AbstractCloudImpl {
     this.role = role;
     this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
     this.frameworkName = frameworkName;
-    this.frameworkId = UUID.randomUUID().toString();
+
+    if (this.frameworkId == null) {
+      this.frameworkId = UUID.randomUUID().toString();
+    }
 
     this.mesosApi =
         new MesosApi(
@@ -154,7 +158,7 @@ public class MesosCloud extends AbstractCloudImpl {
     }
 
     if (this.frameworkId == null) {
-      this.frameworkId = "???"; // Is this this.cloudID?
+      this.frameworkId = UUID.randomUUID().toString();
     }
 
     if (this.mesosAgentSpecTemplates == null && this.slaveInfos != null) {
