@@ -28,7 +28,7 @@ jenkins:
             maxExecutors: 1
             mem: 512
             minExecutors: 1
-            mode: NORMAL
+            mode: EXCLUSIVE 
           - label: "windows"
             agentAttributes: "os:windows"
             agentCommandStyle: Windows
@@ -47,7 +47,7 @@ jenkins:
             maxExecutors: 1
             mem: 512
             minExecutors: 1
-            mode: NORMAL
+            mode: EXCLUSIVE 
         mesosMasterUrl: "${JENKINS_MESOS_MASTER:-http://leader.mesos:5050}"
         role: "${JENKINS_AGENT_ROLE:-*}"
 unclassified:
