@@ -34,7 +34,7 @@ jenkins:
             agentCommandStyle: Windows
             containerInfo:
               dockerForcePullImage: false
-              dockerImage: "winamd64/openjdk:8-jre-windowsservercore-1809"
+              dockerImage: "mesosphere/jenkins-windows-node:latest"
               dockerPrivilegedMode: false
               isDind: false
               networking: BRIDGE
