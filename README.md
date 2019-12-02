@@ -68,8 +68,10 @@ You can update the values/Add  more 'Agent Specs'/Delete 'Agent Specs' by clicki
 'Agent Specs' can hold required information(Executor CPU, Executor Mem etc) for an agent that needs
 to be matched against Mesos offers.
 Label name is the key between the job and the required agent to execute the job. See [Configuring Jenkins Jobs](#configuring-jenkins-jobs).
-Ex: Heavy jobs can be assigned  label 'powerful_slave'(which has 'Slave Info' 20 Executor CPU, 10240M Executor Mem etc)
-and light weight jobs can be assigned label 'light_weight_slave'(which has  'Slave Info' 1 Executor CPU, 128M Executor Mem etc).
+For instance, heavy jobs can be assigned  label 'powerful_agent'(which has 20 Executor CPU, 10240M Executor Mem etc)
+and light weight jobs can be assigned label 'light_weight_agent'(which has  1 Executor CPU, 128M Executor Mem etc).
+
+The [Jenkins Configuration as Code](https://jenkins.io/projects/jcasc/) in [dcos/conf/jenkins](dcos/conf/jenkins/configuration.yaml) configures a Linux agent based on the [amazoncorretto:8](https://hub.docker.com/_/amazoncorretto) Docker image and a Windows agent based on [mesosphere/jenkins-windows-node:latest](https://hub.docker.com/repository/docker/mesosphere/jenkins-windows-node/) Docker image. See https://github.com/jeschkies/hello-world-fsharp/blob/master/Jenkinsfile for an example build.
 
 ### DC/OS Authentication ###
 
