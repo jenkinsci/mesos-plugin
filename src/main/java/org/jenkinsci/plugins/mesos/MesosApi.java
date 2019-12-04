@@ -12,6 +12,7 @@ import com.mesosphere.mesos.client.DcosServiceAccountProvider;
 import com.mesosphere.mesos.client.MesosClient;
 import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
+import com.mesosphere.usi.core.SchedulerFactory;
 import com.mesosphere.usi.core.conf.SchedulerSettings;
 import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
@@ -161,9 +162,15 @@ public class MesosApi {
     commands =
         connectClient(clientSettings, provider)
             .thenCompose(
-                client ->
-                    Scheduler.fromClient(
-                        client, repository, Metrics.getInstance(frameworkName), schedulerSettings))
+                client -> {
+                  final SchedulerFactory schedulerFactory =
+                      new SchedulerFactory(
+                          client,
+                          repository,
+                          schedulerSettings,
+                          Metrics.getInstance(frameworkName));
+                  return Scheduler.fromClient(schedulerFactory, client, repository);
+                })
             .thenApply(builder -> runScheduler(builder.getFlow(), materializer))
             .get();
 
