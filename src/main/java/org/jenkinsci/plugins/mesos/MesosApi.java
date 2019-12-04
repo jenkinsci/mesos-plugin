@@ -164,12 +164,13 @@ public class MesosApi {
             .thenCompose(
                 client -> {
                   final SchedulerFactory schedulerFactory =
-                      new SchedulerFactory(
+                      SchedulerFactory.create(
                           client,
                           repository,
                           schedulerSettings,
-                          Metrics.getInstance(frameworkName));
-                  return Scheduler.fromClient(schedulerFactory, client, repository);
+                          Metrics.getInstance(frameworkName),
+                          this.context);
+                  return Scheduler.asFlow(schedulerFactory);
                 })
             .thenApply(builder -> runScheduler(builder.getFlow(), materializer))
             .get();
