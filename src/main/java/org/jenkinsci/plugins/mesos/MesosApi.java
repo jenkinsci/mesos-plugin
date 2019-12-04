@@ -187,8 +187,7 @@ public class MesosApi {
    * @param frameworkId Unique identifier of the framework in Mesos.
    * @param role The Mesos role to assume.
    * @param schedulerFlow The USI scheduler flow constructed by {@link
-   *     com.mesosphere.usi.core.japi.Scheduler#fromClient(MesosClient, PodRecordRepository,
-   *     com.mesosphere.usi.metrics.Metrics, SchedulerSettings)}
+   *     com.mesosphere.usi.core.japi.Scheduler#asFlow(SchedulerFactory)}
    * @param operationalSettings Operation settings for this plugin.
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.
