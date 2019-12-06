@@ -1,0 +1,16 @@
+# escape=`
+
+# Installer image
+FROM mcr.microsoft.com/windows/servercore:1809 AS installer
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+
+# Install Chocolatey
+RUN $env:chocolateyUseWindowsCompression = 'true'; `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+# Install Java runtime and .NET SDK.
+RUN choco install -y corretto8jre dotnetcore-sdk
+RUN choco install -y git -params '"/GitAndUnixToolsOnPath"'
+CMD ["powershell"]
