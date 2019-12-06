@@ -12,6 +12,7 @@ import com.mesosphere.mesos.client.DcosServiceAccountProvider;
 import com.mesosphere.mesos.client.MesosClient;
 import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
+import com.mesosphere.usi.core.SchedulerFactory;
 import com.mesosphere.usi.core.conf.SchedulerSettings;
 import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
@@ -161,9 +162,16 @@ public class MesosApi {
     commands =
         connectClient(clientSettings, provider)
             .thenCompose(
-                client ->
-                    Scheduler.fromClient(
-                        client, repository, Metrics.getInstance(frameworkName), schedulerSettings))
+                client -> {
+                  final SchedulerFactory schedulerFactory =
+                      SchedulerFactory.create(
+                          client,
+                          repository,
+                          schedulerSettings,
+                          Metrics.getInstance(frameworkName),
+                          this.context);
+                  return Scheduler.asFlow(schedulerFactory);
+                })
             .thenApply(builder -> runScheduler(builder.getFlow(), materializer))
             .get();
 
@@ -179,8 +187,7 @@ public class MesosApi {
    * @param frameworkId Unique identifier of the framework in Mesos.
    * @param role The Mesos role to assume.
    * @param schedulerFlow The USI scheduler flow constructed by {@link
-   *     com.mesosphere.usi.core.japi.Scheduler#fromClient(MesosClient, PodRecordRepository,
-   *     com.mesosphere.usi.metrics.Metrics, SchedulerSettings)}
+   *     com.mesosphere.usi.core.japi.Scheduler#asFlow(SchedulerFactory)}
    * @param operationalSettings Operation settings for this plugin.
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.

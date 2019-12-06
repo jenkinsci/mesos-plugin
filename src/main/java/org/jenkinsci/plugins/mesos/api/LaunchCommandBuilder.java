@@ -5,8 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
 import com.mesosphere.usi.core.models.constraints.AgentFilter;
-import com.mesosphere.usi.core.models.constraints.AgentStringAttributeFilter;
-import com.mesosphere.usi.core.models.constraints.DefaultAgentFilter$;
+import com.mesosphere.usi.core.models.constraints.AttributeStringIsFilter;
 import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
 import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
@@ -19,9 +18,9 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import jenkins.model.Jenkins;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
@@ -155,7 +154,8 @@ public class LaunchCommandBuilder {
             this.buildFetchUris(),
             this.containerInfo);
 
-    return new LaunchPod(this.id, runTemplate, this.domainInfoFilter, buildAgentAttributesFilter());
+    return LaunchPod.create(
+        this.id, runTemplate, this.domainInfoFilter, buildAgentAttributeFilters());
   }
 
   /** @return the agent shell command for the Mesos task. */
@@ -202,15 +202,18 @@ public class LaunchCommandBuilder {
     return jenkins;
   }
 
-  private AgentFilter buildAgentAttributesFilter() {
+  private Iterable<AgentFilter> buildAgentAttributeFilters() {
     if (agentAttributeString.isEmpty()) {
-      return DefaultAgentFilter$.MODULE$;
+      return Collections.emptyList();
     } else {
-      HashMap<String, String> agentAttributes = new HashMap<>();
-      Arrays.stream(agentAttributeString.split(","))
-          .forEach(
-              attribute -> agentAttributes.put(attribute.split(":")[0], attribute.split(":")[1]));
-      return new AgentStringAttributeFilter(agentAttributes);
+      return Arrays.stream(agentAttributeString.split(","))
+          .map(
+              attribute -> {
+                final String name = attribute.split(":")[0];
+                final String value = attribute.split(":")[1];
+                return new AttributeStringIsFilter(name, value);
+              })
+          .collect(Collectors.toList());
     }
   }
 
