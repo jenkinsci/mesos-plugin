@@ -7,7 +7,7 @@ jenkins:
     - mesos:
         agentUser: "${JENKINS_AGENT_USER:-root}"
         frameworkName: "${JENKINS_FRAMEWORK_NAME:-Jenkins Scheduler}"
-        jenkinsUrl: "http://${JENKINS_FRAMEWORK_NAME:-jenkins}.${MARATHON_NAME:-marathon}.mesos:${PORT0:-8080}"
+        jenkinsURL: "http://${JENKINS_FRAMEWORK_NAME:-jenkins}.${MARATHON_NAME:-marathon}.mesos:${PORT0:-8080}"
         mesosAgentSpecTemplates:
           - label: "linux"
             agentAttributes: ""
@@ -19,12 +19,11 @@ jenkins:
               isDind: false
               networking: HOST
               type: "DOCKER"
-            cpus: 0.1
-            disk: 0.0
+            cpus: "0.1"
+            disk: "0.0"
             domainFilterModel: "home"
             idleTerminationMinutes: 3
             jnlpArgs: "-noReconnect"
-            jvmArgs: "-Xms16m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"
             maxExecutors: 1
             mem: 512
             minExecutors: 1
@@ -39,8 +38,8 @@ jenkins:
               isDind: false
               networking: BRIDGE
               type: "DOCKER"
-            cpus: 0.1
-            disk: 0.0
+            cpus: "0.1"
+            disk: "0.0"
             domainFilterModel: "any"
             idleTerminationMinutes: 3
             jnlpArgs: "-noReconnect"
