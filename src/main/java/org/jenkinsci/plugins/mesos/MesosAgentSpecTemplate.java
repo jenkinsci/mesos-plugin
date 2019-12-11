@@ -75,11 +75,11 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.mode = mode;
     this.idleTerminationMinutes = idleTerminationMinutes;
     this.reusable = false; // TODO: DCOS_OSS-5048.
-    this.cpus = Double.parseDouble(cpus);
+    this.cpus = (cpus != null) ? Double.parseDouble(cpus) : 0.1;
     this.mem = Integer.parseInt(mem);
     this.minExecutors = minExecutors;
     this.maxExecutors = maxExecutors;
-    this.disk = Double.parseDouble(disk);
+    this.disk = (disk != null) ? Double.parseDouble(disk) : 0.0;
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
     this.agentAttributes = StringUtils.isNotBlank(agentAttributes) ? agentAttributes : "";
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();

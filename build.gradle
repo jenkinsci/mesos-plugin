@@ -20,7 +20,7 @@ repositories {
 }
 
 ext {
-    usiVersion= '0.1.24'
+    usiVersion= '0.1.27'
     scalaVersion = '2.12'
     akkaVersion = '2.5.19'
 }
@@ -58,7 +58,7 @@ test {
 }
 
 group = "org.jenkins-ci.plugins"
-version = "2.0-beta-6"
+version = "2.0-beta-8"
 description = "Allows the dynamic launch Jenkins agent on a Mesos cluster, depending on workload"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
