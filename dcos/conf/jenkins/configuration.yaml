@@ -38,13 +38,13 @@ jenkins:
               isDind: false
               networking: BRIDGE
               type: "DOCKER"
-            cpus: "0.1"
+            cpus: "1"
             disk: "0.0"
             domainFilterModel: "any"
             idleTerminationMinutes: 3
             jnlpArgs: "-noReconnect"
             maxExecutors: 1
-            mem: 512
+            mem: 4096 
             minExecutors: 1
             mode: EXCLUSIVE 
         mesosMasterUrl: "${JENKINS_MESOS_MASTER:-http://leader.mesos:5050}"
