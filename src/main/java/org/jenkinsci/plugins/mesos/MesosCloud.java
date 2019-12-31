@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.mesos;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
 import hudson.model.Descriptor;
@@ -153,7 +154,7 @@ public class MesosCloud extends AbstractCloudImpl {
     // Migration from 1.x
     if (this.agentUser == null && this.slavesUser != null) {
       this.agentUser = this.slavesUser;
-    } else {
+    } else if (this.agentUser == null){
       this.agentUser = "nobody";
     }
 
@@ -531,6 +532,10 @@ public class MesosCloud extends AbstractCloudImpl {
 
   public String getMesosMasterUrl() {
     return this.master;
+  }
+
+  public String getFrameworkId() {
+    return this.frameworkId;
   }
 
   public String getFrameworkName() {
