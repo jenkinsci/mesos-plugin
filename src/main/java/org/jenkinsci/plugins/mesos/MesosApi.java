@@ -6,6 +6,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.QueueOfferResult;
 import akka.stream.javadsl.*;
+import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.mesos.MasterDetector$;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
@@ -44,9 +45,49 @@ import org.slf4j.LoggerFactory;
 import scala.compat.java8.OptionConverters;
 import scala.concurrent.ExecutionContext;
 
+/**
+ * Provides a simplified interface to Mesos through USI.
+ *
+ * <p>Each connection should be a singleton. New instance are create via {@link
+ * MesosApi#getInstance(String)}.
+ */
 public class MesosApi {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApi.class);
+
+  static HashMap<String, MesosApi> sessions = new HashMap<>();
+
+  /**
+   * Fetching an existing connection or constructs a new one. See {@link MesosApi#MesosApi(String,
+   * URL, String, String, String, String, Optional, Optional)} for parameters.
+   */
+  public static MesosApi getInstance(
+      String master,
+      URL jenkinsUrl,
+      String agentUser,
+      String frameworkName,
+      String frameworkId,
+      String role,
+      Optional<String> sslCert,
+      Optional<DcosAuthorization> authorization)
+      throws ExecutionException, InterruptedException {
+    if (!sessions.containsKey(frameworkId)) {
+      final MesosApi session =
+          new MesosApi(
+              master,
+              jenkinsUrl,
+              agentUser,
+              frameworkName,
+              frameworkId,
+              role,
+              sslCert,
+              authorization);
+      logger.info("Initialized Mesos API object.");
+      sessions.put(frameworkId, session);
+    }
+
+    return sessions.get(frameworkId);
+  }
 
   private final Settings operationalSettings;
 
@@ -86,7 +127,8 @@ public class MesosApi {
    * @throws InterruptedException
    * @throws ExecutionException
    */
-  public MesosApi(
+  @VisibleForTesting
+  private MesosApi(
       String master,
       URL jenkinsUrl,
       String agentUser,
@@ -192,7 +234,8 @@ public class MesosApi {
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.
    */
-  public MesosApi(
+  @VisibleForTesting
+  private MesosApi(
       URL jenkinsUrl,
       String agentUser,
       String frameworkName,

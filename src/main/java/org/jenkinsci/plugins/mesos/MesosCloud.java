@@ -102,6 +102,7 @@ public class MesosCloud extends AbstractCloudImpl {
   public MesosCloud(
       String mesosMasterUrl,
       String frameworkName,
+      String frameworkId,
       String role,
       String agentUser,
       String jenkinsURL,
@@ -131,12 +132,14 @@ public class MesosCloud extends AbstractCloudImpl {
     this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
     this.frameworkName = frameworkName;
 
-    if (this.frameworkId == null) {
+    this.frameworkId = frameworkId;
+    if (StringUtils.isEmpty(this.frameworkId)) {
+      logger.info("Framework ID was null.");
       this.frameworkId = UUID.randomUUID().toString();
     }
 
     this.mesosApi =
-        new MesosApi(
+        MesosApi.getInstance(
             this.master,
             this.jenkinsURL,
             this.agentUser,
@@ -145,7 +148,6 @@ public class MesosCloud extends AbstractCloudImpl {
             this.role,
             this.sslCert,
             this.dcosAuthorization);
-    logger.info("Initialized Mesos API object.");
   }
 
   private Object readResolve() throws IOException {
@@ -179,7 +181,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     try {
       this.mesosApi =
-          new MesosApi(
+          MesosApi.getInstance(
               this.master,
               this.jenkinsURL,
               this.agentUser,

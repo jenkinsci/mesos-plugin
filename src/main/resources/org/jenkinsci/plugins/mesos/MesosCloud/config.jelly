@@ -10,6 +10,10 @@
         <f:textbox default="Jenkins Scheduler" clazz="required"/>
     </f:entry>
 
+    <f:entry title="Framework ID" field="frameworkId">
+        <f:textbox readonly="readonly"/>
+    </f:entry>
+
     <f:entry title="Role" field="role">
         <f:textbox default="*" clazz="required"/>
     </f:entry>
