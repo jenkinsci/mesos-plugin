@@ -127,8 +127,7 @@ public class MesosApi {
    * @throws InterruptedException
    * @throws ExecutionException
    */
-  @VisibleForTesting
-  private MesosApi(
+  public MesosApi(
       String master,
       URL jenkinsUrl,
       String agentUser,
@@ -234,8 +233,7 @@ public class MesosApi {
    * @param system The Akka actor system to use.
    * @param materializer The Akka stream materializer to use.
    */
-  @VisibleForTesting
-  private MesosApi(
+  public MesosApi(
       URL jenkinsUrl,
       String agentUser,
       String frameworkName,

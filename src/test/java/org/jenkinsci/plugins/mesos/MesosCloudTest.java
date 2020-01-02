@@ -67,6 +67,7 @@ public class MesosCloudTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "jenkins-framework",
+            null,
             "*",
             "root",
             j.getURL().toString(),

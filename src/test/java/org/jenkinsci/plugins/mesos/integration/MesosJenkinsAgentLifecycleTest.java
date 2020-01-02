@@ -43,6 +43,7 @@ public class MesosJenkinsAgentLifecycleTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -71,6 +72,7 @@ public class MesosJenkinsAgentLifecycleTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -101,6 +103,7 @@ public class MesosJenkinsAgentLifecycleTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -129,6 +132,7 @@ public class MesosJenkinsAgentLifecycleTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -157,6 +161,7 @@ public class MesosJenkinsAgentLifecycleTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
