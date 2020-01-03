@@ -134,7 +134,6 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.frameworkId = frameworkId;
     if (StringUtils.isEmpty(this.frameworkId)) {
-      logger.info("Framework ID was null.");
       this.frameworkId = UUID.randomUUID().toString();
     }
 
