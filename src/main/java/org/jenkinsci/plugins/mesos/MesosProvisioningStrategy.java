@@ -66,7 +66,12 @@ public class MesosProvisioningStrategy extends NodeProvisioner.Strategy {
                 strategyState.recordPendingLaunches(plannedNodes);
                 availableCapacity += plannedNodes.size();
                 logger.info(
-                    "After provisioning, available capacity={}, currentDemand={}",
+                    "After provisioning, availableCapacity={}, currentDemand={}",
+                    availableCapacity,
+                    currentDemand);
+              } else {
+                logger.info(
+                    "No need to provision new nodes. availableCapacity={}, currentDemand={}",
                     availableCapacity,
                     currentDemand);
               }

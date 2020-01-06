@@ -293,6 +293,7 @@ public class MesosApi {
    * @return a {@link MesosJenkinsAgent} once it's queued for running.
    */
   public CompletionStage<Void> killAgent(PodId podId) {
+    logger.info("Kill agent {}.", podId.value());
     SchedulerCommand command = new KillPod(podId);
     return commands
         .offer(command)

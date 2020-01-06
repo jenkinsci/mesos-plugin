@@ -8,6 +8,13 @@
   "acceptedResourceRoles": [
     "*"
   ],
+  "constraints": [
+    [
+      "os",
+      "UNLIKE",
+      "windows"
+    ]
+  ],
   "container": {
     "type": "DOCKER",
     "docker": {
