@@ -22,6 +22,11 @@ public class StringDomainFilter extends DomainFilterModel implements DomainFilte
     return this;
   }
 
+  @Override
+  public String description() {
+    return String.format("accept %s region and %s zone", region, zone);
+  }
+
   /**
    * Application of the domain filter.
    *
