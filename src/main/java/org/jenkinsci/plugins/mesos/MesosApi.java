@@ -48,7 +48,7 @@ import scala.concurrent.ExecutionContext;
  * Provides a simplified interface to Mesos through USI.
  *
  * <p>Each connection should be a singleton. New instance are create via {@link
- * MesosApi#getInstance(String)}.
+ * MesosApi#getInstance(String, URL, String, String, String, String, Optional, Optional)}.
  */
 public class MesosApi {
 
