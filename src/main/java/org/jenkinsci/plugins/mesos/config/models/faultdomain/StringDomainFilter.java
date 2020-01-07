@@ -47,4 +47,12 @@ public class StringDomainFilter extends DomainFilterModel implements DomainFilte
       return "String Matching";
     }
   }
+
+  public String getRegion() {
+    return this.region;
+  }
+
+  public String getZone() {
+    return this.zone;
+  }
 }
