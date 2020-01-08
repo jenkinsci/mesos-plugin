@@ -25,7 +25,7 @@ jenkins:
             idleTerminationMinutes: 3
             jnlpArgs: "-noReconnect"
             maxExecutors: 1
-            mem: 512
+            mem: "512"
             minExecutors: 1
             mode: EXCLUSIVE 
           - label: "windows"
@@ -44,7 +44,7 @@ jenkins:
             idleTerminationMinutes: 3
             jnlpArgs: "-noReconnect"
             maxExecutors: 1
-            mem: 4096 
+            mem: "4096"
             minExecutors: 1
             mode: EXCLUSIVE 
         mesosMasterUrl: "${JENKINS_MESOS_MASTER:-http://leader.mesos:5050}"
