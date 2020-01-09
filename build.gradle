@@ -58,7 +58,7 @@ test {
 }
 
 group = "org.jenkins-ci.plugins"
-version = "2.0-beta-11"
+version = "2.0-beta-12"
 description = "Allows the dynamic launch of Jenkins agent on a Mesos cluster, depending on workload"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
