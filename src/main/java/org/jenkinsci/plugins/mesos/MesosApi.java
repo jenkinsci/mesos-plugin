@@ -365,8 +365,12 @@ public class MesosApi {
             .addRoles(role)
             .addCapabilities(
                 Protos.FrameworkInfo.Capability.newBuilder()
-                    .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE)
-                    .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE)
+                    .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.PARTITION_AWARE))
             .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds())
             .build();
