@@ -74,6 +74,7 @@ public class MesosCloudProvisionTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -123,6 +124,7 @@ public class MesosCloudProvisionTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
