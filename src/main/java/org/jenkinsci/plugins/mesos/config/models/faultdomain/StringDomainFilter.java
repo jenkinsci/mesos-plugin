@@ -22,6 +22,11 @@ public class StringDomainFilter extends DomainFilterModel implements DomainFilte
     return this;
   }
 
+  @Override
+  public String description() {
+    return String.format("accept %s region and %s zone", region, zone);
+  }
+
   /**
    * Application of the domain filter.
    *
@@ -41,5 +46,13 @@ public class StringDomainFilter extends DomainFilterModel implements DomainFilte
     public String getDisplayName() {
       return "String Matching";
     }
+  }
+
+  public String getRegion() {
+    return this.region;
+  }
+
+  public String getZone() {
+    return this.zone;
   }
 }

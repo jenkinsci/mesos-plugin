@@ -13,6 +13,8 @@ import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.util.XStream2;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.mesos.integration.MesosCloudProvisionTest;
 import org.junit.jupiter.api.Test;
@@ -56,5 +58,28 @@ public class MesosCloudTest {
             template -> {
               assertThat(template.getCpu(), is(notNullValue()));
             });
+  }
+
+  @Test
+  void serializationRoundTrip(TestUtils.JenkinsRule j)
+      throws IOException, InterruptedException, ExecutionException {
+    final MesosCloud cloud =
+        new MesosCloud(
+            mesosCluster.getMesosUrl().toString(),
+            "jenkins-framework",
+            null,
+            "*",
+            "root",
+            j.getURL().toString(),
+            Collections.emptyList());
+
+    final XStream2 xstream = new XStream2();
+    final MesosCloud reloadedCloud = (MesosCloud) xstream.fromXML(xstream.toXML(cloud));
+
+    assertThat(reloadedCloud.getMesosMasterUrl(), is(equalTo(cloud.getMesosMasterUrl())));
+    assertThat(reloadedCloud.getFrameworkName(), is(equalTo(cloud.getFrameworkName())));
+    assertThat(reloadedCloud.getFrameworkId(), is(equalTo(cloud.getFrameworkId())));
+    assertThat(reloadedCloud.getRole(), is(equalTo(cloud.getRole())));
+    assertThat(reloadedCloud.getAgentUser(), is(equalTo(cloud.getAgentUser())));
   }
 }

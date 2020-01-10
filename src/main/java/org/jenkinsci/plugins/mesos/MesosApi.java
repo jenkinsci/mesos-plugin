@@ -44,9 +44,49 @@ import org.slf4j.LoggerFactory;
 import scala.compat.java8.OptionConverters;
 import scala.concurrent.ExecutionContext;
 
+/**
+ * Provides a simplified interface to Mesos through USI.
+ *
+ * <p>Each connection should be a singleton. New instance are create via {@link
+ * MesosApi#getInstance(String, URL, String, String, String, String, Optional, Optional)}.
+ */
 public class MesosApi {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApi.class);
+
+  static HashMap<String, MesosApi> sessions = new HashMap<>();
+
+  /**
+   * Fetching an existing connection or constructs a new one. See {@link MesosApi#MesosApi(String,
+   * URL, String, String, String, String, Optional, Optional)} for parameters.
+   */
+  public static MesosApi getInstance(
+      String master,
+      URL jenkinsUrl,
+      String agentUser,
+      String frameworkName,
+      String frameworkId,
+      String role,
+      Optional<String> sslCert,
+      Optional<DcosAuthorization> authorization)
+      throws ExecutionException, InterruptedException {
+    if (!sessions.containsKey(frameworkId)) {
+      final MesosApi session =
+          new MesosApi(
+              master,
+              jenkinsUrl,
+              agentUser,
+              frameworkName,
+              frameworkId,
+              role,
+              sslCert,
+              authorization);
+      logger.info("Initialized Mesos API object.");
+      sessions.put(frameworkId, session);
+    }
+
+    return sessions.get(frameworkId);
+  }
 
   private final Settings operationalSettings;
 
@@ -253,6 +293,7 @@ public class MesosApi {
    * @return a {@link MesosJenkinsAgent} once it's queued for running.
    */
   public CompletionStage<Void> killAgent(PodId podId) {
+    logger.info("Kill agent {}.", podId.value());
     SchedulerCommand command = new KillPod(podId);
     return commands
         .offer(command)
@@ -325,6 +366,12 @@ public class MesosApi {
             .addCapabilities(
                 Protos.FrameworkInfo.Capability.newBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.PARTITION_AWARE))
             .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds())
             .build();
 
