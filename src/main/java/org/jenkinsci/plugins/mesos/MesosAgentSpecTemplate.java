@@ -148,8 +148,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
             .collect(Collectors.toList());
 
     return new LaunchCommandBuilder()
-        .withCpu(this.getCpu())
-        .withMemory(this.getMemory())
+        .withCpu(this.getCpus())
+        .withMemory(this.getMem())
         .withDisk(this.getDisk())
         .withName(name)
         .withJenkinsUrl(jenkinsUrl)
@@ -184,7 +184,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return String.format("jenkins-agent-%s-%s", this.label, UUID.randomUUID().toString());
   }
 
-  public double getCpu() {
+  public double getCpus() {
     return this.cpus;
   }
 
@@ -192,7 +192,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.disk;
   }
 
-  public int getMemory() {
+  public int getMem() {
     return this.mem;
   }
 

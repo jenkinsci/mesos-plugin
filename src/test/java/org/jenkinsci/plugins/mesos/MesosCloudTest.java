@@ -56,7 +56,7 @@ public class MesosCloudTest {
         .getMesosAgentSpecTemplates()
         .forEach(
             template -> {
-              assertThat(template.getCpu(), is(notNullValue()));
+              assertThat(template.getCpus(), is(notNullValue()));
             });
   }
 
