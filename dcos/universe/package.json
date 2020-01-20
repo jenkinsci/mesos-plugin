@@ -1,5 +1,5 @@
 {
-    "packagingVersion": "3.0",
+    "packagingVersion": "4.0",
     "name": "jenkins",
     "version": "{{package-version}}",
     "minDcosReleaseVersion": "1.10",

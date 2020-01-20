@@ -31,6 +31,7 @@ is automatically shut down.
 - __[Plugin Development](#plugin-development)__
   - __[Building the plugin](#building-the-plugin)__
   - __[On DC/OS Enterprise](#on-dcos-enterprise)__
+- __[Release](#release)__
 <!-- /toc -->
 
 
@@ -143,3 +144,18 @@ The code is formatted following the [Google Style Guide](https://github.com/goog
 ### On DC/OS Enterprise
 
 See the [dcos folder](dcos/README.md).
+
+## Release
+
+You must have publish rights and the credentials set in `~/.m2/settings.xml` and `~/.jenkins-ci.org` as described
+[here](https://wiki.jenkins.io/display/JENKINS/Hosting+Plugins#HostingPlugins-Releasingtojenkins-ci.org).
+
+To release this plugin
+
+1. Set the version in `build.gradle`.
+2. Publish the plugin with `./gradlew publish`.
+3. Build the Docker image with `docker build -t mesosphere/jenkins:<version> .`.
+4. Publish the Docker image with `docker push mespsphere/jenkins:<version>`.
+5. Update the version in `dcos/universe/package.json` and the Docker image in `???`.
+6. Publish the DC/OS package to the universe.
+
