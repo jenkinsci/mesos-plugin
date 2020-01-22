@@ -1,10 +1,14 @@
 package org.jenkinsci.plugins.mesos;
 
+import static hudson.init.InitMilestone.PLUGINS_STARTED;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
+import hudson.init.Initializer;
+import hudson.logging.LogRecorder;
+import hudson.logging.LogRecorderManager;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Label;
@@ -25,9 +29,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.metrics.api.Metrics;
@@ -379,6 +385,39 @@ public class MesosCloud extends AbstractCloudImpl {
     @Override
     public String getDisplayName() {
       return "Mesos Cloud";
+    }
+
+    private static final String LOG_RECORDER_NAME = "Mesos Cloud";
+
+    public String getLogRecorderName() {
+      return LOG_RECORDER_NAME;
+    }
+
+    /**
+     * Preconfigure logger for easier debugging. This is a fork of the Azure Plugin.
+     *
+     * @see <a
+     *     href="https://github.com/jenkinsci/azure-vm-agents-plugin/blob/master/src/main/java/com/microsoft/azure/vmagent/AzureVMCloud.java#L1024">Azure
+     *     Plugin</a>
+     * @param h The Jenkins instance.
+     * @throws IOException
+     */
+    @Initializer(before = PLUGINS_STARTED)
+    public static void addLogRecorder(Jenkins h) throws IOException {
+      // avoid the failure in dynamic loading.
+      if (!h.hasPermission(h.ADMINISTER)) {
+        return;
+      }
+      LogRecorderManager manager = h.getLog();
+      Map<String, LogRecorder> logRecorders = manager.logRecorders;
+      if (!logRecorders.containsKey(LOG_RECORDER_NAME)) {
+        LogRecorder recorder = new LogRecorder(LOG_RECORDER_NAME);
+        recorder.targets.add(new LogRecorder.Target("org.jenkinsci.plugins.mesos", Level.ALL));
+        recorder.targets.add(new LogRecorder.Target("com.mesosphere", Level.ALL));
+        recorder.targets.add(new LogRecorder.Target("akka", Level.ALL));
+        logRecorders.put(LOG_RECORDER_NAME, recorder);
+        recorder.save();
+      }
     }
 
     /**
