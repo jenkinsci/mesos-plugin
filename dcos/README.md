@@ -23,6 +23,8 @@ account to run. To setup one up with the DC/OS CLI
 4. Grant `jenkins` service account rights to start Mesos tasks:
    ```
    dcos security org users grant jenkins dcos:mesos:master:task:user:nobody create
+   dcos security org users grant jenkins "dcos:mesos:master:framework:role:*" read
+   dcos security org users grant jenkins "dcos:mesos:master:framework:role:*" create
    ```
 5. Deploy the Jenkins app defined in `./jenkins-app.json`
    ```
