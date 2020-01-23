@@ -55,7 +55,7 @@ public class LaunchCommandBuilder {
   private ScalarRequirement cpus = null;
   private ScalarRequirement memory = null;
   private ScalarRequirement disk = null;
-  private String role = "test";
+  private String role = null;
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
   private AgentCommandStyle agentCommandStyle = AgentCommandStyle.Linux;

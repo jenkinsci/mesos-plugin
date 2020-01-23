@@ -332,7 +332,7 @@ public class MesosApi {
             spec.getReusable(),
             Collections.emptyList(),
             this.agentTimeout);
-    LaunchPod launchCommand = spec.buildLaunchCommand(jenkinsUrl, name);
+    LaunchPod launchCommand = spec.buildLaunchCommand(jenkinsUrl, name, this.role);
 
     stateMap.put(launchCommand.podId(), mesosJenkinsAgent);
 

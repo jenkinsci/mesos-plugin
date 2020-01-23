@@ -26,7 +26,7 @@
     "volumes": [
       {
         "containerPath": "/var/jenkins_home",
-        "hostPath": "/tmp/jenkins_2",
+        "hostPath": "/tmp/jenkins",
         "mode": "RW"
       }
     ]
