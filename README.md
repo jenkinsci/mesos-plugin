@@ -140,6 +140,17 @@ started with
 
 The code is formatted following the [Google Style Guide](https://github.com/google/styleguide).
 
-### On DC/OS Enterprise
+### Testing On DC/OS Enterprise
 
-See the [dcos folder](dcos/README.md).
+See the [dcos folder](dcos-testing/README.md).
+
+## Release
+
+You must have publish rights and the credentials set in `~/.m2/settings.xml` and `~/.jenkins-ci.org` as described
+[here](https://wiki.jenkins.io/display/JENKINS/Hosting+Plugins#HostingPlugins-Releasingtojenkins-ci.org).
+
+To release this plugin
+
+1. Set the version in `build.gradle`.
+2. Publish the plugin with `./gradlew publish`.
+
