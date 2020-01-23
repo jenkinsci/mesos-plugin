@@ -1,12 +1,13 @@
 # Running on DC/OS
 
 This folder includes a Docker file and a [Marathon](https://mesosphere.github.io/marathon/) app 
-definition which can be used to run Jenkins with this plugin on [DC/OS](https://dcos.io/).
+definition which can be used to run Jenkins with this plugin on [DC/OS](https://dcos.io/). It should
+only be used for testing. Please use the DC/OS universe Jenkins package for production. 
 
-### On DC/OS Enterprise
+### Testing On DC/OS Enterprise
 
-The `Dockerfile` defines a Docker image that supports DC/OS strict mode. It requires a service
-account to run. To setup one up with the DC/OS CLI
+The `Dockerfile` defines a Docker image that supports DC/OS strict mode. It should be publishes as
+`mesosphere/jenkins:unstalbe`. It requires a service account to run. To setup one up with the DC/OS CLI
 
 1. Create service account secrets with
    ```
