@@ -91,6 +91,7 @@ public class MesosApi {
   private final Settings operationalSettings;
 
   private final String frameworkName;
+  private final Optional<String> frameworkPrincipal;
   private final String role;
   private final String agentUser;
   private final String frameworkId;
@@ -179,6 +180,7 @@ public class MesosApi {
     this.repository = new MesosPodRecordRepository();
 
     // Inject metrics and credentials provider.
+    this.frameworkPrincipal = authorization.map(auth -> auth.getUid());
     Optional<CredentialsProvider> provider =
         authorization.map(
             auth -> {
@@ -243,6 +245,7 @@ public class MesosApi {
       ActorSystem system,
       ActorMaterializer materializer) {
     this.frameworkName = frameworkName;
+    this.frameworkPrincipal = Optional.empty();
     this.frameworkId = frameworkId;
     this.role = role;
     this.agentUser = agentUser;
@@ -357,7 +360,7 @@ public class MesosApi {
       MesosClientSettings clientSettings, Optional<CredentialsProvider> authorization) {
     Protos.FrameworkID frameworkId =
         Protos.FrameworkID.newBuilder().setValue(this.frameworkId).build();
-    Protos.FrameworkInfo frameworkInfo =
+    Protos.FrameworkInfo.Builder frameworkInfoBuilder =
         Protos.FrameworkInfo.newBuilder()
             .setUser(this.agentUser)
             .setName(this.frameworkName)
@@ -372,8 +375,11 @@ public class MesosApi {
             .addCapabilities(
                 Protos.FrameworkInfo.Capability.newBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.PARTITION_AWARE))
-            .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds())
-            .build();
+            .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds());
+
+    this.frameworkPrincipal.ifPresent(principal -> frameworkInfoBuilder.setPrincipal(principal));
+
+    Protos.FrameworkInfo frameworkInfo = frameworkInfoBuilder.build();
 
     return MesosClient$.MODULE$
         .apply(
