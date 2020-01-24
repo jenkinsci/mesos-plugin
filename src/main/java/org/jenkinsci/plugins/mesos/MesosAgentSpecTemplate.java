@@ -122,11 +122,12 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
    *
    * @param jenkinsUrl the URL of the jenkins master.
    * @param name The name of the node to launch.
+   * @param role The Mesos role for the task.
    * @return a LaunchPod command to be passed to USI.
    * @throws MalformedURLException If a fetch URL is not well formed.
    * @throws URISyntaxException IF the fetch URL cannot be converted into a proper URI.
    */
-  public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
+  public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name, String role)
       throws MalformedURLException, URISyntaxException {
     List<FetchUri> fetchUris =
         additionalURIs.stream()
@@ -152,6 +153,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         .withMemory(this.getMem())
         .withDisk(this.getDisk())
         .withName(name)
+        .withRole(role)
         .withJenkinsUrl(jenkinsUrl)
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
         .withDomainInfoFilter(
