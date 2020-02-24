@@ -45,7 +45,7 @@ public class LaunchCommandBuilder {
   }
 
   private static final String LINUX_AGENT_COMMAND_TEMPLATE =
-      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/agent.jar %s %s -jnlpUrl %s";
+      "wrapper.sh java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/agent.jar %s %s -jnlpUrl %s"; // TODO(kjeschkies) wrapper.sh should only be used for Dind images.
   private static final String WINDOWS_AGENT_COMMAND_TEMPLATE =
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar %%MESOS_SANDBOX%%/agent.jar %s %s -jnlpUrl %s";
 
