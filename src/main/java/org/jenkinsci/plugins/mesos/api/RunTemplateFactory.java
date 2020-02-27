@@ -9,7 +9,12 @@ import com.mesosphere.usi.core.models.resources.ResourceRequirement;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.LegacyLaunchRunTemplate;
 import com.mesosphere.usi.core.models.template.RunTemplate;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Command;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Shell;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.SimpleTaskInfoBuilder;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.DockerEntrypoint;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.mesos.v1.Protos.ContainerInfo;
@@ -54,21 +59,21 @@ public class RunTemplateFactory {
       String role,
       List<FetchUri> fetchUris,
       Optional<MesosAgentSpecTemplate.ContainerInfo> containerInfo) {
+
+    // If a container info is set we assume its Docker image defines and entrypoint.
+    Command cmd = containerInfo.isPresent() ? DockerEntrypoint.create(shellCommand) : new Shell(shellCommand);
+
     TaskBuilder taskBuilder =
-        new SimpleTaskInfoBuilder(
-            convertListToSeq(requirements),
-            shellCommand,
+        SimpleTaskInfoBuilder.create(
+            requirements,
+            cmd,
             role,
-            convertListToSeq(fetchUris),
+            fetchUris,
             Option.empty());
     if (containerInfo.isPresent()) {
       taskBuilder = new ContainerInfoTaskInfoBuilder(agentName, taskBuilder, containerInfo.get());
     }
     return new LegacyLaunchRunTemplate(role, taskBuilder);
-  }
-
-  private static <T> Seq<T> convertListToSeq(List<T> inputList) {
-    return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
   }
 
   /**
