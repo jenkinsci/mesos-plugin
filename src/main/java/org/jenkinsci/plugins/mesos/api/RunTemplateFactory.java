@@ -10,11 +10,10 @@ import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.LegacyLaunchRunTemplate;
 import com.mesosphere.usi.core.models.template.RunTemplate;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Command;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.DockerEntrypoint$;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Shell;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.SimpleTaskInfoBuilder;
-import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.DockerEntrypoint;
-import java.util.Arrays;
-import java.util.Collections;
+import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.SimpleTaskInfoBuilder$;
 import java.util.List;
 import java.util.Optional;
 import org.apache.mesos.v1.Protos.ContainerInfo;
@@ -30,7 +29,6 @@ import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
-import scala.collection.JavaConverters;
 import scala.collection.Seq;
 import scala.collection.immutable.Map;
 
@@ -61,15 +59,13 @@ public class RunTemplateFactory {
       Optional<MesosAgentSpecTemplate.ContainerInfo> containerInfo) {
 
     // If a container info is set we assume its Docker image defines and entrypoint.
-    final Command cmd = (containerInfo.isPresent() ? DockerEntrypoint.create(shellCommand) : new Shell(shellCommand));
+    final Command cmd =
+        containerInfo.isPresent()
+            ? DockerEntrypoint$.MODULE$.create(shellCommand)
+            : new Shell(shellCommand);
 
     TaskBuilder taskBuilder =
-        SimpleTaskInfoBuilder.create(
-            requirements,
-            cmd,
-            role,
-            fetchUris,
-            Option.empty());
+        SimpleTaskInfoBuilder$.MODULE$.create(requirements, cmd, role, fetchUris, Option.empty());
     if (containerInfo.isPresent()) {
       taskBuilder = new ContainerInfoTaskInfoBuilder(agentName, taskBuilder, containerInfo.get());
     }
