@@ -83,14 +83,14 @@ public class MesosApi {
               authorization);
       logger.info("Initialized Mesos API object.");
       sessions.put(frameworkId, session);
+      return session;
+    } else {
+      // Override Jenkins URL and agent user if they changed.
+      MesosApi session = sessions.get(frameworkId);
+      session.setJenkinsUrl(jenkinsUrl);
+      session.setAgentUser(agentUser);
+      return session;
     }
-
-    // Override Jenkins URL and agent user if they changed.
-    MesosApi session = sessions.get(frameworkId);
-    session.setJenkinsUrl(jenkinsUrl);
-    session.setAgentUser(agentUser);
-
-    return session;
   }
 
   private final Settings operationalSettings;
