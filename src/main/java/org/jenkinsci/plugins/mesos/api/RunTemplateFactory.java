@@ -61,7 +61,7 @@ public class RunTemplateFactory {
       Optional<MesosAgentSpecTemplate.ContainerInfo> containerInfo) {
 
     // If a container info is set we assume its Docker image defines and entrypoint.
-    Command cmd = containerInfo.isPresent() ? DockerEntrypoint.create(shellCommand) : new Shell(shellCommand);
+    final Command cmd = (containerInfo.isPresent() ? DockerEntrypoint.create(shellCommand) : new Shell(shellCommand));
 
     TaskBuilder taskBuilder =
         SimpleTaskInfoBuilder.create(
