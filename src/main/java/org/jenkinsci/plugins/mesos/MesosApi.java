@@ -83,19 +83,24 @@ public class MesosApi {
               authorization);
       logger.info("Initialized Mesos API object.");
       sessions.put(frameworkId, session);
+      return session;
+    } else {
+      // Override Jenkins URL and agent user if they changed.
+      MesosApi session = sessions.get(frameworkId);
+      session.setJenkinsUrl(jenkinsUrl);
+      session.setAgentUser(agentUser);
+      return session;
     }
-
-    return sessions.get(frameworkId);
   }
 
   private final Settings operationalSettings;
 
   private final String frameworkName;
   private final Optional<String> frameworkPrincipal;
-  private final String role;
-  private final String agentUser;
+  private String role;
+  private String agentUser;
   private final String frameworkId;
-  private final URL jenkinsUrl;
+  private URL jenkinsUrl;
   private Duration agentTimeout;
 
   // Interface to USI.
@@ -425,6 +430,16 @@ public class MesosApi {
         stateMap.remove(podStateEvent.id());
       }
     }
+  }
+
+  // Setters
+
+  public void setJenkinsUrl(URL jenkinsUrl) {
+    this.jenkinsUrl = jenkinsUrl;
+  }
+
+  public void setAgentUser(String user) {
+    this.agentUser = user;
   }
 
   /** test method to set the agent timeout duration */
