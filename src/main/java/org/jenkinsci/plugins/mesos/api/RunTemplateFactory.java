@@ -9,7 +9,6 @@ import com.mesosphere.usi.core.models.resources.ResourceRequirement;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import com.mesosphere.usi.core.models.template.LegacyLaunchRunTemplate;
 import com.mesosphere.usi.core.models.template.RunTemplate;
-import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Command;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.DockerEntrypoint$;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.Shell;
 import com.mesosphere.usi.core.models.template.SimpleRunTemplateFactory.SimpleTaskInfoBuilder;
@@ -28,7 +27,6 @@ import org.apache.mesos.v1.Protos.Volume.Mode;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 import scala.collection.Seq;
 import scala.collection.immutable.Map;
 
@@ -59,15 +57,20 @@ public class RunTemplateFactory {
       Optional<MesosAgentSpecTemplate.ContainerInfo> containerInfo) {
 
     // If a container info is set we assume its Docker image defines and entrypoint.
-    final Command cmd =
-        containerInfo.isPresent()
-            ? DockerEntrypoint$.MODULE$.create(shellCommand)
-            : new Shell(shellCommand);
-
-    TaskBuilder taskBuilder =
-        SimpleTaskInfoBuilder$.MODULE$.create(requirements, cmd, role, fetchUris, Option.empty());
+    TaskBuilder taskBuilder;
     if (containerInfo.isPresent()) {
+      taskBuilder =
+          SimpleTaskInfoBuilder$.MODULE$.create(
+              requirements,
+              DockerEntrypoint$.MODULE$.create(shellCommand),
+              role,
+              fetchUris,
+              containerInfo.map(MesosAgentSpecTemplate.ContainerInfo::getDockerImage));
       taskBuilder = new ContainerInfoTaskInfoBuilder(agentName, taskBuilder, containerInfo.get());
+    } else {
+      taskBuilder =
+          SimpleTaskInfoBuilder$.MODULE$.create(
+              requirements, new Shell(shellCommand), role, fetchUris, Optional.empty());
     }
     return new LegacyLaunchRunTemplate(role, taskBuilder);
   }
