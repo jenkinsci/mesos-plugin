@@ -48,7 +48,7 @@ public class AgentSpecMother {
               "mesosphere/jenkins-dind-dev:karsten",
               true,
               true,
-              true,
+              false,
               Collections.emptyList(),
               Network.HOST),
           null,
