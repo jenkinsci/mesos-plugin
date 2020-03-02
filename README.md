@@ -30,7 +30,8 @@ is automatically shut down.
   - __[Pipeline jobs](#pipeline-jobs)__
 - __[Plugin Development](#plugin-development)__
   - __[Building the plugin](#building-the-plugin)__
-  - __[On DC/OS Enterprise](#on-dcos-enterprise)__
+  - __[Testing On DC/OS Enterprise](#testing-on-dcos-enterprise)__
+- __[Release](#release)__
 <!-- /toc -->
 
 
