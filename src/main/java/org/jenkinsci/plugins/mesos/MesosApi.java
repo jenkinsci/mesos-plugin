@@ -311,9 +311,14 @@ public class MesosApi {
                 logger.warn("USI command queue is full. Fail kill for {}", podId.value());
                 throw new IllegalStateException(
                     String.format("Kill command for %s was dropped.", podId.value()));
+              } else if (result == QueueOfferResult.enqueued()) {
+                logger.debug("Successfully queued kill command for {}", podId.value());
+              } else if (result instanceof QueueOfferResult.Failure) {
+                final Throwable ex = ((QueueOfferResult.Failure) result).cause();
+                throw new IllegalStateException("The USI stream failed or is closed.", ex);
               } else {
-                // TODO: Call crash strategy DCOS_OSS-5055
-                throw new IllegalStateException("The USI stream failed or is closed.");
+                throw new IllegalStateException(
+                    String.format("Unknown queue result %s", result.toString()));
               }
             });
   }
@@ -353,9 +358,12 @@ public class MesosApi {
                 logger.warn("USI command queue is full. Fail provisioning for {}", name);
                 throw new IllegalStateException(
                     String.format("Launch command for %s was dropped.", name));
+              } else if (result instanceof QueueOfferResult.Failure) {
+                final Throwable ex = ((QueueOfferResult.Failure) result).cause();
+                throw new IllegalStateException("The USI stream failed or is closed.", ex);
               } else {
-                // TODO: Call crash strategy DCOS_OSS-5055
-                throw new IllegalStateException("The USI stream failed or is closed.");
+                throw new IllegalStateException(
+                    String.format("Unknown queue result %s", result.toString()));
               }
             });
   }
