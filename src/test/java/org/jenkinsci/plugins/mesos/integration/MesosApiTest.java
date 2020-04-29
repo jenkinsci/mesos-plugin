@@ -23,27 +23,32 @@ import org.jenkinsci.plugins.mesos.MesosApi;
 import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsParameterResolver;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsRule;
+import org.jenkinsci.plugins.mesos.api.SessionTest;
 import org.jenkinsci.plugins.mesos.fixture.AgentSpecMother;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.jdk.javaapi.CollectionConverters;
 
 @ExtendWith(JenkinsParameterResolver.class)
 class MesosApiTest {
 
-  @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
+  private static final Logger logger = LoggerFactory.getLogger(MesosApiTest.class);
+
+//  @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
 
   static ActorSystem system = ActorSystem.create("mesos-scheduler-test");
-  static ActorMaterializer materializer = ActorMaterializer.create(system);
+//  static ActorMaterializer materializer = ActorMaterializer.create(system);
 
-  @RegisterExtension
-  static MesosClusterExtension mesosCluster =
-      MesosClusterExtension.builder()
-          .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-          .withLogPrefix(MesosApiTest.class.getCanonicalName())
-          .build(system, materializer);
+//  @RegisterExtension
+  static MesosClusterExtension mesosCluster = null;
+//      MesosClusterExtension.builder()
+//                  .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
+//                  .withLogPrefix(MesosApiTest.class.getCanonicalName())
+//                  .build(system, materializer);
 
   @Test
   public void startAgent(JenkinsRule j)
