@@ -7,6 +7,7 @@ import hudson.model.Queue;
 import hudson.model.Queue.Item;
 import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 import org.junit.Assert;
@@ -202,6 +203,72 @@ public class JenkinsSchedulerTest {
         Mockito.verify(driver).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC).build());
         Mockito.verify(driver, Mockito.never()).declineOffer(offer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(120000).build());
         Mockito.verify(driver, Mockito.never()).suppressOffers();
+    }
+
+    @Test
+    public void testSlaveAttributesFromLabel() throws Exception {
+        Mesos.SlaveRequest request = mockSlaveRequestWithSlaveLabelAttributes(Boolean.TRUE, false, null, "testLabelString:docker-container-name");
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        Protos.Offer rejectedOffer = createOfferWithAttributes("rack", "jenkins-master");
+        offers.add(rejectedOffer);
+        offers.add(createOfferWithAttributes("rack", "jenkins-slave"));
+
+        List<MesosSlaveInfo> mesosSlaveInfos = mockSlaveInfos();
+        Mockito.when(mesosCloud.getSlaveInfos()).thenReturn(mesosSlaveInfos);
+        MesosComputer computer = Mockito.mock(MesosComputer.class);
+        Mockito.when(jenkins.getComputers()).thenReturn(new Computer[] { computer });
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        //check it
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.atLeastOnce()).declineOffer(rejectedOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(5).build());
+        Mockito.verify(driver, Mockito.atLeastOnce()).suppressOffers();
+    }
+
+    @Test
+    public void testSlaveAttributesFromLabelNoMatch() throws Exception {
+        Mesos.SlaveRequest request = mockSlaveRequestWithSlaveLabelAttributes(Boolean.TRUE, false, null, "testLabelString:docker-container-name");
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        Protos.Offer rejectedOffer = createOfferWithAttributes("rack", "jenkins-master");
+        offers.add(rejectedOffer);
+
+        List<MesosSlaveInfo> mesosSlaveInfos = mockSlaveInfos();
+        Mockito.when(mesosCloud.getSlaveInfos()).thenReturn(mesosSlaveInfos);
+        MesosComputer computer = Mockito.mock(MesosComputer.class);
+        Mockito.when(jenkins.getComputers()).thenReturn(new Computer[] { computer });
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        //check it
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.atLeastOnce()).declineOffer(rejectedOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(5).build());
+        Mockito.verify(driver, never()).suppressOffers();
+    }
+
+    @Test
+    public void testSlaveAttributesFromLabelNotSet() throws Exception {
+        Mesos.SlaveRequest request = mockSlaveRequestWithSlaveLabelAttributes(Boolean.TRUE, false, null, "");
+        jenkinsScheduler.requestJenkinsSlave(request, null);
+
+        ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
+        Protos.Offer rejectedOffer = createOfferWithAttributes("rack", "jenkins-slave");
+        offers.add(rejectedOffer);
+
+        List<MesosSlaveInfo> mesosSlaveInfos = mockSlaveInfos();
+        Mockito.when(mesosCloud.getSlaveInfos()).thenReturn(mesosSlaveInfos);
+        MesosComputer computer = Mockito.mock(MesosComputer.class);
+        Mockito.when(jenkins.getComputers()).thenReturn(new Computer[] { computer });
+        SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
+        jenkinsScheduler.setDriver(driver);
+
+        //check it
+        jenkinsScheduler.resourceOffers(driver, offers);
+        Mockito.verify(driver, Mockito.atLeastOnce()).suppressOffers();
     }
 
     @Test
@@ -512,6 +579,114 @@ public class JenkinsSchedulerTest {
             new Mesos.JenkinsSlave(TEST_JENKINS_SLAVE_NAME), Mockito.mock(MesosSlave.class), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo, 500);
     }
 
+    private List<MesosSlaveInfo> mockSlaveInfos() throws IOException, Descriptor.FormException {
+        List<MesosSlaveInfo> slaveInfos = new ArrayList<>();
+        MesosSlaveInfo.ContainerInfo containerInfo = new MesosSlaveInfo.ContainerInfo(
+                "docker",
+                "test-docker-in-docker-image",
+                Boolean.FALSE,
+                Boolean.TRUE,
+                Boolean.TRUE,
+                Boolean.FALSE,
+                Boolean.FALSE,
+                null,
+                Collections.<MesosSlaveInfo.Volume>emptyList(),
+                Collections.<MesosSlaveInfo.Parameter>emptyList(),
+                Protos.ContainerInfo.DockerInfo.Network.HOST.name(),
+                Collections.<MesosSlaveInfo.PortMapping>emptyList(),
+                Collections.<MesosSlaveInfo.NetworkInfo>emptyList());
+
+        MesosSlaveInfo mesosSlaveInfo = new MesosSlaveInfo(
+                "testLabelString",  // labelString,
+                Node.Mode.NORMAL,
+                "0.2",              // slaveCpus,
+                "512",              // slaveMem,
+                "1",                // minExecutors,
+                "2",                // maxExecutors,
+                "0.2",              // executorCpus,
+                "500",               // diskNeeded
+                "512",              // executorMem,
+                "remoteFSRoot",     // remoteFSRoot,
+                "2",                // idleTerminationMinutes,
+                "{\"rack\":\"jenkins-slave\"}",       // slaveAttributes,
+                null,               // jvmArgs,
+                null,               // jnlpArgs,
+                "true",               // defaultSlave,
+                containerInfo,      // containerInfo,
+                null,              // additionalURIs
+                null              // nodeProperties
+        );
+        MesosSlaveInfo mesosSlaveInfo1 = new MesosSlaveInfo(
+                "testLabelString",  // labelString,
+                Node.Mode.NORMAL,
+                "0.2",              // slaveCpus,
+                "512",              // slaveMem,
+                "1",                // minExecutors,
+                "2",                // maxExecutors,
+                "0.2",              // executorCpus,
+                "500",               // diskNeeded
+                "512",              // executorMem,
+                "remoteFSRoot",     // remoteFSRoot,
+                "2",                // idleTerminationMinutes,
+                (String) null,       // slaveAttributes,
+                null,               // jvmArgs,
+                null,               // jnlpArgs,
+                "true",               // defaultSlave,
+                null,      // containerInfo,
+                null,              // additionalURIs
+                null              // nodeProperties
+        );
+        slaveInfos.add(mesosSlaveInfo);
+        slaveInfos.add(mesosSlaveInfo1);
+
+        return slaveInfos;
+    }
+
+    private Mesos.SlaveRequest mockSlaveRequestWithSlaveLabelAttributes(
+            Boolean useDocker,
+            Boolean useCustomDockerCommandShell,
+            String customDockerCommandShell, String labelString) throws Descriptor.FormException, IOException {
+        MesosSlaveInfo.ContainerInfo containerInfo = null;
+        if (useDocker) {
+            containerInfo = new MesosSlaveInfo.ContainerInfo(
+                    "DOCKER",
+                    "test-docker-in-docker-image",
+                    Boolean.FALSE, //is dind
+                    Boolean.TRUE, //dockerPrivilegedMode
+                    Boolean.TRUE, //dockerForcePullImage
+                    Boolean.TRUE, //dockerImageCustomizable
+                    useCustomDockerCommandShell, //useCustomDockerCommandShell
+                    customDockerCommandShell, //customDockerCommandShell
+                    Collections.<MesosSlaveInfo.Volume>emptyList(), //volumes
+                    Collections.<MesosSlaveInfo.Parameter>emptyList(), //parameters
+                    Protos.ContainerInfo.DockerInfo.Network.HOST.name(), //docker info network
+                    Collections.<MesosSlaveInfo.PortMapping>emptyList(), //slave port mapping
+                    Collections.<MesosSlaveInfo.NetworkInfo>emptyList()); //slave network info
+        }
+        MesosSlaveInfo mesosSlaveInfo = new MesosSlaveInfo(
+                labelString,  // labelString,
+                Node.Mode.NORMAL,
+                "0.2",              // slaveCpus,
+                "512",              // slaveMem,
+                "1",                // minExecutors,
+                "2",                // maxExecutors,
+                "0.2",              // executorCpus,
+                "500",               // diskNeeded
+                "512",              // executorMem,
+                "remoteFSRoot",     // remoteFSRoot,
+                "2",                // idleTerminationMinutes,
+                "{\"rack\":\"jenkins-slave\"}",       // slaveAttributes,
+                null,               // jvmArgs,
+                null,               // jnlpArgs,
+                null,               // defaultSlave,
+                containerInfo,      // containerInfo,
+                null,              // additionalURIs
+                null              // nodeProperties
+        );
+        return new Mesos.SlaveRequest(
+                new Mesos.JenkinsSlave("slaveTaskAttributes"), Mockito.mock(MesosSlave.class), 0.2d, TEST_JENKINS_SLAVE_MEM, "jenkins", mesosSlaveInfo, 500);
+    }
+
     private JenkinsScheduler.Request mockMesosRequest(
             Boolean useDocker,
             Boolean useCustomDockerCommandShell,
@@ -570,6 +745,30 @@ public class JenkinsSchedulerTest {
                 .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("value").build())
                 .setSlaveId(Protos.SlaveID.newBuilder().setValue("value").build())
                 .setHostname("hostname")
+                .build();
+    }
+
+    private Protos.Offer createOfferWithAttributes(String name, String value) {
+        List<Protos.Resource> resources =  new ArrayList<>();
+        resources.add(createCpuResource(20));
+        resources.add(createMemResource(1000));
+
+
+        List<Protos.Attribute> attributes = new ArrayList<>();
+
+        attributes.add(Protos.Attribute.newBuilder()
+                .setType(Protos.Value.Type.TEXT)
+                .setName(name)
+                .setText(Protos.Value.Text.newBuilder().setValue(value))
+                .build());
+
+        return Protos.Offer.newBuilder()
+                .addAllResources(resources)
+                .setId(Protos.OfferID.newBuilder().setValue(RandomStringUtils.random(10, true, true)).build())
+                .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("value").build())
+                .setSlaveId(Protos.SlaveID.newBuilder().setValue("value").build())
+                .setHostname("hostname")
+                .addAllAttributes(attributes)
                 .build();
     }
 

@@ -663,22 +663,6 @@ public class MesosCloud extends Cloud {
     return null;
   }
 
-  /**
-  * Retrieves the slaveattribute corresponding to label name.
-  *
-  * @param labelName The Jenkins label name.
-  * @return slaveattribute as a JSONObject.
-  */
-
-  public JSONObject getSlaveAttributeForLabel(String labelName) {
-    for (MesosSlaveInfo slaveInfo : slaveInfos) {
-      if (StringUtils.equals(labelName, slaveInfo.getLabelString())) {
-          return slaveInfo.getSlaveAttributes();
-      }
-    }
-    return null;
-  }
-
   protected Object readResolve() {
     migrateToCredentials();
     if (role == null) {
