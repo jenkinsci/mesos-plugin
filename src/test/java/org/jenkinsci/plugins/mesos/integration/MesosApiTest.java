@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import com.mesosphere.utils.mesos.MesosCluster.Master;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
@@ -23,12 +24,10 @@ import org.jenkinsci.plugins.mesos.MesosApi;
 import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsParameterResolver;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsRule;
-import org.jenkinsci.plugins.mesos.api.SessionTest;
 import org.jenkinsci.plugins.mesos.fixture.AgentSpecMother;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.jdk.javaapi.CollectionConverters;
@@ -38,17 +37,17 @@ class MesosApiTest {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApiTest.class);
 
-//  @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
+  @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
 
   static ActorSystem system = ActorSystem.create("mesos-scheduler-test");
-//  static ActorMaterializer materializer = ActorMaterializer.create(system);
+  static Materializer materializer = ActorMaterializer.create(system);
 
-//  @RegisterExtension
-  static MesosClusterExtension mesosCluster = null;
-//      MesosClusterExtension.builder()
-//                  .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-//                  .withLogPrefix(MesosApiTest.class.getCanonicalName())
-//                  .build(system, materializer);
+  @RegisterExtension
+  static MesosClusterExtension mesosCluster =
+      MesosClusterExtension.builder()
+          .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
+          .withLogPrefix(MesosApiTest.class.getCanonicalName())
+          .build(system, materializer);
 
   @Test
   public void startAgent(JenkinsRule j)
@@ -130,7 +129,7 @@ class MesosApiTest {
     assertThat(agent.isRunning(), equalTo(true));
 
     // When Mesos fails over
-    for (Master m : CollectionConverters.asJava(mesosCluster.mesosCluster().masters())){
+    for (Master m : CollectionConverters.asJava(mesosCluster.mesosCluster().masters())) {
       m.restart();
     }
 
