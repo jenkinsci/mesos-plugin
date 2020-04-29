@@ -50,7 +50,7 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junitJupiterVersion
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: junitJupiterVersion
     testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitJupiterVersion
-    testImplementation group: 'com.mesosphere.usi', name: 'test-utils', version: usiVersion
+    testImplementation group: 'com.mesosphere.usi', name: "test-utils_$scalaVersion", version: usiVersion
     testImplementation 'org.awaitility:awaitility:3.1.6'
 
     compileOnly 'com.github.spotbugs:spotbugs-annotations:3.1.3'

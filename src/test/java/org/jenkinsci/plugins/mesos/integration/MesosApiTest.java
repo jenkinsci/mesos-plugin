@@ -27,7 +27,8 @@ import org.jenkinsci.plugins.mesos.fixture.AgentSpecMother;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import scala.Option;
+
+import scala.jdk.javaapi.CollectionConverters;
 
 @ExtendWith(JenkinsParameterResolver.class)
 class MesosApiTest {
@@ -124,11 +125,8 @@ class MesosApiTest {
     assertThat(agent.isRunning(), equalTo(true));
 
     // When Mesos fails over
-    for (Master m :
-        scala.collection.JavaConverters.seqAsJavaList(mesosCluster.mesosCluster().masters())) {
-      // m.restart()
-      m.stop();
-      m.start(Option.apply("reconnected"));
+    for (Master m : CollectionConverters.asJava(mesosCluster.mesosCluster().masters())){
+      m.restart();
     }
 
     // Then we can kill the agent after USI reconnected.
