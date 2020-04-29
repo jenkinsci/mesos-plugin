@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.RestartFlow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
@@ -22,6 +23,7 @@ import com.mesosphere.usi.core.models.StateEvent;
 import com.mesosphere.usi.core.models.StateEventOrSnapshot;
 import com.mesosphere.usi.core.models.commands.SchedulerCommand;
 import com.mesosphere.usi.repository.PodRecordRepository;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -49,7 +51,7 @@ public class Session {
   // Interface to USI.
   @Nonnull private final SourceQueueWithComplete<SchedulerCommand> commands;
 
-  public static CompletionStage<Session> create(
+  public static Session create(
       FrameworkInfo frameworkInfo,
       MesosClientSettings clientSettings,
       Optional<CredentialsProvider> provider,
@@ -61,28 +63,36 @@ public class Session {
       ExecutionContext context,
       ActorSystem system,
       ActorMaterializer materializer) {
-    return connectClient(frameworkInfo, clientSettings, provider, system, materializer)
-        .thenCompose(
-            client -> {
-              final SchedulerFactory schedulerFactory =
-                  SchedulerFactory.create(
-                      client,
-                      repository,
-                      schedulerSettings,
-                      Metrics.getInstance(frameworkInfo.getName()),
-                      context);
-              return Scheduler.asFlow(schedulerFactory);
-            })
-        .thenApply(
-            builder -> {
-              Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>> pair =
-                  runScheduler(operationalSettings, builder.getFlow(), eventHandler, materializer);
-
-              // Handle stream termination.
-              pair.second().handle(terminationHandler);
-
-              return new Session(pair.first());
+    Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =
+        RestartFlow.withBackoff(
+            Duration.ofSeconds(3),
+            Duration.ofSeconds(30),
+            0.2,
+            20,
+            () -> {
+              return connectClient(frameworkInfo, clientSettings, provider, system, materializer)
+                  .thenCompose(
+                      client -> {
+                        final SchedulerFactory schedulerFactory =
+                            SchedulerFactory.create(
+                                client,
+                                repository,
+                                schedulerSettings,
+                                Metrics.getInstance(frameworkInfo.getName()),
+                                context);
+                        return Scheduler.asFlow(schedulerFactory);
+                      })
+                  .get()
+                  .getFlow(); // TODO: do not block
             });
+
+    Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>> pair =
+        runScheduler(operationalSettings, schedulerFlow, eventHandler, materializer);
+
+    // Handle stream termination.
+    // pair.second().handle(terminationHandler);
+
+    return new Session(pair.first());
   }
 
   public Session(SourceQueueWithComplete<SchedulerCommand> commands) {
@@ -130,9 +140,5 @@ public class Session {
 
   public SourceQueueWithComplete<SchedulerCommand> getCommands() {
     return this.commands;
-  }
-
-  public void cancel() {
-    this.commands.complete();
   }
 }

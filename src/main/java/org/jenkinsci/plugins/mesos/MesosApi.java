@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.mesos;
 
-import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.QueueOfferResult;
@@ -28,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos;
@@ -90,11 +88,6 @@ public class MesosApi {
 
   private final Settings operationalSettings;
 
-  // TODO: Save in SessionBuilder
-  @Nonnull private final MesosClientSettings clientSettings;
-  @Nonnull private final SchedulerSettings schedulerSettings;
-  @Nonnull private Optional<CredentialsProvider> credentialsProvider = Optional.empty();
-
   private final String frameworkName;
   private final Optional<String> frameworkPrincipal;
   private String role;
@@ -104,7 +97,7 @@ public class MesosApi {
   private Duration agentTimeout;
 
   // Connection to Mesos through USI
-  @Nonnull private AtomicReference<Session> session;
+  @Nonnull private final Session session;
 
   // Internal state.
   @Nonnull private final ConcurrentHashMap<PodId, MesosJenkinsAgent> stateMap;
@@ -175,9 +168,9 @@ public class MesosApi {
             .toCompletableFuture()
             .get();
 
-    this.clientSettings =
+    MesosClientSettings clientSettings =
         MesosClientSettings.load(classLoader).withMasters(Collections.singletonList(masterUrl));
-    this.schedulerSettings = SchedulerSettings.load(classLoader);
+    SchedulerSettings schedulerSettings = SchedulerSettings.load(classLoader);
     this.operationalSettings = Settings.load(classLoader);
 
     // Initialize state.
@@ -186,7 +179,7 @@ public class MesosApi {
 
     // Inject metrics and credentials provider.
     this.frameworkPrincipal = authorization.map(auth -> auth.getUid());
-    this.credentialsProvider =
+    Optional<CredentialsProvider> credentialsProvider =
         authorization.map(
             auth -> {
               try {
@@ -207,21 +200,18 @@ public class MesosApi {
     // Initialize scheduler flow.
     logger.info("Starting USI scheduler flow.");
     this.session =
-        new AtomicReference<Session>(
-            Session.create(
-                    buildFrameworkInfo(),
-                    clientSettings,
-                    this.credentialsProvider,
-                    schedulerSettings,
-                    repository,
-                    this.operationalSettings,
-                    this::updateState,
-                    this::handleConnectionTermination,
-                    context,
-                    system,
-                    materializer)
-                .toCompletableFuture()
-                .get());
+        Session.create(
+            buildFrameworkInfo(),
+            clientSettings,
+            credentialsProvider,
+            schedulerSettings,
+            repository,
+            this.operationalSettings,
+            this::updateState,
+            null,
+            context,
+            system,
+            materializer);
 
     this.agentTimeout = this.operationalSettings.getAgentTimeout();
   }
@@ -271,7 +261,6 @@ public class MesosApi {
     logger.info("Kill agent {}.", podId.value());
     SchedulerCommand command = new KillPod(podId);
     return this.session
-        .get()
         .getCommands()
         .offer(command)
         .thenAccept(
@@ -317,7 +306,6 @@ public class MesosApi {
 
     // async add agent to queue
     return this.session
-        .get()
         .getCommands()
         .offer(launchCommand)
         .thenApply(
@@ -372,36 +360,6 @@ public class MesosApi {
         stateMap.remove(podStateEvent.id());
       }
     }
-  }
-
-  private synchronized Done handleConnectionTermination(Done done, Throwable ex) {
-    if (ex != null) {
-      logger.error("USI stream terminated with an error. Reconnecting...", ex);
-    } else {
-      logger.info("USI stream terminated. Reconnecting...");
-    }
-
-    Session.create(
-            buildFrameworkInfo(),
-            this.clientSettings,
-            this.credentialsProvider,
-            this.schedulerSettings,
-            repository,
-            this.operationalSettings,
-            this::updateState,
-            this::handleConnectionTermination,
-            context,
-            system,
-            materializer)
-        .thenAccept(
-            newSession -> {
-              Session oldSession = this.session.getAndSet(newSession);
-
-              // Cancel old session just to be sure.
-              oldSession.cancel();
-            });
-
-    return Done.done();
   }
 
   // Setters

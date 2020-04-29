@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import com.mesosphere.utils.mesos.MesosCluster.Master;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Descriptor.FormException;
@@ -26,6 +27,7 @@ import org.jenkinsci.plugins.mesos.fixture.AgentSpecMother;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import scala.Option;
 
 @ExtendWith(JenkinsParameterResolver.class)
 class MesosApiTest {
@@ -92,6 +94,44 @@ class MesosApiTest {
     await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
     assertThat(agent.isRunning(), equalTo(true));
 
+    api.killAgent(agent.getPodId());
+    await().atMost(5, TimeUnit.MINUTES).until(agent::isKilled);
+    assertThat(agent.isKilled(), equalTo(true));
+  }
+
+  @Test
+  public void reconnectMesos(JenkinsRule j) throws Exception {
+    URL jenkinsUrl = j.getURL();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
+
+    MesosApi api =
+        new MesosApi(
+            mesosUrl,
+            jenkinsUrl,
+            System.getProperty("user.name"),
+            "MesosTest-reconnect",
+            UUID.randomUUID().toString(),
+            "*",
+            Optional.empty(),
+            Optional.empty());
+
+    // Given a running agent
+    final String name = "jenkins-stop-agent";
+    final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
+    MesosJenkinsAgent agent = api.enqueueAgent(name, spec).toCompletableFuture().get();
+    // Poll state until we get something.
+    await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
+    assertThat(agent.isRunning(), equalTo(true));
+
+    // When Mesos fails over
+    for (Master m :
+        scala.collection.JavaConverters.seqAsJavaList(mesosCluster.mesosCluster().masters())) {
+      // m.restart()
+      m.stop();
+      m.start(Option.apply("reconnected"));
+    }
+
+    // Then we can kill the agent after USI reconnected.
     api.killAgent(agent.getPodId());
     await().atMost(5, TimeUnit.MINUTES).until(agent::isKilled);
     assertThat(agent.isKilled(), equalTo(true));

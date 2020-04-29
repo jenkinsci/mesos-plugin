@@ -73,7 +73,6 @@ public class SessionTest {
   @Test
   void testKillOverflow(TestUtils.JenkinsRule j) throws Exception {
     // Given a scheduler flow that never processes commands.
-    final URL jenkinsUrl = new URL("https://jenkins.com");
     Settings settings = Settings.load().withCommandQueueBufferSize(1);
     final CompletableFuture<StateEvent> ignore = new CompletableFuture<>();
     final Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =

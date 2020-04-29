@@ -9,20 +9,20 @@ plugins {
 
 repositories {
     jcenter()
+    mavenLocal()
     maven {
         name "Mesosphere Public Repo"
-        url "https://downloads.mesosphere.com/maven"
+        url "https://downloads.mesosphere.io/maven"
     }
     maven {
         name "Mesosphere Snapshot Repo"
-        url "https://downloads.mesosphere.com/maven-snapshot"
+        url "https://downloads.mesosphere.io/maven-snapshot"
     }
 }
 
 ext {
-    usiVersion= '0.1.35'
-    scalaVersion = '2.12'
-    akkaVersion = '2.5.19'
+    usiVersion= '0.1.42-99535d6-SNAPSHOT'
+    scalaVersion = '2.13'
 
     junitJupiterVersion = '5.3.1'
 }
@@ -31,12 +31,12 @@ dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api 'org.apache.commons:commons-math3:3.6.1'
     api 'com.google.guava:guava:26.0-jre'
-    api group: 'com.mesosphere.usi', name: 'core', version: usiVersion
-    api group: 'com.mesosphere.usi', name: 'core-models', version: usiVersion
-    api group: 'com.mesosphere.usi', name: 'mesos-client', version: usiVersion
-    api group: 'com.mesosphere.usi', name: 'mesos-master-detector', version: usiVersion
-    api group: 'com.mesosphere.usi', name: 'metrics-dropwizard', version: usiVersion
-    api group: 'com.mesosphere.usi', name: 'persistence', version: usiVersion
+    api group: 'com.mesosphere.usi', name: "core_$scalaVersion", version: usiVersion
+    api group: 'com.mesosphere.usi', name: "core-models_$scalaVersion", version: usiVersion
+    api group: 'com.mesosphere.usi', name: "mesos-client_$scalaVersion", version: usiVersion
+    api group: 'com.mesosphere.usi', name: "mesos-master-detector_$scalaVersion", version: usiVersion
+    api group: 'com.mesosphere.usi', name: "metrics-dropwizard_$scalaVersion", version: usiVersion
+    api group: 'com.mesosphere.usi', name: "persistence_$scalaVersion", version: usiVersion
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:metrics:4.0.2.5@jar'
