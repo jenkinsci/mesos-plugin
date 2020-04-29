@@ -208,19 +208,21 @@ public class MesosApi {
     // Initialize scheduler flow.
     logger.info("Starting USI scheduler flow.");
     this.session =
-        new AtomicReference<>(
+        new AtomicReference<Session>(
             Session.create(
-                buildFrameworkInfo(),
-                clientSettings,
-                this.credentialsProvider,
-                schedulerSettings,
-                repository,
-                this.operationalSettings,
-                this::updateState,
-                this::handleConnectionTermination,
-                context,
-                system,
-                materializer));
+                    buildFrameworkInfo(),
+                    clientSettings,
+                    this.credentialsProvider,
+                    schedulerSettings,
+                    repository,
+                    this.operationalSettings,
+                    this::updateState,
+                    this::handleConnectionTermination,
+                    context,
+                    system,
+                    materializer)
+                .toCompletableFuture()
+                .get());
 
     this.agentTimeout = this.operationalSettings.getAgentTimeout();
   }

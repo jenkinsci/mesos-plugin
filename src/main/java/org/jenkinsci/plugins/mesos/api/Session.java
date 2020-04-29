@@ -85,7 +85,7 @@ public class Session {
             });
   }
 
-  private Session(SourceQueueWithComplete<SchedulerCommand> commands) {
+  public Session(SourceQueueWithComplete<SchedulerCommand> commands) {
     this.commands = commands;
   }
 
