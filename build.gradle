@@ -23,6 +23,8 @@ ext {
     usiVersion= '0.1.35'
     scalaVersion = '2.12'
     akkaVersion = '2.5.19'
+
+    junitJupiterVersion = '5.3.1'
 }
 
 dependencies {
@@ -45,8 +47,9 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:okhttp:3.14.1'
     testImplementation 'javax.json:javax.json-api:1.1'
     testImplementation 'org.glassfish:javax.json:1.0.4'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junitJupiterVersion
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: junitJupiterVersion
+    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitJupiterVersion
     testImplementation group: 'com.mesosphere.usi', name: 'test-utils', version: usiVersion
     testImplementation 'org.awaitility:awaitility:3.1.6'
 

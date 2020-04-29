@@ -37,7 +37,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private static final Logger logger = LoggerFactory.getLogger(MesosAgentSpecTemplate.class);
 
   private final String label;
-  private final Set<LabelAtom> labelSet;
+  private Set<LabelAtom> labelSet;
 
   private final Node.Mode mode;
   private final int idleTerminationMinutes;
@@ -71,7 +71,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
       DomainFilterModel domainFilterModel) {
     this.label = label;
-    this.labelSet = Label.parse(label);
     this.mode = mode;
     this.idleTerminationMinutes = idleTerminationMinutes;
     this.reusable = false; // TODO: DCOS_OSS-5048.
@@ -170,6 +169,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   }
 
   public Set<LabelAtom> getLabelSet() {
+    // Label.parse requires a Jenkins instance so we initialize it lazily
+    if (this.labelSet == null) {
+      this.labelSet = Label.parse(label);
+    }
     return this.labelSet;
   }
 

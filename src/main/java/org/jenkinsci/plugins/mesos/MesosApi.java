@@ -9,7 +9,6 @@ import com.mesosphere.mesos.MasterDetector$;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
 import com.mesosphere.mesos.conf.MesosClientSettings;
-import com.mesosphere.usi.core.SchedulerFactory;
 import com.mesosphere.usi.core.conf.SchedulerSettings;
 import com.mesosphere.usi.core.models.*;
 import com.mesosphere.usi.core.models.commands.KillPod;

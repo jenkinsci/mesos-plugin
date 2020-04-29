@@ -116,12 +116,11 @@ public class Session {
    * @param materializer The {@link ActorMaterializer} used for the source queue.
    * @return A running source queue.
    */
-  private static Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>>
-      runScheduler(
-          Settings operationalSettings,
-          Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow,
-          Consumer<StateEventOrSnapshot> eventHandler,
-          ActorMaterializer materializer) {
+  public static Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>> runScheduler(
+      Settings operationalSettings,
+      Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow,
+      Consumer<StateEventOrSnapshot> eventHandler,
+      ActorMaterializer materializer) {
     return Source.<SchedulerCommand>queue(
             operationalSettings.getCommandQueueBufferSize(), OverflowStrategy.dropNew())
         .via(schedulerFlow)
