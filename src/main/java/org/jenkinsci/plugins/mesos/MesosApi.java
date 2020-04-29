@@ -227,55 +227,6 @@ public class MesosApi {
     this.agentTimeout = this.operationalSettings.getAgentTimeout();
   }
 
-  /**
-   * Internal constructor for testing the API.
-   *
-   * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
-   * @param agentUser The username used for executing Mesos tasks.
-   * @param frameworkName The name of the framework the Mesos client should register as.
-   * @param frameworkId Unique identifier of the framework in Mesos.
-   * @param role The Mesos role to assume.
-   * @param schedulerFlow The USI scheduler flow constructed by {@link
-   *     com.mesosphere.usi.core.japi.Scheduler#asFlow(SchedulerFactory)}
-   * @param operationalSettings Operation settings for this plugin.
-   * @param system The Akka actor system to use.
-   * @param materializer The Akka stream materializer to use.
-   */
-  public MesosApi(
-      URL jenkinsUrl,
-      String agentUser,
-      String frameworkName,
-      String frameworkId,
-      String role,
-      Session session,
-      MesosClientSettings clientSettings,
-      SchedulerSettings schedulerSettings,
-      Settings operationalSettings,
-      ActorSystem system,
-      ActorMaterializer materializer) {
-    this.frameworkName = frameworkName;
-    this.frameworkPrincipal = Optional.empty();
-    this.frameworkId = frameworkId;
-    this.role = role;
-    this.agentUser = agentUser;
-    this.jenkinsUrl = jenkinsUrl;
-
-    this.operationalSettings = operationalSettings;
-    this.agentTimeout = this.operationalSettings.getAgentTimeout();
-
-    this.stateMap = new ConcurrentHashMap<>();
-    this.repository = new MesosPodRecordRepository();
-
-    this.clientSettings = clientSettings;
-    this.schedulerSettings = schedulerSettings;
-
-    this.session = new AtomicReference<>(session);
-
-    this.context = system.dispatcher();
-    this.system = system;
-    this.materializer = materializer;
-  }
-
   private Protos.FrameworkInfo buildFrameworkInfo() {
     Protos.FrameworkID frameworkId =
         Protos.FrameworkID.newBuilder().setValue(this.frameworkId).build();

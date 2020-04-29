@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
@@ -54,8 +55,8 @@ class MesosApiTest {
             mesosUrl,
             jenkinsUrl,
             System.getProperty("user.name"),
-            "MesosTest",
-            "unique",
+            "MesosTest-startAgent",
+            UUID.randomUUID().toString(),
             "*",
             Optional.empty(),
             Optional.empty());
@@ -78,8 +79,8 @@ class MesosApiTest {
             mesosUrl,
             jenkinsUrl,
             System.getProperty("user.name"),
-            "MesosTest",
-            "unique",
+            "MesosTest-stopAgent",
+            UUID.randomUUID().toString(),
             "*",
             Optional.empty(),
             Optional.empty());
