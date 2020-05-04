@@ -70,6 +70,7 @@ public class Session {
             0.2,
             20,
             () -> {
+              // TODO: connectClient might still fail. We should add a retry there as well.
               return connectClient(frameworkInfo, clientSettings, provider, system, materializer)
                   .thenCompose(
                       client -> {

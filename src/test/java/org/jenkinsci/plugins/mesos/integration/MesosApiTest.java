@@ -46,6 +46,7 @@ class MesosApiTest {
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
+          .withNumMasters(3)
           .withLogPrefix(MesosApiTest.class.getCanonicalName())
           .build(system, materializer);
 
@@ -128,10 +129,8 @@ class MesosApiTest {
     await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
     assertThat(agent.isRunning(), equalTo(true));
 
-    // When Mesos fails over
-    for (Master m : CollectionConverters.asJava(mesosCluster.mesosCluster().masters())) {
-      m.restart();
-    }
+    // When Mesos has a failover.
+    mesosCluster.mesosCluster().failover();
 
     // Then we can kill the agent after USI reconnected.
     api.killAgent(agent.getPodId());
