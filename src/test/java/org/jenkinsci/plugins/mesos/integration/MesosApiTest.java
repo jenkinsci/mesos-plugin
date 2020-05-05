@@ -46,7 +46,7 @@ class MesosApiTest {
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-          .withNumMasters(3)
+          //.withNumMasters(3)
           .withLogPrefix(MesosApiTest.class.getCanonicalName())
           .build(system, materializer);
 
@@ -122,19 +122,20 @@ class MesosApiTest {
             Optional.empty());
 
     // Given a running agent
-    final String name = "jenkins-stop-agent";
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
-    MesosJenkinsAgent agent = api.enqueueAgent(name, spec).toCompletableFuture().get();
+    MesosJenkinsAgent agent1 = api.enqueueAgent("agent-before-failover", spec).toCompletableFuture().get();
     // Poll state until we get something.
-    await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
-    assertThat(agent.isRunning(), equalTo(true));
+    await().atMost(5, TimeUnit.MINUTES).until(agent1::isRunning);
+    assertThat(agent1.isRunning(), equalTo(true));
 
     // When Mesos has a failover.
-    mesosCluster.mesosCluster().failover();
+    //mesosCluster.mesosCluster().failover();
+    mesosCluster.mesosCluster().masters().head().restart();
 
-    // Then we can kill the agent after USI reconnected.
-    api.killAgent(agent.getPodId());
-    await().atMost(5, TimeUnit.MINUTES).until(agent::isKilled);
-    assertThat(agent.isKilled(), equalTo(true));
+    // Then we can start a new agent
+    MesosJenkinsAgent agent2 = api.enqueueAgent("agent-after-failover", spec).toCompletableFuture().get();
+    // Poll state until we get something.
+    await().atMost(5, TimeUnit.MINUTES).until(agent2::isRunning);
+    assertThat(agent2.isRunning(), equalTo(true));
   }
 }

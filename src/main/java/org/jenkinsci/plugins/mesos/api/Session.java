@@ -9,6 +9,7 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RestartFlow;
+import akka.stream.javadsl.RestartSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
@@ -70,7 +71,6 @@ public class Session {
             0.2,
             20,
             () -> {
-              // TODO: connectClient might still fail. We should add a retry there as well.
               return connectClient(frameworkInfo, clientSettings, provider, system, materializer)
                   .thenCompose(
                       client -> {
@@ -108,13 +108,14 @@ public class Session {
       ActorSystem system,
       ActorMaterializer materializer) {
 
-    return MesosClient$.MODULE$
+    // TODO: move times and max retries into operational settings.
+    return RestartSource.onFailuresWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(30), 0.2, 3, () -> MesosClient$.MODULE$
         .apply(
             clientSettings,
             frameworkInfo,
             OptionConverters.toScala(authorization),
             system,
-            materializer)
+            materializer).asJava())
         .runWith(Sink.head(), materializer)
         .toCompletableFuture();
   }
