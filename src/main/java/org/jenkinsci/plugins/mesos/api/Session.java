@@ -71,7 +71,13 @@ public class Session {
             0.2,
             20,
             () -> {
-              return connectClient(frameworkInfo, clientSettings, provider, system, materializer)
+              return connectClient(
+                      frameworkInfo,
+                      operationalSettings,
+                      clientSettings,
+                      provider,
+                      system,
+                      materializer)
                   .thenCompose(
                       client -> {
                         final SchedulerFactory schedulerFactory =
@@ -103,6 +109,7 @@ public class Session {
   /** Establish a connection to Mesos via the v1 client. */
   private static CompletableFuture<MesosClient> connectClient(
       Protos.FrameworkInfo frameworkInfo,
+      Settings operationalSettings,
       MesosClientSettings clientSettings,
       Optional<CredentialsProvider> authorization,
       ActorSystem system,
@@ -113,7 +120,7 @@ public class Session {
             Duration.ofSeconds(1),
             Duration.ofSeconds(30),
             0.2,
-            5,
+            operationalSettings.getConnectionRetries(),
             () ->
                 MesosClient$.MODULE$
                     .apply(

@@ -14,26 +14,42 @@ public class Settings {
   private final int commandQueueBufferSize;
   private final Duration failoverTimeout;
 
+  private final int connectionRetries;
+
   /** Internal constructor */
-  private Settings(Duration agentTimeout, int commandQueueBufferSize, Duration failoverTimeout) {
+  private Settings(
+      Duration agentTimeout,
+      int commandQueueBufferSize,
+      Duration failoverTimeout,
+      int connectionRetries) {
     this.agentTimeout = agentTimeout;
     this.commandQueueBufferSize = commandQueueBufferSize;
     this.failoverTimeout = failoverTimeout;
+    this.connectionRetries = connectionRetries;
   }
 
   /** @return copy of these settings with overridden command queue buffer size. */
   public Settings withCommandQueueBufferSize(int commandQueueBufferSize) {
-    return new Settings(this.agentTimeout, commandQueueBufferSize, this.failoverTimeout);
+    return new Settings(
+        this.agentTimeout, commandQueueBufferSize, this.failoverTimeout, this.connectionRetries);
   }
 
   /** @return copy of these settings with overridden agent timeout. */
   public Settings withAgentTimeout(Duration agentTimeout) {
-    return new Settings(agentTimeout, this.commandQueueBufferSize, this.failoverTimeout);
+    return new Settings(
+        agentTimeout, this.commandQueueBufferSize, this.failoverTimeout, connectionRetries);
   }
 
   /** @return copy of these settings with overridden failover timeout. */
   public Settings withFailoverTimeout(Duration failoverTimeout) {
-    return new Settings(this.agentTimeout, this.commandQueueBufferSize, failoverTimeout);
+    return new Settings(
+        this.agentTimeout, this.commandQueueBufferSize, failoverTimeout, connectionRetries);
+  }
+
+  /** @return copy of these settings with overridden connection retries. */
+  public Settings withConnectionRetries(int connectionRetries) {
+    return new Settings(
+        this.agentTimeout, this.commandQueueBufferSize, this.failoverTimeout, connectionRetries);
   }
 
   /** @return agent timeout setting. */
@@ -51,6 +67,11 @@ public class Settings {
     return this.failoverTimeout;
   }
 
+  /** @return number of times Jenkins should try to reconnect to Mesos via USI. */
+  public int getConnectionRetries() {
+    return this.connectionRetries;
+  }
+
   /**
    * Factory method to construct {@link Settings} from a Lightbend {@link Config}.
    *
@@ -61,7 +82,8 @@ public class Settings {
     return new Settings(
         conf.getDuration("agent-timeout"),
         conf.getInt("command-queue-buffer-size"),
-        conf.getDuration("failover-timeout"));
+        conf.getDuration("failover-timeout"),
+        conf.getInt("connection-retries"));
   }
 
   /**
