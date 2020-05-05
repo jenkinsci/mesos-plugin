@@ -109,13 +109,20 @@ public class Session {
       ActorMaterializer materializer) {
 
     // TODO: move times and max retries into operational settings.
-    return RestartSource.onFailuresWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(30), 0.2, 3, () -> MesosClient$.MODULE$
-        .apply(
-            clientSettings,
-            frameworkInfo,
-            OptionConverters.toScala(authorization),
-            system,
-            materializer).asJava())
+    return RestartSource.onFailuresWithBackoff(
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(30),
+            0.2,
+            5,
+            () ->
+                MesosClient$.MODULE$
+                    .apply(
+                        clientSettings,
+                        frameworkInfo,
+                        OptionConverters.toScala(authorization),
+                        system,
+                        materializer)
+                    .asJava())
         .runWith(Sink.head(), materializer)
         .toCompletableFuture();
   }

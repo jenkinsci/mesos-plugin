@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.equalTo;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import com.mesosphere.utils.mesos.MesosCluster.Master;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Descriptor.FormException;
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.jdk.javaapi.CollectionConverters;
 
 @ExtendWith(JenkinsParameterResolver.class)
 class MesosApiTest {
@@ -46,7 +44,7 @@ class MesosApiTest {
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
-          //.withNumMasters(3)
+          .withNumMasters(3)
           .withLogPrefix(MesosApiTest.class.getCanonicalName())
           .build(system, materializer);
 
@@ -123,17 +121,18 @@ class MesosApiTest {
 
     // Given a running agent
     final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
-    MesosJenkinsAgent agent1 = api.enqueueAgent("agent-before-failover", spec).toCompletableFuture().get();
+    MesosJenkinsAgent agent1 =
+        api.enqueueAgent("agent-before-failover", spec).toCompletableFuture().get();
     // Poll state until we get something.
     await().atMost(5, TimeUnit.MINUTES).until(agent1::isRunning);
     assertThat(agent1.isRunning(), equalTo(true));
 
     // When Mesos has a failover.
-    //mesosCluster.mesosCluster().failover();
-    mesosCluster.mesosCluster().masters().head().restart();
+    mesosCluster.mesosCluster().failover();
 
     // Then we can start a new agent
-    MesosJenkinsAgent agent2 = api.enqueueAgent("agent-after-failover", spec).toCompletableFuture().get();
+    MesosJenkinsAgent agent2 =
+        api.enqueueAgent("agent-after-failover", spec).toCompletableFuture().get();
     // Poll state until we get something.
     await().atMost(5, TimeUnit.MINUTES).until(agent2::isRunning);
     assertThat(agent2.isRunning(), equalTo(true));
