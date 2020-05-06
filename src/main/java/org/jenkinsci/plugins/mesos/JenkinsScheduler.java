@@ -626,9 +626,13 @@ public class JenkinsScheduler implements Scheduler {
         double requestedCpus = request.request.cpus;
         double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
         // Get matching slave attribute for this label.
-        LOGGER.info("Get slave attributes for label: " + request.request.slaveInfo.getLabelString());
-        String defaultLabel = getLabelOrDefault(request);
-        JSONObject slaveAttributes = getSlaveAttributeForLabel(defaultLabel);
+        JSONObject slaveAttributes = new JSONObject();
+        String reqLabel = request.request.slaveInfo.getLabelString();
+        if(reqLabel != null && !reqLabel.isEmpty()) {
+            LOGGER.info("Get slave attributes for label: " + reqLabel);
+            String defaultLabel = getLabelOrDefault(reqLabel);
+            slaveAttributes = getSlaveAttributeForLabel(defaultLabel);
+        }
 
         if (requestedCpus <= cpus
                 && requestedMem <= mem
@@ -664,7 +668,7 @@ public class JenkinsScheduler implements Scheduler {
     private JSONObject getSlaveAttributeForLabel(String labelName) {
         LOGGER.info(String.format("Getting slave attributes for label: %s", labelName));
         List<MesosSlaveInfo> matchedSlaves = getMesosCloud().getSlaveInfos().stream()
-                .filter(slaveInfo -> slaveInfo.getLabelString() != null && slaveInfo.getLabelString().equals(labelName))
+                .filter(slaveInfo -> Objects.equals(labelName, slaveInfo.getLabelString()))
                 .collect(Collectors.toList());
 
         if (matchedSlaves.size() > 1) {
@@ -675,26 +679,25 @@ public class JenkinsScheduler implements Scheduler {
                     .stream()
                     .findFirst()
                     .map(MesosSlaveInfo::getSlaveAttributes)
-                    .orElse(null);
+                    .orElse(new JSONObject());
         }
-        return matchedSlaves.stream().findFirst().map(MesosSlaveInfo::getSlaveAttributes).orElse(null);
+        return matchedSlaves.stream().findFirst().map(MesosSlaveInfo::getSlaveAttributes).orElse(new JSONObject());
     }
 
     /**
      * Checks for label to match based upon provided label, in the event that label is not found then determine closest
      * matching label. First checks for exact match of label, on exact match return it. Secondly, will trim label (ex: mesos:myDockerContainer)
      * then checks for a match of trimmed label and returns it. If no match is found return original reqLabel.
-     * @param request
+     * @param reqLabel
      * @return label
      */
-    private String getLabelOrDefault(Request request) {
-        String reqLabel = request.request.slaveInfo.getLabelString();
+    private String getLabelOrDefault(String reqLabel) {
         boolean match = getMesosCloud().getSlaveInfos().stream().anyMatch(slaveInfo -> {
             assert slaveInfo.getLabelString() != null;
             return slaveInfo.getLabelString().equals(reqLabel);
         });
 
-        if (match || reqLabel == null) {
+        if (match) {
             return reqLabel;
         }
 

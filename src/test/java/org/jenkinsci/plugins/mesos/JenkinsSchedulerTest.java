@@ -222,10 +222,11 @@ public class JenkinsSchedulerTest {
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         jenkinsScheduler.setDriver(driver);
 
-        //check it
+        //check that offer not having requested attributes is declined, and offer with requested attributes is accepted
         jenkinsScheduler.resourceOffers(driver, offers);
-        Mockito.verify(driver, Mockito.atLeastOnce()).declineOffer(rejectedOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(5).build());
+        Mockito.verify(driver, Mockito.atMost(1)).declineOffer(rejectedOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(5).build());
         Mockito.verify(driver, Mockito.atLeastOnce()).suppressOffers();
+        assertEquals(0, jenkinsScheduler.getUnmatchedLabels().size());
     }
 
     @Test
@@ -244,10 +245,11 @@ public class JenkinsSchedulerTest {
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         jenkinsScheduler.setDriver(driver);
 
-        //check it
+        //check that offer having attributes not matched in mesos slave info is declined.
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver, Mockito.atLeastOnce()).declineOffer(rejectedOffer.getId(), Protos.Filters.newBuilder().setRefuseSeconds(5).build());
         Mockito.verify(driver, never()).suppressOffers();
+        assertEquals(1, jenkinsScheduler.getUnmatchedLabels().size());
     }
 
     @Test
@@ -256,8 +258,8 @@ public class JenkinsSchedulerTest {
         jenkinsScheduler.requestJenkinsSlave(request, null);
 
         ArrayList<Protos.Offer> offers = new ArrayList<Protos.Offer>();
-        Protos.Offer rejectedOffer = createOfferWithAttributes("rack", "jenkins-slave");
-        offers.add(rejectedOffer);
+        Protos.Offer offer = createOfferWithAttributes("rack", "jenkins-slave");
+        offers.add(offer);
 
         List<MesosSlaveInfo> mesosSlaveInfos = mockSlaveInfos();
         Mockito.when(mesosCloud.getSlaveInfos()).thenReturn(mesosSlaveInfos);
@@ -266,9 +268,10 @@ public class JenkinsSchedulerTest {
         SchedulerDriver driver = Mockito.mock(SchedulerDriver.class);
         jenkinsScheduler.setDriver(driver);
 
-        //check it
+        //check that offer was accepted, as no label specified in request, therefore should accept any offer
         jenkinsScheduler.resourceOffers(driver, offers);
         Mockito.verify(driver, Mockito.atLeastOnce()).suppressOffers();
+        assertEquals(0, jenkinsScheduler.getUnmatchedLabels().size());
     }
 
     @Test
@@ -582,7 +585,7 @@ public class JenkinsSchedulerTest {
     private List<MesosSlaveInfo> mockSlaveInfos() throws IOException, Descriptor.FormException {
         List<MesosSlaveInfo> slaveInfos = new ArrayList<>();
         MesosSlaveInfo.ContainerInfo containerInfo = new MesosSlaveInfo.ContainerInfo(
-                "docker",
+                "DOCKER",
                 "test-docker-in-docker-image",
                 Boolean.FALSE,
                 Boolean.TRUE,
@@ -631,7 +634,7 @@ public class JenkinsSchedulerTest {
                 (String) null,       // slaveAttributes,
                 null,               // jvmArgs,
                 null,               // jnlpArgs,
-                "true",               // defaultSlave,
+                null,               // defaultSlave,
                 null,      // containerInfo,
                 null,              // additionalURIs
                 null              // nodeProperties
@@ -748,6 +751,13 @@ public class JenkinsSchedulerTest {
                 .build();
     }
 
+    /**
+     * Creates an offer containing attributes set from params name/value, generates an random ID used in tests that assert
+     * an offer was declined or accepted using it's ID.
+     * @param name
+     * @param value
+     * @return
+     */
     private Protos.Offer createOfferWithAttributes(String name, String value) {
         List<Protos.Resource> resources =  new ArrayList<>();
         resources.add(createCpuResource(20));
