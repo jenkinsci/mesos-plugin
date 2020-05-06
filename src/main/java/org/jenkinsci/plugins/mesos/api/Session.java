@@ -89,15 +89,12 @@ public class Session {
                                 context);
                         return Scheduler.asFlow(schedulerFactory);
                       })
-                  .get()
-                  .getFlow(); // TODO: do not block
+                  .get() // TODO: avoid blocking.
+                  .getFlow();
             });
 
     Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>> pair =
         runScheduler(operationalSettings, schedulerFlow, eventHandler, materializer);
-
-    // Handle stream termination.
-    // pair.second().handle(terminationHandler);
 
     return new Session(pair.first());
   }
@@ -115,10 +112,9 @@ public class Session {
       ActorSystem system,
       ActorMaterializer materializer) {
 
-    // TODO: move times and max retries into operational settings.
     return RestartSource.onFailuresWithBackoff(
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(30),
+            operationalSettings.getConnectionMinBackoff(),
+            operationalSettings.getConnectionMaxBackoff(),
             0.2,
             operationalSettings.getConnectionRetries(),
             () ->
