@@ -96,9 +96,8 @@ public class Session {
     Pair<SourceQueueWithComplete<SchedulerCommand>, CompletionStage<Done>> pair =
         runScheduler(operationalSettings, schedulerFlow, eventHandler, materializer);
 
-
-    //TODO: handle termination
-    //pair.second().handle()
+    // TODO: handle termination
+    // pair.second().handle()
 
     return new Session(pair.first());
   }
