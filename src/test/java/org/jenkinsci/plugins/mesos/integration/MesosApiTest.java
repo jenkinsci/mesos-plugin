@@ -3,15 +3,10 @@ package org.jenkinsci.plugins.mesos.integration;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
-import com.mesosphere.usi.core.models.StateEvent;
-import com.mesosphere.usi.core.models.commands.SchedulerCommand;
+import akka.stream.Materializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.model.Descriptor.FormException;
@@ -19,7 +14,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
@@ -28,24 +23,28 @@ import org.jenkinsci.plugins.mesos.MesosApi;
 import org.jenkinsci.plugins.mesos.MesosJenkinsAgent;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsParameterResolver;
 import org.jenkinsci.plugins.mesos.TestUtils.JenkinsRule;
-import org.jenkinsci.plugins.mesos.api.Settings;
 import org.jenkinsci.plugins.mesos.fixture.AgentSpecMother;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExtendWith(JenkinsParameterResolver.class)
 class MesosApiTest {
 
+  private static final Logger logger = LoggerFactory.getLogger(MesosApiTest.class);
+
   @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
 
   static ActorSystem system = ActorSystem.create("mesos-scheduler-test");
-  static ActorMaterializer materializer = ActorMaterializer.create(system);
+  static Materializer materializer = ActorMaterializer.create(system);
 
   @RegisterExtension
   static MesosClusterExtension mesosCluster =
       MesosClusterExtension.builder()
           .withMesosMasterUrl(String.format("zk://%s/mesos", zkServer.getConnectionUrl()))
+          .withNumMasters(3)
           .withLogPrefix(MesosApiTest.class.getCanonicalName())
           .build(system, materializer);
 
@@ -62,8 +61,8 @@ class MesosApiTest {
             mesosUrl,
             jenkinsUrl,
             System.getProperty("user.name"),
-            "MesosTest",
-            "unique",
+            "MesosTest-startAgent",
+            UUID.randomUUID().toString(),
             "*",
             Optional.empty(),
             Optional.empty());
@@ -86,8 +85,8 @@ class MesosApiTest {
             mesosUrl,
             jenkinsUrl,
             System.getProperty("user.name"),
-            "MesosTest",
-            "unique",
+            "MesosTest-stopAgent",
+            UUID.randomUUID().toString(),
             "*",
             Optional.empty(),
             Optional.empty());
@@ -105,75 +104,37 @@ class MesosApiTest {
   }
 
   @Test
-  public void testLaunchOverflow(JenkinsRule j) throws Exception {
-    // Given a scheduler flow that never processes commands.
-    Settings settings = Settings.load().withCommandQueueBufferSize(1);
-    final CompletableFuture<StateEvent> ignore = new CompletableFuture<>();
-    final Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =
-        Flow.of(SchedulerCommand.class).mapAsync(1, command -> ignore);
+  public void reconnectMesos(JenkinsRule j) throws Exception {
+    URL jenkinsUrl = j.getURL();
+    String mesosUrl = mesosCluster.getMesosUrl().toString();
 
     MesosApi api =
         new MesosApi(
-            new URL("http://jenkins.com"),
+            mesosUrl,
+            jenkinsUrl,
             System.getProperty("user.name"),
-            "MesosTest",
-            "uniqueId",
+            "MesosTest-reconnect",
+            UUID.randomUUID().toString(),
             "*",
-            schedulerFlow,
-            settings,
-            system,
-            materializer);
+            Optional.empty(),
+            Optional.empty());
 
-    // And one agent is processed and one is queued.
-    api.enqueueAgent("agent1", AgentSpecMother.simple);
-    api.enqueueAgent("agent2", AgentSpecMother.simple);
+    // Given a running agent
+    final MesosAgentSpecTemplate spec = AgentSpecMother.simple;
+    MesosJenkinsAgent agent1 =
+        api.enqueueAgent("agent-before-failover", spec).toCompletableFuture().get();
+    // Poll state until we get something.
+    await().atMost(5, TimeUnit.MINUTES).until(agent1::isRunning);
+    assertThat(agent1.isRunning(), equalTo(true));
 
-    // When we enqueue a third agent
-    CompletableFuture<MesosJenkinsAgent> result =
-        api.enqueueAgent("agent3", AgentSpecMother.simple).toCompletableFuture();
+    // When Mesos has a failover.
+    mesosCluster.mesosCluster().failover();
 
-    // Then backpressure hits us.
-    try {
-      result.get();
-    } catch (ExecutionException ex) {
-      assertThat(ex.getCause(), is(instanceOf(IllegalStateException.class)));
-      assertThat(ex.getCause().getMessage(), is("Launch command for agent3 was dropped."));
-    }
-  }
-
-  @Test
-  void testKillOverflow(JenkinsRule j) throws Exception {
-    // Given a scheduler flow that never processes commands.
-    Settings settings = Settings.load().withCommandQueueBufferSize(1);
-    final CompletableFuture<StateEvent> ignore = new CompletableFuture<>();
-    final Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow =
-        Flow.of(SchedulerCommand.class).mapAsync(1, command -> ignore);
-
-    MesosApi api =
-        new MesosApi(
-            new URL("http://jenkins.com"),
-            System.getProperty("user.name"),
-            "MesosTest",
-            "uniqueId",
-            "*",
-            schedulerFlow,
-            settings,
-            system,
-            materializer);
-
-    // And one agent is processed and one is queued.
-    api.enqueueAgent("agent1", AgentSpecMother.simple);
-    api.enqueueAgent("agent2", AgentSpecMother.simple);
-
-    // When we enqueue a third agent
-    CompletableFuture<Void> result = api.killAgent("agent3").toCompletableFuture();
-
-    // Then backpressure hits us.
-    try {
-      result.get();
-    } catch (ExecutionException ex) {
-      assertThat(ex.getCause(), is(instanceOf(IllegalStateException.class)));
-      assertThat(ex.getCause().getMessage(), is("Kill command for agent3 was dropped."));
-    }
+    // Then we can start a new agent
+    MesosJenkinsAgent agent2 =
+        api.enqueueAgent("agent-after-failover", spec).toCompletableFuture().get();
+    // Poll state until we get something.
+    await().atMost(5, TimeUnit.MINUTES).until(agent2::isRunning);
+    assertThat(agent2.isRunning(), equalTo(true));
   }
 }

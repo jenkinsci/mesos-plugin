@@ -42,7 +42,8 @@ public class DockerAgentTest {
           Option.empty(),
           Option.empty(),
           new FiniteDuration(7, TimeUnit.MINUTES),
-          new FiniteDuration(5, TimeUnit.MINUTES));
+          new FiniteDuration(5, TimeUnit.MINUTES),
+          false);
 
   @RegisterExtension
   static MesosClusterExtension mesosCluster =
