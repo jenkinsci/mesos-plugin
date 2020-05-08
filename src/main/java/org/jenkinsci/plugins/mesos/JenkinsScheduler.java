@@ -49,6 +49,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.apache.mesos.Protos.ContainerInfo.Type.MESOS;
 import static org.apache.mesos.Protos.Image.Type.DOCKER;
@@ -625,7 +626,13 @@ public class JenkinsScheduler implements Scheduler {
         double requestedCpus = request.request.cpus;
         double requestedMem = (1 + JVM_MEM_OVERHEAD_FACTOR) * request.request.mem;
         // Get matching slave attribute for this label.
-        JSONObject slaveAttributes = getMesosCloud().getSlaveAttributeForLabel(request.request.slaveInfo.getLabelString());
+        JSONObject slaveAttributes = new JSONObject();
+        String reqLabel = request.request.slaveInfo.getLabelString();
+        if(reqLabel != null && !reqLabel.isEmpty()) {
+            LOGGER.info("Get slave attributes for label: " + reqLabel);
+            String defaultLabel = getLabelOrDefault(reqLabel);
+            slaveAttributes = getSlaveAttributeForLabel(defaultLabel);
+        }
 
         if (requestedCpus <= cpus
                 && requestedMem <= mem
@@ -648,6 +655,65 @@ public class JenkinsScheduler implements Scheduler {
                             "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
             return false;
         }
+    }
+
+    /**
+     * Retrieves the slaveAttributes corresponding to label name. In the event of a match on label names,
+     * returns attributes for SlaveInfo marked as default, otherwiese the matched label's slave attributes. Keeping with
+     * the previous behavior, will return null/empty slave attributes.
+     * @param labelName MesosSlaveInfo label string name.
+     * @return slaveAttributes as a JSONObject.
+     */
+
+    private JSONObject getSlaveAttributeForLabel(String labelName) {
+        LOGGER.info(String.format("Getting slave attributes for label: %s", labelName));
+        List<MesosSlaveInfo> matchedSlaves = getMesosCloud().getSlaveInfos().stream()
+                .filter(slaveInfo -> Objects.equals(labelName, slaveInfo.getLabelString()))
+                .collect(Collectors.toList());
+
+        if (matchedSlaves.size() > 1) {
+            LOGGER.info(String.format("Multiple matches for label %s found, matches: %o", labelName, matchedSlaves.size()));
+            LOGGER.info("For multiple matches, checking for Slave Info marked as default");
+            return matchedSlaves.stream()
+                    .filter(MesosSlaveInfo::isDefaultSlave).collect(Collectors.toList())
+                    .stream()
+                    .findFirst()
+                    .map(MesosSlaveInfo::getSlaveAttributes)
+                    .orElse(new JSONObject());
+        }
+        return matchedSlaves.stream().findFirst().map(MesosSlaveInfo::getSlaveAttributes).orElse(new JSONObject());
+    }
+
+    /**
+     * Checks for label to match based upon provided label, in the event that label is not found then determine closest
+     * matching label. First checks for exact match of label, on exact match return it. Secondly, will trim label (ex: mesos:myDockerContainer)
+     * then checks for a match of trimmed label and returns it. If no match is found return original reqLabel.
+     * @param reqLabel
+     * @return label
+     */
+    private String getLabelOrDefault(String reqLabel) {
+        boolean match = getMesosCloud().getSlaveInfos().stream().anyMatch(slaveInfo -> {
+            assert slaveInfo.getLabelString() != null;
+            return slaveInfo.getLabelString().equals(reqLabel);
+        });
+
+        if (match) {
+            return reqLabel;
+        }
+
+        String trimmedLabel = reqLabel.split(":")[0];
+        List<String> sortedLabelList = getMesosCloud().getSlaveInfos()
+                .stream()
+                .map(MesosSlaveInfo::getLabelString)
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
+
+        match = sortedLabelList.stream().anyMatch(label -> label.equals(trimmedLabel));
+         if(match){
+             return trimmedLabel;
+         } else {
+            return reqLabel;
+         }
     }
 
     /**
