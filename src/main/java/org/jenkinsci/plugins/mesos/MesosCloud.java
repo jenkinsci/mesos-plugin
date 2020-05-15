@@ -234,7 +234,8 @@ public class MesosCloud extends AbstractCloudImpl {
             "Excess workload of {} provisioning new Jenkins agent on Mesos cluster with {} executors",
             excessWorkload,
             numExecutors);
-        final String agentName = spec.generateName();
+        // prefix with framework name to ease debugging in multi-framework scenarios.
+        final String agentName = String.format("%s-%s", frameworkName, spec.generateName());
         nodes.add(
             new NodeProvisioner.PlannedNode(agentName, startAgent(agentName, spec), numExecutors));
         excessWorkload -= numExecutors;
