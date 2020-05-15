@@ -73,7 +73,7 @@ public class MesosCloud extends AbstractCloudImpl {
   private transient Optional<String> sslCert;
   private transient Optional<DcosAuthorization> dcosAuthorization;
 
-  @Nonnull private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
+  private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
   public static class DcosAuthorization {
 
