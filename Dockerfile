@@ -6,7 +6,7 @@ RUN gradle jpi
 
 
 # Stage: Prod
-FROM jenkins/jenkins:2.176.1 as prod
+FROM jenkins/jenkins:2.176.4 as prod
 WORKDIR /tmp
 
 # Environment variables used throughout this Dockerfile

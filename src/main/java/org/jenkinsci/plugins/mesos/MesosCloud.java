@@ -4,6 +4,7 @@ import static hudson.init.InitMilestone.PLUGINS_STARTED;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
 import hudson.init.Initializer;
@@ -54,7 +55,7 @@ import scala.concurrent.ExecutionContext.Implicits$;
  */
 public class MesosCloud extends AbstractCloudImpl {
 
-  private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
+  private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class.getName());
 
   private String master;
 
@@ -72,7 +73,7 @@ public class MesosCloud extends AbstractCloudImpl {
   private transient Optional<String> sslCert;
   private transient Optional<DcosAuthorization> dcosAuthorization;
 
-  private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
+  @Nonnull private List<? extends MesosAgentSpecTemplate> mesosAgentSpecTemplates;
 
   public static class DcosAuthorization {
 
@@ -135,13 +136,19 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.agentUser = agentUser;
     this.role = role;
-    this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
+    this.mesosAgentSpecTemplates =
+        mesosAgentSpecTemplates != null ? mesosAgentSpecTemplates : Collections.emptyList();
     this.frameworkName = frameworkName;
 
     this.frameworkId = frameworkId;
     if (StringUtils.isEmpty(this.frameworkId)) {
       this.frameworkId = UUID.randomUUID().toString();
     }
+
+    logger.info(
+        "Created Mesos cloud instance for framework {} and endpoint {}",
+        this.frameworkId,
+        this.master);
 
     this.mesosApi =
         MesosApi.getInstance(
@@ -195,9 +202,10 @@ public class MesosCloud extends AbstractCloudImpl {
               this.role,
               this.sslCert,
               this.dcosAuthorization);
-      logger.info("Initialized Mesos API object after deserialization.");
+      logger.info(
+          "Initialized Mesos API object for framework {} after deserialization.", this.frameworkId);
     } catch (InterruptedException | ExecutionException e) {
-      logger.error("Failed initialize Mesos API object", e);
+      logger.error("Failed initialize Mesos API object for framework {}", this.frameworkId, e);
       throw new RuntimeException("Failed to initialize Mesos API object after deserialization.", e);
     }
 
@@ -376,7 +384,7 @@ public class MesosCloud extends AbstractCloudImpl {
   }
 
   @Extension
-  public static class DescriptorImpl extends Descriptor<Cloud> {
+  public static final class DescriptorImpl extends Descriptor<Cloud> {
 
     public DescriptorImpl() {
       load();
@@ -599,6 +607,7 @@ public class MesosCloud extends AbstractCloudImpl {
         mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
   }
 
+  @VisibleForTesting
   public MesosApi getMesosApi() {
     return this.mesosApi;
   }
