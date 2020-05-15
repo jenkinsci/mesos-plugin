@@ -1,19 +1,14 @@
 package org.jenkinsci.plugins.mesos;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.OverflowStrategy;
 import akka.stream.QueueOfferResult;
 import akka.stream.javadsl.*;
 import com.mesosphere.mesos.MasterDetector$;
 import com.mesosphere.mesos.client.CredentialsProvider;
 import com.mesosphere.mesos.client.DcosServiceAccountProvider;
-import com.mesosphere.mesos.client.MesosClient;
-import com.mesosphere.mesos.client.MesosClient$;
 import com.mesosphere.mesos.conf.MesosClientSettings;
 import com.mesosphere.usi.core.conf.SchedulerSettings;
-import com.mesosphere.usi.core.japi.Scheduler;
 import com.mesosphere.usi.core.models.*;
 import com.mesosphere.usi.core.models.commands.KillPod;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
@@ -29,7 +24,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -37,27 +31,73 @@ import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.mesos.v1.Protos;
 import org.jenkinsci.plugins.mesos.MesosCloud.DcosAuthorization;
+import org.jenkinsci.plugins.mesos.api.Session;
 import org.jenkinsci.plugins.mesos.api.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.compat.java8.OptionConverters;
 import scala.concurrent.ExecutionContext;
 
+/**
+ * Provides a simplified interface to Mesos through USI.
+ *
+ * <p>Each connection should be a singleton. New instance are create via {@link
+ * MesosApi#getInstance(String, URL, String, String, String, String, Optional, Optional)}.
+ */
 public class MesosApi {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApi.class);
 
+  static HashMap<String, MesosApi> sessions = new HashMap<>();
+
+  /**
+   * Fetching an existing connection or constructs a new one. See {@link MesosApi#MesosApi(String,
+   * URL, String, String, String, String, Optional, Optional)} for parameters.
+   */
+  public static MesosApi getInstance(
+      String master,
+      URL jenkinsUrl,
+      String agentUser,
+      String frameworkName,
+      String frameworkId,
+      String role,
+      Optional<String> sslCert,
+      Optional<DcosAuthorization> authorization)
+      throws ExecutionException, InterruptedException {
+    if (!sessions.containsKey(frameworkId)) {
+      final MesosApi session =
+          new MesosApi(
+              master,
+              jenkinsUrl,
+              agentUser,
+              frameworkName,
+              frameworkId,
+              role,
+              sslCert,
+              authorization);
+      logger.info("Initialized Mesos API object.");
+      sessions.put(frameworkId, session);
+      return session;
+    } else {
+      // Override Jenkins URL and agent user if they changed.
+      MesosApi session = sessions.get(frameworkId);
+      session.setJenkinsUrl(jenkinsUrl);
+      session.setAgentUser(agentUser);
+      return session;
+    }
+  }
+
   private final Settings operationalSettings;
 
   private final String frameworkName;
-  private final String role;
-  private final String agentUser;
+  private final Optional<String> frameworkPrincipal;
+  private String role;
+  private String agentUser;
   private final String frameworkId;
-  private final URL jenkinsUrl;
+  private URL jenkinsUrl;
   private Duration agentTimeout;
 
-  // Interface to USI.
-  @Nonnull private final SourceQueueWithComplete<SchedulerCommand> commands;
+  // Connection to Mesos through USI
+  @Nonnull private final Session session;
 
   // Internal state.
   @Nonnull private final ConcurrentHashMap<PodId, MesosJenkinsAgent> stateMap;
@@ -138,7 +178,8 @@ public class MesosApi {
     this.repository = new MesosPodRecordRepository();
 
     // Inject metrics and credentials provider.
-    Optional<CredentialsProvider> provider =
+    this.frameworkPrincipal = authorization.map(auth -> auth.getUid());
+    Optional<CredentialsProvider> credentialsProvider =
         authorization.map(
             auth -> {
               try {
@@ -158,75 +199,46 @@ public class MesosApi {
 
     // Initialize scheduler flow.
     logger.info("Starting USI scheduler flow.");
-    commands =
-        connectClient(clientSettings, provider)
-            .thenCompose(
-                client ->
-                    Scheduler.fromClient(
-                        client, repository, Metrics.getInstance(frameworkName), schedulerSettings))
-            .thenApply(builder -> runScheduler(builder.getFlow(), materializer))
-            .get();
+    this.session =
+        Session.create(
+            buildFrameworkInfo(),
+            clientSettings,
+            credentialsProvider,
+            schedulerSettings,
+            repository,
+            this.operationalSettings,
+            this::updateState,
+            null,
+            context,
+            system,
+            materializer);
 
     this.agentTimeout = this.operationalSettings.getAgentTimeout();
   }
 
-  /**
-   * Internal constructor for testing the API.
-   *
-   * @param jenkinsUrl The Jenkins address to fetch the agent jar from.
-   * @param agentUser The username used for executing Mesos tasks.
-   * @param frameworkName The name of the framework the Mesos client should register as.
-   * @param frameworkId Unique identifier of the framework in Mesos.
-   * @param role The Mesos role to assume.
-   * @param schedulerFlow The USI scheduler flow constructed by {@link
-   *     com.mesosphere.usi.core.japi.Scheduler#fromClient(MesosClient, PodRecordRepository,
-   *     com.mesosphere.usi.metrics.Metrics, SchedulerSettings)}
-   * @param operationalSettings Operation settings for this plugin.
-   * @param system The Akka actor system to use.
-   * @param materializer The Akka stream materializer to use.
-   */
-  public MesosApi(
-      URL jenkinsUrl,
-      String agentUser,
-      String frameworkName,
-      String frameworkId,
-      String role,
-      Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow,
-      Settings operationalSettings,
-      ActorSystem system,
-      ActorMaterializer materializer) {
-    this.frameworkName = frameworkName;
-    this.frameworkId = frameworkId;
-    this.role = role;
-    this.agentUser = agentUser;
-    this.jenkinsUrl = jenkinsUrl;
+  private Protos.FrameworkInfo buildFrameworkInfo() {
+    Protos.FrameworkID frameworkId =
+        Protos.FrameworkID.newBuilder().setValue(this.frameworkId).build();
+    Protos.FrameworkInfo.Builder frameworkInfoBuilder =
+        Protos.FrameworkInfo.newBuilder()
+            .setUser(this.agentUser)
+            .setName(this.frameworkName)
+            .setId(frameworkId)
+            .addRoles(role)
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE))
+            .addCapabilities(
+                Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.PARTITION_AWARE))
+            .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds());
 
-    this.operationalSettings = operationalSettings;
+    this.frameworkPrincipal.ifPresent(principal -> frameworkInfoBuilder.setPrincipal(principal));
 
-    this.stateMap = new ConcurrentHashMap<>();
-    this.repository = new MesosPodRecordRepository();
-
-    this.commands = runScheduler(schedulerFlow, materializer);
-    this.context = system.dispatcher();
-    this.system = system;
-    this.materializer = materializer;
-  }
-
-  /**
-   * Constructs a queue of {@link SchedulerCommand}. All state events are processed by {@link
-   * MesosApi#updateState(StateEventOrSnapshot)}.
-   *
-   * @param schedulerFlow The scheduler flow from commands to events provided by USI.
-   * @param materializer The {@link ActorMaterializer} used for the source queue.
-   * @return A running source queue.
-   */
-  private SourceQueueWithComplete<SchedulerCommand> runScheduler(
-      Flow<SchedulerCommand, StateEvent, NotUsed> schedulerFlow, ActorMaterializer materializer) {
-    return Source.<SchedulerCommand>queue(
-            operationalSettings.getCommandQueueBufferSize(), OverflowStrategy.dropNew())
-        .via(schedulerFlow)
-        .toMat(Sink.foreach(this::updateState), Keep.left())
-        .run(materializer);
+    return frameworkInfoBuilder.build();
   }
 
   /**
@@ -246,8 +258,10 @@ public class MesosApi {
    * @return a {@link MesosJenkinsAgent} once it's queued for running.
    */
   public CompletionStage<Void> killAgent(PodId podId) {
+    logger.info("Kill agent {}.", podId.value());
     SchedulerCommand command = new KillPod(podId);
-    return commands
+    return this.session
+        .getCommands()
         .offer(command)
         .thenAccept(
             result -> {
@@ -255,9 +269,14 @@ public class MesosApi {
                 logger.warn("USI command queue is full. Fail kill for {}", podId.value());
                 throw new IllegalStateException(
                     String.format("Kill command for %s was dropped.", podId.value()));
+              } else if (result == QueueOfferResult.enqueued()) {
+                logger.debug("Successfully queued kill command for {}", podId.value());
+              } else if (result instanceof QueueOfferResult.Failure) {
+                final Throwable ex = ((QueueOfferResult.Failure) result).cause();
+                throw new IllegalStateException("The USI stream failed or is closed.", ex);
               } else {
-                // TODO: Call crash strategy DCOS_OSS-5055
-                throw new IllegalStateException("The USI stream failed or is closed.");
+                throw new IllegalStateException(
+                    String.format("Unknown queue result %s", result.toString()));
               }
             });
   }
@@ -281,12 +300,13 @@ public class MesosApi {
             spec.getReusable(),
             Collections.emptyList(),
             this.agentTimeout);
-    LaunchPod launchCommand = spec.buildLaunchCommand(jenkinsUrl, name);
+    LaunchPod launchCommand = spec.buildLaunchCommand(jenkinsUrl, name, this.role);
 
     stateMap.put(launchCommand.podId(), mesosJenkinsAgent);
 
     // async add agent to queue
-    return commands
+    return this.session
+        .getCommands()
         .offer(launchCommand)
         .thenApply(
             result -> {
@@ -297,39 +317,14 @@ public class MesosApi {
                 logger.warn("USI command queue is full. Fail provisioning for {}", name);
                 throw new IllegalStateException(
                     String.format("Launch command for %s was dropped.", name));
+              } else if (result instanceof QueueOfferResult.Failure) {
+                final Throwable ex = ((QueueOfferResult.Failure) result).cause();
+                throw new IllegalStateException("The USI stream failed or is closed.", ex);
               } else {
-                // TODO: Call crash strategy DCOS_OSS-5055
-                throw new IllegalStateException("The USI stream failed or is closed.");
+                throw new IllegalStateException(
+                    String.format("Unknown queue result %s", result.toString()));
               }
             });
-  }
-
-  /** Establish a connection to Mesos via the v1 client. */
-  private CompletableFuture<MesosClient> connectClient(
-      MesosClientSettings clientSettings, Optional<CredentialsProvider> authorization) {
-    Protos.FrameworkID frameworkId =
-        Protos.FrameworkID.newBuilder().setValue(this.frameworkId).build();
-    Protos.FrameworkInfo frameworkInfo =
-        Protos.FrameworkInfo.newBuilder()
-            .setUser(this.agentUser)
-            .setName(this.frameworkName)
-            .setId(frameworkId)
-            .addRoles(role)
-            .addCapabilities(
-                Protos.FrameworkInfo.Capability.newBuilder()
-                    .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE))
-            .setFailoverTimeout(this.operationalSettings.getFailoverTimeout().getSeconds())
-            .build();
-
-    return MesosClient$.MODULE$
-        .apply(
-            clientSettings,
-            frameworkInfo,
-            OptionConverters.toScala(authorization),
-            system,
-            materializer)
-        .runWith(Sink.head(), materializer)
-        .toCompletableFuture();
   }
 
   public ActorMaterializer getMaterializer() {
@@ -365,6 +360,16 @@ public class MesosApi {
         stateMap.remove(podStateEvent.id());
       }
     }
+  }
+
+  // Setters
+
+  public void setJenkinsUrl(URL jenkinsUrl) {
+    this.jenkinsUrl = jenkinsUrl;
+  }
+
+  public void setAgentUser(String user) {
+    this.agentUser = user;
   }
 
   /** test method to set the agent timeout duration */

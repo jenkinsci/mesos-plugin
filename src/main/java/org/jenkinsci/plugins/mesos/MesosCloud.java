@@ -1,10 +1,14 @@
 package org.jenkinsci.plugins.mesos;
 
+import static hudson.init.InitMilestone.PLUGINS_STARTED;
 import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
+import hudson.init.Initializer;
+import hudson.logging.LogRecorder;
+import hudson.logging.LogRecorderManager;
 import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Label;
@@ -25,9 +29,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.metrics.api.Metrics;
@@ -52,6 +58,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
   private String master;
 
+  // The Mesos API instance is *not* persisted but re-create each time.
   @Nonnull private transient MesosApi mesosApi;
 
   private final String frameworkName;
@@ -101,6 +108,7 @@ public class MesosCloud extends AbstractCloudImpl {
   public MesosCloud(
       String mesosMasterUrl,
       String frameworkName,
+      String frameworkId,
       String role,
       String agentUser,
       String jenkinsURL,
@@ -129,10 +137,14 @@ public class MesosCloud extends AbstractCloudImpl {
     this.role = role;
     this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
     this.frameworkName = frameworkName;
-    this.frameworkId = UUID.randomUUID().toString();
+
+    this.frameworkId = frameworkId;
+    if (StringUtils.isEmpty(this.frameworkId)) {
+      this.frameworkId = UUID.randomUUID().toString();
+    }
 
     this.mesosApi =
-        new MesosApi(
+        MesosApi.getInstance(
             this.master,
             this.jenkinsURL,
             this.agentUser,
@@ -141,7 +153,6 @@ public class MesosCloud extends AbstractCloudImpl {
             this.role,
             this.sslCert,
             this.dcosAuthorization);
-    logger.info("Initialized Mesos API object.");
   }
 
   private Object readResolve() throws IOException {
@@ -149,12 +160,12 @@ public class MesosCloud extends AbstractCloudImpl {
     // Migration from 1.x
     if (this.agentUser == null && this.slavesUser != null) {
       this.agentUser = this.slavesUser;
-    } else {
+    } else if (this.agentUser == null) {
       this.agentUser = "nobody";
     }
 
     if (this.frameworkId == null) {
-      this.frameworkId = "???"; // Is this this.cloudID?
+      this.frameworkId = UUID.randomUUID().toString();
     }
 
     if (this.mesosAgentSpecTemplates == null && this.slaveInfos != null) {
@@ -175,7 +186,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     try {
       this.mesosApi =
-          new MesosApi(
+          MesosApi.getInstance(
               this.master,
               this.jenkinsURL,
               this.agentUser,
@@ -376,6 +387,39 @@ public class MesosCloud extends AbstractCloudImpl {
       return "Mesos Cloud";
     }
 
+    private static final String LOG_RECORDER_NAME = "Mesos Cloud";
+
+    public String getLogRecorderName() {
+      return LOG_RECORDER_NAME;
+    }
+
+    /**
+     * Preconfigure logger for easier debugging. This is a fork of the Azure Plugin.
+     *
+     * @see <a
+     *     href="https://github.com/jenkinsci/azure-vm-agents-plugin/blob/master/src/main/java/com/microsoft/azure/vmagent/AzureVMCloud.java#L1024">Azure
+     *     Plugin</a>
+     * @param h The Jenkins instance.
+     * @throws IOException
+     */
+    @Initializer(before = PLUGINS_STARTED)
+    public static void addLogRecorder(Jenkins h) throws IOException {
+      // avoid the failure in dynamic loading.
+      if (!h.hasPermission(h.ADMINISTER)) {
+        return;
+      }
+      LogRecorderManager manager = h.getLog();
+      Map<String, LogRecorder> logRecorders = manager.logRecorders;
+      if (!logRecorders.containsKey(LOG_RECORDER_NAME)) {
+        LogRecorder recorder = new LogRecorder(LOG_RECORDER_NAME);
+        recorder.targets.add(new LogRecorder.Target("org.jenkinsci.plugins.mesos", Level.ALL));
+        recorder.targets.add(new LogRecorder.Target("com.mesosphere", Level.ALL));
+        recorder.targets.add(new LogRecorder.Target("akka", Level.ALL));
+        logRecorders.put(LOG_RECORDER_NAME, recorder);
+        recorder.save();
+      }
+    }
+
     /**
      * Validates that the Mesos master URL is a valid URL.
      *
@@ -527,6 +571,10 @@ public class MesosCloud extends AbstractCloudImpl {
 
   public String getMesosMasterUrl() {
     return this.master;
+  }
+
+  public String getFrameworkId() {
+    return this.frameworkId;
   }
 
   public String getFrameworkName() {

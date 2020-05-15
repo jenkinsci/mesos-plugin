@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
 import com.mesosphere.usi.core.models.commands.LaunchPod;
-import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
 import com.mesosphere.usi.core.models.template.FetchUri;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
@@ -22,8 +21,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
-import org.apache.mesos.v1.Protos.DomainInfo;
+import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
+import org.jenkinsci.plugins.mesos.api.RunTemplateFactory.ContainerInfoTaskInfoBuilder;
+import org.jenkinsci.plugins.mesos.config.models.faultdomain.DomainFilterModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private static final Logger logger = LoggerFactory.getLogger(MesosAgentSpecTemplate.class);
 
   private final String label;
-  private final Set<LabelAtom> labelSet;
+  private Set<LabelAtom> labelSet;
 
   private final Node.Mode mode;
   private final int idleTerminationMinutes;
@@ -47,9 +48,11 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   private final int minExecutors;
   private final int maxExecutors;
   private final String jnlpArgs;
+  private final String agentAttributes;
   private final List<MesosSlaveInfo.URI> additionalURIs;
+  private final LaunchCommandBuilder.AgentCommandStyle agentCommandStyle;
   private final ContainerInfo containerInfo;
-  private final DomainFilterImpl domainInfoFilter;
+  private final DomainFilterModel domainFilterModel;
 
   @DataBoundConstructor
   public MesosAgentSpecTemplate(
@@ -62,23 +65,26 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
       int maxExecutors,
       String disk,
       String jnlpArgs,
+      String agentAttributes,
       List<MesosSlaveInfo.URI> additionalURIs,
       ContainerInfo containerInfo,
-      DomainFilterImpl domainInfoFilter) {
+      LaunchCommandBuilder.AgentCommandStyle agentCommandStyle,
+      DomainFilterModel domainFilterModel) {
     this.label = label;
-    this.labelSet = Label.parse(label);
     this.mode = mode;
     this.idleTerminationMinutes = idleTerminationMinutes;
     this.reusable = false; // TODO: DCOS_OSS-5048.
-    this.cpus = Double.parseDouble(cpus);
+    this.cpus = (cpus != null) ? Double.parseDouble(cpus) : 0.1;
     this.mem = Integer.parseInt(mem);
     this.minExecutors = minExecutors;
     this.maxExecutors = maxExecutors;
-    this.disk = Double.parseDouble(disk);
+    this.disk = (disk != null) ? Double.parseDouble(disk) : 0.0;
     this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
+    this.agentAttributes = StringUtils.isNotBlank(agentAttributes) ? agentAttributes : "";
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
-    this.domainInfoFilter = domainInfoFilter;
+    this.domainFilterModel = domainFilterModel;
+    this.agentCommandStyle = agentCommandStyle;
     validate();
   }
 
@@ -115,11 +121,12 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
    *
    * @param jenkinsUrl the URL of the jenkins master.
    * @param name The name of the node to launch.
+   * @param role The Mesos role for the task.
    * @return a LaunchPod command to be passed to USI.
    * @throws MalformedURLException If a fetch URL is not well formed.
    * @throws URISyntaxException IF the fetch URL cannot be converted into a proper URI.
    */
-  public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name)
+  public LaunchPod buildLaunchCommand(URL jenkinsUrl, String name, String role)
       throws MalformedURLException, URISyntaxException {
     List<FetchUri> fetchUris =
         additionalURIs.stream()
@@ -141,14 +148,18 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
             .collect(Collectors.toList());
 
     return new LaunchCommandBuilder()
-        .withCpu(this.getCpu())
-        .withMemory(this.getMemory())
+        .withCpu(this.getCpus())
+        .withMemory(this.getMem())
         .withDisk(this.getDisk())
         .withName(name)
+        .withRole(role)
         .withJenkinsUrl(jenkinsUrl)
         .withContainerInfo(Optional.ofNullable(this.getContainerInfo()))
-        .withDomainInfoFilter(Optional.ofNullable(this.getDomainInfoFilter()))
+        .withDomainInfoFilter(
+            Optional.ofNullable(this.getDomainFilterModel()).map(model -> model.getFilter()))
         .withJnlpArguments(this.getJnlpArgs())
+        .withAgentAttribute(this.getAgentAttributes())
+        .withAgentCommandStyle(Optional.ofNullable(this.agentCommandStyle))
         .withAdditionalFetchUris(fetchUris)
         .build();
   }
@@ -158,6 +169,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   }
 
   public Set<LabelAtom> getLabelSet() {
+    // Label.parse requires a Jenkins instance so we initialize it lazily
+    if (this.labelSet == null) {
+      this.labelSet = Label.parse(label);
+    }
     return this.labelSet;
   }
 
@@ -174,7 +189,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return String.format("jenkins-agent-%s-%s", this.label, UUID.randomUUID().toString());
   }
 
-  public double getCpu() {
+  public double getCpus() {
     return this.cpus;
   }
 
@@ -182,7 +197,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return this.disk;
   }
 
-  public int getMemory() {
+  public int getMem() {
     return this.mem;
   }
 
@@ -206,16 +221,24 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     return maxExecutors;
   }
 
+  public LaunchCommandBuilder.AgentCommandStyle getAgentCommandStyle() {
+    return this.agentCommandStyle;
+  }
+
   public String getJnlpArgs() {
     return jnlpArgs;
+  }
+
+  public String getAgentAttributes() {
+    return agentAttributes;
   }
 
   public ContainerInfo getContainerInfo() {
     return this.containerInfo;
   }
 
-  public DomainFilterImpl getDomainInfoFilter() {
-    return this.domainInfoFilter;
+  public DomainFilterModel getDomainFilterModel() {
+    return this.domainFilterModel;
   }
 
   public static class ContainerInfo extends AbstractDescribableImpl<ContainerInfo> {
@@ -223,12 +246,10 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     private final String type;
     private final String dockerImage;
     private final List<Volume> volumes;
+    private final Network networking;
     private final boolean dockerPrivilegedMode;
     private final boolean dockerForcePullImage;
     private boolean isDind;
-
-    @SuppressFBWarnings("UUF_UNUSED_FIELD")
-    private transient String networking;
 
     @SuppressFBWarnings("UUF_UNUSED_FIELD")
     private transient List<Object> portMappings;
@@ -255,17 +276,24 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
         boolean isDind,
         boolean dockerPrivilegedMode,
         boolean dockerForcePullImage,
-        List<Volume> volumes) {
+        List<Volume> volumes,
+        Network networking) {
       this.type = type;
       this.dockerImage = dockerImage;
       this.dockerPrivilegedMode = dockerPrivilegedMode;
       this.dockerForcePullImage = dockerForcePullImage;
       this.volumes = volumes;
       this.isDind = isDind;
+      this.networking =
+          (networking != null) ? networking : ContainerInfoTaskInfoBuilder.DEFAULT_NETWORKING;
     }
 
     public boolean getIsDind() {
       return this.isDind;
+    }
+
+    public Network getNetworking() {
+      return this.networking;
     }
 
     public String getType() {
@@ -328,33 +356,6 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Volume> {
-
-      public DescriptorImpl() {
-        load();
-      }
-    }
-  }
-
-  public static class DomainFilterImpl extends AbstractDescribableImpl<DomainFilterImpl>
-      implements DomainFilter {
-
-    private final String region;
-    private final String zone;
-
-    @DataBoundConstructor
-    public DomainFilterImpl(String region, String zone) {
-      this.region = region;
-      this.zone = zone;
-    }
-
-    @Override
-    public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
-      return this.region == nodeDomain.getFaultDomain().getRegion().getName()
-          && this.zone == nodeDomain.getFaultDomain().getZone().getName();
-    }
-
-    @Extension
-    public static final class DescriptorImpl extends Descriptor<DomainFilterImpl> {
 
       public DescriptorImpl() {
         load();

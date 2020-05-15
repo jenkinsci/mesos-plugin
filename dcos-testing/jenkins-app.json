@@ -8,6 +8,13 @@
   "acceptedResourceRoles": [
     "*"
   ],
+  "constraints": [
+    [
+      "os",
+      "UNLIKE",
+      "windows"
+    ]
+  ],
   "container": {
     "type": "DOCKER",
     "docker": {
@@ -35,9 +42,10 @@
     "JENKINS_SLAVE_AGENT_PORT": "50000",
     "JENKINS_AGENT_ROLE": "*",
     "JVM_OPTS": "-Xms1024m -Xmx1024m",
-    "JENKINS_AGENT_USER": "root",
+    "JENKINS_AGENT_USER": "nobody",
     "JENKINS_OPTS": "",
     "JENKINS_FRAMEWORK_NAME": "jenkins",
+    "JENKINS_MESOS_MASTER": "https://leader.mesos:5050",
     "MARATHON_NAME": "marathon",
     "DCOS_SERVICE_ACCOUNT": "jenkins",
     "DCOS_SERVICE_ACCOUNT_PRIVATE_KEY": {
@@ -66,5 +74,16 @@
   "upgradeStrategy": {
     "maximumOverCapacity": 0,
     "minimumHealthCapacity": 0
-  }
+  },
+  "healthChecks": [
+    {
+      "path": "/service/jenkins",
+      "portIndex": 0,
+      "protocol": "MESOS_HTTP",
+      "gracePeriodSeconds": 60,
+      "intervalSeconds": 60,
+      "timeoutSeconds": 20,
+      "maxConsecutiveFailures": 3
+    }
+  ]
 }

@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.mesos.fixture;
 
 import hudson.model.Node.Mode;
 import java.util.Collections;
+import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 
@@ -23,7 +24,9 @@ public class AgentSpecMother {
           1,
           "0",
           "",
+          "",
           Collections.emptyList(),
+          null,
           null,
           null);
 
@@ -38,13 +41,16 @@ public class AgentSpecMother {
           1,
           "1",
           "",
+          "",
           Collections.emptyList(),
           new ContainerInfo(
               "DOCKER",
-              "mesosphere/jenkins-dind:0.6.0-alpine",
+              "mesosphere/jenkins-dind-dev:karsten",
               true,
               true,
               false,
-              Collections.emptyList()),
+              Collections.emptyList(),
+              Network.HOST),
+          null,
           null);
 }

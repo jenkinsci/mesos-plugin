@@ -63,7 +63,9 @@ public class MesosCloudProvisionTest {
             1,
             "0",
             "",
+            "",
             Collections.emptyList(),
+            null,
             null,
             null);
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);
@@ -72,6 +74,7 @@ public class MesosCloudProvisionTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -110,7 +113,9 @@ public class MesosCloudProvisionTest {
             1,
             "0",
             "",
+            "",
             Collections.emptyList(),
+            null,
             null,
             null);
 
@@ -119,6 +124,7 @@ public class MesosCloudProvisionTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),

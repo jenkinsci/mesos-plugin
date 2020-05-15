@@ -4,6 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.mesosphere.usi.core.models.PodId;
 import com.mesosphere.usi.core.models.commands.LaunchPod;
+import com.mesosphere.usi.core.models.constraints.AgentFilter;
+import com.mesosphere.usi.core.models.constraints.AttributeStringIsFilter;
 import com.mesosphere.usi.core.models.faultdomain.DomainFilter;
 import com.mesosphere.usi.core.models.faultdomain.HomeRegionFilter$;
 import com.mesosphere.usi.core.models.resources.ScalarRequirement;
@@ -18,8 +20,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import jenkins.model.Jenkins;
-import org.apache.mesos.v1.Protos.DomainInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 import scala.Option;
@@ -37,8 +39,15 @@ public class LaunchCommandBuilder {
   // We allocate extra memory for the JVM
   private static final int JVM_XMX = 32;
 
-  private static final String AGENT_COMMAND_FORMAT =
+  public static enum AgentCommandStyle {
+    Linux,
+    Windows
+  }
+
+  private static final String LINUX_AGENT_COMMAND_TEMPLATE =
       "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar ${MESOS_SANDBOX-.}/agent.jar %s %s -jnlpUrl %s";
+  private static final String WINDOWS_AGENT_COMMAND_TEMPLATE =
+      "java -DHUDSON_HOME=jenkins -server -Xmx%dm %s -jar %%MESOS_SANDBOX%%/agent.jar %s %s -jnlpUrl %s";
 
   private static final String JNLP_SECRET_FORMAT = "-secret %s";
 
@@ -46,15 +55,17 @@ public class LaunchCommandBuilder {
   private ScalarRequirement cpus = null;
   private ScalarRequirement memory = null;
   private ScalarRequirement disk = null;
-  private String role = "test";
+  private String role = null;
   private List<FetchUri> additionalFetchUris = Collections.emptyList();
   private Optional<ContainerInfo> containerInfo = Optional.empty();
-  private DomainFilter domainInfoFilter = ANY_DOMAIN;
+  private AgentCommandStyle agentCommandStyle = AgentCommandStyle.Linux;
+  private DomainFilter domainInfoFilter = HomeRegionFilter$.MODULE$;
 
   private int xmx = 0;
 
   private String jvmArgString = "";
   private String jnlpArgString = "";
+  private String agentAttributeString = "";
 
   private URL jenkinsMaster = null;
 
@@ -118,8 +129,18 @@ public class LaunchCommandBuilder {
     return this;
   }
 
+  public LaunchCommandBuilder withAgentCommandStyle(Optional<AgentCommandStyle> maybeStyle) {
+    maybeStyle.ifPresent(style -> this.agentCommandStyle = style);
+    return this;
+  }
+
   public LaunchCommandBuilder withJnlpArguments(String args) {
     this.jnlpArgString = args;
+    return this;
+  }
+
+  public LaunchCommandBuilder withAgentAttribute(String agentAttribute) {
+    this.agentAttributeString = agentAttribute;
     return this;
   }
 
@@ -132,13 +153,27 @@ public class LaunchCommandBuilder {
             this.role,
             this.buildFetchUris(),
             this.containerInfo);
-    return new LaunchPod(this.id, runTemplate, this.domainInfoFilter);
+
+    return LaunchPod.create(
+        this.id, runTemplate, this.domainInfoFilter, buildAgentAttributeFilters());
   }
 
   /** @return the agent shell command for the Mesos task. */
   private String buildCommand() throws MalformedURLException {
+    final String template;
+    switch (this.agentCommandStyle) {
+      case Linux:
+        template = LINUX_AGENT_COMMAND_TEMPLATE;
+        break;
+      case Windows:
+        template = WINDOWS_AGENT_COMMAND_TEMPLATE;
+        break;
+      default:
+        template = LINUX_AGENT_COMMAND_TEMPLATE;
+        break;
+    }
     return String.format(
-        AGENT_COMMAND_FORMAT,
+        template,
         this.xmx,
         this.jvmArgString,
         this.jnlpArgString,
@@ -167,6 +202,21 @@ public class LaunchCommandBuilder {
     return jenkins;
   }
 
+  private Iterable<AgentFilter> buildAgentAttributeFilters() {
+    if (agentAttributeString.isEmpty()) {
+      return Collections.emptyList();
+    } else {
+      return Arrays.stream(agentAttributeString.split(","))
+          .map(
+              attribute -> {
+                final String name = attribute.split(":")[0];
+                final String value = attribute.split(":")[1];
+                return new AttributeStringIsFilter(name, value);
+              })
+          .collect(Collectors.toList());
+    }
+  }
+
   /** @return the Jnlp url for the agent: http://[master]/computer/[slaveName]/slave-agent.jnlp */
   private URL buildJnlpUrl() throws MalformedURLException {
     final String path = Paths.get("computer", this.id.value(), "slave-agent.jnlp").toString();
@@ -183,12 +233,4 @@ public class LaunchCommandBuilder {
         .add(jenkinsAgentFetchUri)
         .build();
   }
-
-  private static DomainFilter ANY_DOMAIN =
-      new DomainFilter() {
-        @Override
-        public boolean apply(DomainInfo masterDomain, DomainInfo nodeDomain) {
-          return true;
-        }
-      };
 }

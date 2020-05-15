@@ -30,7 +30,8 @@ is automatically shut down.
   - __[Pipeline jobs](#pipeline-jobs)__
 - __[Plugin Development](#plugin-development)__
   - __[Building the plugin](#building-the-plugin)__
-  - __[On DC/OS Enterprise](#on-dcos-enterprise)__
+  - __[Testing On DC/OS Enterprise](#testing-on-dcos-enterprise)__
+- __[Release](#release)__
 <!-- /toc -->
 
 
@@ -50,7 +51,7 @@ Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
 you should see an option to 'Add a new cloud' at the bottom of the page.
 
 1. Add the 'Mesos Cloud'.
-2. Give the path to the address `http://HOST:PORT` of a running Mesos master.
+2. Give the path to the address `http://HOST:PORT` of a running Mesos master. On DC/OS this can be as simple as `https://leader.mesos:5050`.
 3. Set the user name agents should start as. Ensure that the Mesos agents have have the user available.
 4. Set the Jenkins URL.
 5. Click `Save`.
@@ -68,8 +69,10 @@ You can update the values/Add  more 'Agent Specs'/Delete 'Agent Specs' by clicki
 'Agent Specs' can hold required information(Executor CPU, Executor Mem etc) for an agent that needs
 to be matched against Mesos offers.
 Label name is the key between the job and the required agent to execute the job. See [Configuring Jenkins Jobs](#configuring-jenkins-jobs).
-Ex: Heavy jobs can be assigned  label 'powerful_slave'(which has 'Slave Info' 20 Executor CPU, 10240M Executor Mem etc)
-and light weight jobs can be assigned label 'light_weight_slave'(which has  'Slave Info' 1 Executor CPU, 128M Executor Mem etc).
+For instance, heavy jobs can be assigned  label 'powerful_agent'(which has 20 Executor CPU, 10240M Executor Mem etc)
+and light weight jobs can be assigned label 'light_weight_agent'(which has  1 Executor CPU, 128M Executor Mem etc).
+
+The [Jenkins Configuration as Code](https://jenkins.io/projects/jcasc/) in [dcos/conf/jenkins](dcos/conf/jenkins/configuration.yaml) configures a Linux agent based on the [amazoncorretto:8](https://hub.docker.com/_/amazoncorretto) Docker image and a Windows agent based on [mesosphere/jenkins-windows-node:latest](https://hub.docker.com/repository/docker/mesosphere/jenkins-windows-node/) Docker image. See https://github.com/jeschkies/hello-world-fsharp/blob/master/Jenkinsfile for an example build.
 
 ### DC/OS Authentication ###
 
@@ -138,6 +141,17 @@ started with
 
 The code is formatted following the [Google Style Guide](https://github.com/google/styleguide).
 
-### On DC/OS Enterprise
+### Testing On DC/OS Enterprise
 
-See the [dcos folder](dcos/README.md).
+See the [dcos folder](dcos-testing/README.md).
+
+## Release
+
+You must have publish rights and the credentials set in `~/.m2/settings.xml` and `~/.jenkins-ci.org` as described
+[here](https://wiki.jenkins.io/display/JENKINS/Hosting+Plugins#HostingPlugins-Releasingtojenkins-ci.org).
+
+To release this plugin
+
+1. Set the version in `build.gradle`.
+2. Publish the plugin with `./gradlew publish`.
+

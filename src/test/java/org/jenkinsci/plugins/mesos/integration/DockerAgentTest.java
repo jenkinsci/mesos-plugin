@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.mesos.integration;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -41,7 +42,8 @@ public class DockerAgentTest {
           Option.empty(),
           Option.empty(),
           new FiniteDuration(7, TimeUnit.MINUTES),
-          new FiniteDuration(5, TimeUnit.MINUTES));
+          new FiniteDuration(5, TimeUnit.MINUTES),
+          false);
 
   @RegisterExtension
   static MesosClusterExtension mesosCluster =
@@ -61,6 +63,7 @@ public class DockerAgentTest {
         new MesosCloud(
             mesosCluster.getMesosUrl().toString(),
             "MesosTest",
+            null,
             "*",
             System.getProperty("user.name"),
             j.getURL().toString(),
@@ -71,6 +74,7 @@ public class DockerAgentTest {
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
 
     // verify slave is running when the future completes;
+    await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
     assertThat(agent.isRunning(), is(true));
   }
 }

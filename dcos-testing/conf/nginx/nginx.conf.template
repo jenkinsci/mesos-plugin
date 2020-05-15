@@ -12,7 +12,7 @@ http {
         access_log      /var/log/nginx/jenkins/access.log;
         error_log       /var/log/nginx/jenkins/error.log debug;
 
-        location ^~ $jenkins_context {
+        location ^~ $JENKINS_CONTEXT {
             proxy_pass         http://127.0.0.1:$PORT1;
             proxy_set_header   Host             $http_host;
             proxy_set_header   X-Real-IP        $remote_addr;

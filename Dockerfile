@@ -39,14 +39,14 @@ RUN mkdir -p "$JENKINS_HOME" "${JENKINS_FOLDER}/war"
 
 # Nginx setup
 RUN mkdir -p /var/log/nginx/jenkins
-COPY dcos/conf/nginx/nginx.conf.template /etc/nginx/nginx.conf.template
+COPY dcos-testing/conf/nginx/nginx.conf.template /etc/nginx/nginx.conf.template
 
 # Jenkins setup and configuration.
 ENV CASC_JENKINS_CONFIG /usr/local/jenkins/jenkins.yaml
-COPY dcos/conf/jenkins/configuration.yaml "${CASC_JENKINS_CONFIG}"
+COPY dcos-testing/conf/jenkins/configuration.yaml "${CASC_JENKINS_CONFIG}"
 
 # Add plugins
-COPY dcos/conf/plugins.conf /tmp/
+COPY dcos-testing/conf/plugins.conf /tmp/
 RUN /usr/local/bin/install-plugins.sh < /tmp/plugins.conf
 
 # Add Mesos plugin

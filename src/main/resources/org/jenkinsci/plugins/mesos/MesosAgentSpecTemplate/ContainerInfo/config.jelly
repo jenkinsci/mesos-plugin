@@ -19,6 +19,13 @@
         <f:checkbox/>
     </f:entry>
 
+    <f:entry title="${%Networking}" description="${%Specify the networking mode to use for this container}" field="networking" >
+      <f:enum field="networking">
+          ${it.toString()}
+      </f:enum>
+    </f:entry>
+
+
     <f:entry title="${%Volumes}">
         <f:repeatableProperty field="volumes" add="${%Add Volume}" minimum="0">
             <f:entry>

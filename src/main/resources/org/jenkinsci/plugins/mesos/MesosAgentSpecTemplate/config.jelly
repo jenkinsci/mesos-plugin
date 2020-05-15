@@ -38,9 +38,20 @@
              <f:textbox default="-noReconnect"/>
          </f:entry>
 
+         <f:entry title="${%Mesos Offer Selection Attributes}" field="agentAttributes">
+             <f:textbox default=""/>
+         </f:entry>
+
          <f:optionalProperty title="${%Configure Containerizer}" field="containerInfo"/>
 
-         <f:optionalProperty title="${%Filter Fault Domain}" field="domainInfoFilter"/>
+         <f:entry title="${%Agent Command Style}" field="agentCommandStyle">
+             <f:enum field="agentCommandStyle">
+               ${it.toString()}
+             </f:enum>
+         </f:entry>
+
+         <f:dropdownDescriptorSelector title="${%Fault Domain Filter}" field="domainFilterModel"
+           descriptors="${descriptor.domainFilterModelDescriptors}"/>
 
           <f:entry title="${%Additional URIs}">
               <f:repeatableProperty field="additionalURIs" minimum="0" add="Add URI">
