@@ -25,7 +25,7 @@ ext {
     scalaVersion = '2.13'
     akkaVersion = '2.6.3'
     junitJupiterVersion = '5.3.1'
-    jcascVersion = '1.36'
+    jcascVersion = '1.35'
 }
 
 dependencies {
@@ -54,7 +54,8 @@ dependencies {
     testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitJupiterVersion
     testImplementation group: 'com.mesosphere.usi', name: "test-utils_$scalaVersion", version: usiVersion
     testImplementation 'org.awaitility:awaitility:3.1.6'
-    testImplementation group: 'io.jenkins', name: 'configuration-as-code', version: jcascVersion
+
+    testImplementation "io.jenkins:configuration-as-code:$jcascVersion@jar"
     testImplementation group: 'io.jenkins.configuration-as-code', name: 'test-harness', version: jcascVersion
 
     compileOnly 'com.github.spotbugs:spotbugs-annotations:3.1.3'

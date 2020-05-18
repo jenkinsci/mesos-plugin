@@ -1,0 +1,28 @@
+jenkins:
+  clouds:
+    - mesos:
+        agentUser: "${JENKINS_AGENT_USER:-root}"
+        frameworkName: "${JENKINS_FRAMEWORK_NAME:-Jenkins Scheduler}"
+        jenkinsURL: "http://${JENKINS_FRAMEWORK_NAME:-jenkins}.${MARATHON_NAME:-marathon}.mesos:${PORT0:-8080}"
+        mesosAgentSpecTemplates:
+          - label: "linux"
+            agentAttributes: ""
+            agentCommandStyle: Linux
+            containerInfo:
+              dockerForcePullImage: false
+              dockerImage: "amazoncorretto:8"
+              dockerPrivilegedMode: false
+              isDind: false
+              networking: HOST
+              type: "DOCKER"
+            cpus: "0.1"
+            disk: "0.0"
+            domainFilterModel: "home"
+            idleTerminationMinutes: 3
+            jnlpArgs: "-noReconnect"
+            maxExecutors: 1
+            mem: "512"
+            minExecutors: 1
+            mode: EXCLUSIVE
+        mesosMasterUrl: "${JENKINS_MESOS_MASTER:-http://leader.mesos:5050}"
+        role: "${JENKINS_AGENT_ROLE:-*}"

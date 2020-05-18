@@ -16,7 +16,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
+import org.jenkinsci.plugins.mesos.MesosCloud.DescriptorImpl;
 import org.jenkinsci.plugins.mesos.integration.MesosCloudProvisionTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,9 +87,10 @@ public class MesosCloudTest {
   }
 
   @Test
-  void configureAsCode(TestUtils.JenkinsRule j) {
-    ConfigurationAsCode.get().configure(configs);
+  void configureAsCode(TestUtils.JenkinsRule j) throws IOException {
+    final String config = IOUtils.resourceToURL("configuration.yaml", this.getClass().getClassLoader()).toExternalForm();
+    ConfigurationAsCode.get().configure(config);
 
-    jenkins.getDescriptorByType(GitLabConnectionConfig.class);
+    j.jenkins.getDescriptorByType(DescriptorImpl.class);
   }
 }
