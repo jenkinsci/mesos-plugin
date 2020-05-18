@@ -14,9 +14,9 @@ jenkins:
             agentCommandStyle: Linux
             containerInfo:
               dockerForcePullImage: false
-              dockerImage: "amazoncorretto:8"
-              dockerPrivilegedMode: false
-              isDind: false
+              dockerImage: "mesosphere/jenkins-dind:0.8.0"
+              dockerPrivilegedMode: true
+              isDind: true
               networking: HOST
               type: "DOCKER"
             cpus: "0.1"
