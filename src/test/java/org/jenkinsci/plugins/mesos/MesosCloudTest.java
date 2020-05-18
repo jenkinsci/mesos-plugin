@@ -91,6 +91,6 @@ public class MesosCloudTest {
     final String config = IOUtils.resourceToURL("configuration.yaml", this.getClass().getClassLoader()).toExternalForm();
     ConfigurationAsCode.get().configure(config);
 
-    j.jenkins.getDescriptorByType(DescriptorImpl.class);
+    assertThat(j.jenkins.clouds, hasSize(1));
   }
 }
