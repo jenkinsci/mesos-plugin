@@ -50,10 +50,24 @@ public class MesosApi {
   static HashMap<String, MesosApi> sessions = new HashMap<>();
 
   /**
-   * Fetching an existing connection or constructs a new one. See {@link MesosApi#MesosApi(String,
-   * URL, String, String, String, String, Optional, Optional)} for parameters.
+   * Fetching an existing connection or constructs a new one.
+   *
+   * <p>This is modelled after the <code>KubernetesClientProvider</code> of the Kubernetes plugin.
    */
-  public static synchronized MesosApi getInstance(
+  public static synchronized MesosApi getInstance(MesosCloud cloud)
+      throws InterruptedException, ExecutionException {
+    return getInstance(
+        cloud.getMesosMasterUrl(),
+        cloud.getJenkinsURL(),
+        cloud.getAgentUser(),
+        cloud.getFrameworkName(),
+        cloud.getFrameworkId(),
+        cloud.getRole(),
+        cloud.getSslCert(),
+        cloud.getAuthorization());
+  }
+
+  private static synchronized MesosApi getInstance(
       String master,
       URL jenkinsUrl,
       String agentUser,
