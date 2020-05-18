@@ -4,6 +4,7 @@ node('docker') {
 
       try {
         checkout scm
+        sh 'sudo -E docker image prune --force'
         sh 'sudo -E docker run -d --rm --privileged -v "$(pwd):/var/build" --name mini mesos/mesos-mini:1.9.x'
 	timeout(time: 45, unit: 'MINUTES') {
           sh 'sudo -E docker exec -w /var/build mini ci/run.sh'
