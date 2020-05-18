@@ -386,9 +386,9 @@ public class MesosCloud extends AbstractCloudImpl {
   @Extension
   public static final class DescriptorImpl extends Descriptor<Cloud> {
 
-    public DescriptorImpl() {
-      load();
-    }
+//    public DescriptorImpl() {
+//      load();
+//    }
 
     @Override
     public String getDisplayName() {

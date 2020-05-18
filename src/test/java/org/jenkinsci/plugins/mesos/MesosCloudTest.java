@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer;
 import com.mesosphere.utils.mesos.MesosClusterExtension;
 import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.util.XStream2;
+import io.jenkins.plugins.casc.ConfigurationAsCode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -81,5 +82,12 @@ public class MesosCloudTest {
     assertThat(reloadedCloud.getFrameworkId(), is(equalTo(cloud.getFrameworkId())));
     assertThat(reloadedCloud.getRole(), is(equalTo(cloud.getRole())));
     assertThat(reloadedCloud.getAgentUser(), is(equalTo(cloud.getAgentUser())));
+  }
+
+  @Test
+  void configureAsCode(TestUtils.JenkinsRule j) {
+    ConfigurationAsCode.get().configure(configs);
+
+    jenkins.getDescriptorByType(GitLabConnectionConfig.class);
   }
 }
