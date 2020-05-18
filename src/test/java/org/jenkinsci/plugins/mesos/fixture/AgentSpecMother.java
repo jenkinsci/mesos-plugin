@@ -45,9 +45,9 @@ public class AgentSpecMother {
           Collections.emptyList(),
           new ContainerInfo(
               "DOCKER",
-              "mesosphere/jenkins-dind:0.8.0",
-              true,
-              true,
+              "jeschkies/jenkins-simple-agent:testing",
+              false,
+              false,
               false,
               Collections.emptyList(),
               Network.HOST),
