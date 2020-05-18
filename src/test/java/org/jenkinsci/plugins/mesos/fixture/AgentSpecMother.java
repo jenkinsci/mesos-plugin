@@ -48,7 +48,7 @@ public class AgentSpecMother {
               "jeschkies/jenkins-simple-agent:testing",
               false,
               false,
-              false,
+              true,
               Collections.emptyList(),
               Network.HOST),
           null,
