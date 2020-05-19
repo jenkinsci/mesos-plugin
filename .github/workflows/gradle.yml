@@ -29,6 +29,8 @@ jobs:
       run: sudo ./ci/install_docker.sh
     - name: Install Mesos
       run: sudo ./ci/install_mesos.sh 1.9.0
+    - name: Set Port Range
+      run: sudo ./ci/set_port_range.sh
     - name: Build and Unit Test
       run: ./gradlew clean check javadoc -x integrationTest --info
     - name: Test Integration
