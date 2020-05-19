@@ -32,11 +32,11 @@ jobs:
     - name: Build and test with Gradle
       run: ./gradlew clean check javadoc --info
     - name: Archive Test Results
-      if: always()
+      if: failure()
       uses: actions/upload-artifact@v1
       with:
         name: JUnit
-        path: build/test-results/test/*.xml
+        path: uild/reports/tests/**/*
     - name: Archive Sandboxes
       if: always()
       uses: actions/upload-artifact@v1

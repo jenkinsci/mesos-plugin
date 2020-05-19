@@ -61,6 +61,10 @@ test {
     useJUnitPlatform {
         excludeTags 'integration'
     }
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
 }
 
 task integrationTest(type: Test) {
