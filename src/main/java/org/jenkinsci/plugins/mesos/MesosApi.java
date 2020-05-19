@@ -56,9 +56,15 @@ public class MesosApi {
    */
   public static synchronized MesosApi getInstance(MesosCloud cloud)
       throws InterruptedException, ExecutionException {
+    final URL jenkinsURL;
+    try {
+      jenkinsURL = new URL(cloud.getJenkinsURL());
+    } catch (MalformedURLException ex) {
+      throw new ExecutionException("Could not parse Jenkins URL", ex);
+    }
     return getInstance(
         cloud.getMesosMasterUrl(),
-        cloud.getJenkinsURL(),
+        jenkinsURL,
         cloud.getAgentUser(),
         cloud.getFrameworkName(),
         cloud.getFrameworkId(),

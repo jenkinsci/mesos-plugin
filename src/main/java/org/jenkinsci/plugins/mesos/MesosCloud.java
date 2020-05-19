@@ -553,8 +553,8 @@ public class MesosCloud extends AbstractCloudImpl {
     return this.frameworkName;
   }
 
-  public URL getJenkinsURL() {
-    return this.jenkinsURL;
+  public String getJenkinsURL() {
+    return this.jenkinsURL.toString();
   }
 
   public String getAgentUser() {
