@@ -39,3 +39,11 @@ jobs:
       with:
         name: JUnit
         path: /home/runner/work/mesos-plugin/mesos-plugin/build/test-results
+    - name: Create Sandboxes Archive
+      if: always()
+      run: ./gradlew zipSandboxes --info && sudo rm -rf sandboxes && ls build/distributions
+    - name: Archive Sandboxes
+      if: always()
+      uses: actions/upload-artifact@v1
+      with:
+        path: /home/runner/work/mesos-plugin/mesos-plugin/build/distributions/sandboxes-*.zip
