@@ -33,9 +33,9 @@ jobs:
     - name: Set Port Range
       run: sudo ./ci/set_port_range.sh
     - name: Build and Unit Test
-      run: ./gradlew clean check javadoc -x integrationTest --info
+      run: ./gradlew clean check javadoc -x integrationTest
     - name: Test Integration
-      run: sudo ./gradlew integrationTest --info
+      run: sudo ./gradlew integrationTest
     - name: Archive Test Results
       if: failure()
       uses: actions/upload-artifact@v1
