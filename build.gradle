@@ -65,6 +65,8 @@ test {
     testLogging {
         events 'PASSED', 'FAILED', 'SKIPPED'
     }
+
+    maxParallelForks = Runtime.runtime.availableProcessors()
 }
 
 task integrationTest(type: Test) {
@@ -78,6 +80,8 @@ task integrationTest(type: Test) {
     testLogging {
         events 'PASSED', 'FAILED', 'SKIPPED'
     }
+
+    maxParallelForks = Runtime.runtime.availableProcessors()
 }
 
 group = "org.jenkins-ci.plugins"
