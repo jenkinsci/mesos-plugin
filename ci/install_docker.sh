@@ -8,3 +8,6 @@ apt-get -y update
 apt-get -y install docker-ce docker-ce-cli containerd.io
 
 docker --version
+
+# Add user to docker group
+gpasswd -a $(whoami) docker
