@@ -16,4 +16,4 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157
 apt-get -y update
 
 # Install Mesos
-apt-get -y install mesos
+apt-get -y install mesos="$MESOS_VERSION-2.0.1.ubuntu1604"
