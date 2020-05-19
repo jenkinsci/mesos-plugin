@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
+@IntegrationTest
 public class MesosJenkinsAgentLifecycleTest {
 
   @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();

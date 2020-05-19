@@ -26,6 +26,7 @@ import scala.Option;
 import scala.concurrent.duration.FiniteDuration;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
+@IntegrationTest
 @EnabledOnOs(OS.LINUX)
 public class DockerAgentTest {
 

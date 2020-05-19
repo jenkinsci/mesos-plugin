@@ -62,7 +62,26 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+}
+
+task integrationTest(type: Test) {
+
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+
+    check.dependsOn it
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
 }
 
 group = "org.jenkins-ci.plugins"
