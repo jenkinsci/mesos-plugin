@@ -6,6 +6,7 @@ import static java.lang.Math.toIntExact;
 import com.codahale.metrics.Timer;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
+import hudson.Util;
 import hudson.init.Initializer;
 import hudson.logging.LogRecorder;
 import hudson.logging.LogRecorderManager;
@@ -131,8 +132,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.agentUser = agentUser;
     this.role = role;
-    this.mesosAgentSpecTemplates =
-        mesosAgentSpecTemplates != null ? mesosAgentSpecTemplates : Collections.emptyList();
+    this.mesosAgentSpecTemplates = Util.fixNull(mesosAgentSpecTemplates);
     this.frameworkName = frameworkName;
 
     this.frameworkId = frameworkId;
@@ -173,15 +173,6 @@ public class MesosCloud extends AbstractCloudImpl {
     } else {
       this.sslCert = Optional.empty();
       this.dcosAuthorization = Optional.empty();
-    }
-
-    try {
-      MesosApi.getInstance(this);
-      logger.info(
-          "Initialized Mesos API object for framework {} after deserialization.", this.frameworkId);
-    } catch (InterruptedException | ExecutionException e) {
-      logger.error("Failed initialize Mesos API object for framework {}", this.frameworkId, e);
-      throw new RuntimeException("Failed to initialize Mesos API object after deserialization.", e);
     }
 
     return this;

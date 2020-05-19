@@ -72,7 +72,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 jenkinsPlugin {
-    coreVersion = "2.164"
+    coreVersion = "2.222.3"
     displayName = "Mesos Cloud"
     shortName = "mesos-cloud"
     url = "https://wiki.jenkins-ci.org/display/JENKINS/Mesos+Plugin"
