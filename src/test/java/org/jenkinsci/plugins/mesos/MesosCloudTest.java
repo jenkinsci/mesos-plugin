@@ -6,20 +6,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import com.mesosphere.utils.mesos.MesosClusterExtension;
-import com.mesosphere.utils.zookeeper.ZookeeperServerExtension;
 import hudson.util.XStream2;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
-import org.jenkinsci.plugins.mesos.integration.MesosCloudProvisionTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
 public class MesosCloudTest {
@@ -54,7 +48,7 @@ public class MesosCloudTest {
       throws IOException, InterruptedException, ExecutionException {
     final MesosCloud cloud =
         new MesosCloud(
-            mesosCluster.getMesosUrl().toString(),
+            "http://localhost:5050",
             "jenkins-framework",
             null,
             "*",
