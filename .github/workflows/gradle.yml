@@ -48,4 +48,4 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v1
       with:
-        path: /home/runner/work/mesos-plugin/mesos-plugin/build/distributions/sandboxes-*.zip
+        path: /home/runner/work/mesos-plugin/mesos-plugin/build/distributions/sandboxes-undefined.zip
