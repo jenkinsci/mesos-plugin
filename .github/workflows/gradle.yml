@@ -25,3 +25,12 @@ jobs:
       run: sudo ./ci/install_mesos.sh 1.9.0
     - name: Build and test with Gradle
       run: ./gradlew clean check javadoc --info
+    - name: Archive Test Results
+      uses: actions/upload-artifact@v1
+      with:
+        name: JUnit
+        path: build/test-results/test/*.xml
+    - name: Archive Sandboxes
+      uses: actions/upload-artifact@v1
+      with:
+        path: build/distributions/sandboxes-*.zip

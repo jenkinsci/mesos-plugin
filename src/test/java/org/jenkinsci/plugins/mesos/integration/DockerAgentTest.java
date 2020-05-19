@@ -26,6 +26,8 @@ import scala.Option;
 import scala.concurrent.duration.FiniteDuration;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
+@IntegrationTest
+@EnabledOnOs(OS.LINUX)
 public class DockerAgentTest {
 
   @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
@@ -54,7 +56,6 @@ public class DockerAgentTest {
           .build(system, materializer);
 
   @Test
-  @EnabledOnOs(OS.LINUX)
   public void testJenkinsAgentWithDockerImage(TestUtils.JenkinsRule j) throws Exception {
     final MesosAgentSpecTemplate spec = AgentSpecMother.docker;
     List<MesosAgentSpecTemplate> specTemplates = Collections.singletonList(spec);

@@ -58,7 +58,20 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+task integrationTest(type: Test) {
+
+    useJUnitPlatform {
+
+        includeTags 'integration'
+
+    }
+
+    check.dependsOn it
 }
 
 group = "org.jenkins-ci.plugins"

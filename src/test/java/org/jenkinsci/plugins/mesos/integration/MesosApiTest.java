@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExtendWith(JenkinsParameterResolver.class)
+@IntegrationTest
 class MesosApiTest {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosApiTest.class);
