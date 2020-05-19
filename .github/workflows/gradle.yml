@@ -36,8 +36,9 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: JUnit
-        path: build/reports/tests/**/*
+        path: /home/runner/work/mesos-plugin/mesos-plugin/build/test-results
     - name: Create Sandboxes Archive
+      if: always()
       run: ./gradlew zipSandboxes --info && rm -rf sandboxes
     - name: Archive Sandboxes
       if: always()
