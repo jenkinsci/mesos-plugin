@@ -36,7 +36,9 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: JUnit
-        path: uild/reports/tests/**/*
+        path: build/reports/tests/**/*
+    - name: Create Sandboxes Archive
+      run: ./gradlew zipSandboxes --info && rm -rf sandboxes
     - name: Archive Sandboxes
       if: always()
       uses: actions/upload-artifact@v1
