@@ -6,6 +6,7 @@ import static java.lang.Math.toIntExact;
 import com.codahale.metrics.Timer;
 import com.mesosphere.mesos.MasterDetector$;
 import hudson.Extension;
+import hudson.Util;
 import hudson.init.Initializer;
 import hudson.logging.LogRecorder;
 import hudson.logging.LogRecorderManager;
@@ -35,7 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
@@ -54,12 +54,9 @@ import scala.concurrent.ExecutionContext.Implicits$;
  */
 public class MesosCloud extends AbstractCloudImpl {
 
-  private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class);
+  private static final Logger logger = LoggerFactory.getLogger(MesosCloud.class.getName());
 
   private String master;
-
-  // The Mesos API instance is *not* persisted but re-create each time.
-  @Nonnull private transient MesosApi mesosApi;
 
   private final String frameworkName;
   private String frameworkId;
@@ -135,7 +132,7 @@ public class MesosCloud extends AbstractCloudImpl {
 
     this.agentUser = agentUser;
     this.role = role;
-    this.mesosAgentSpecTemplates = mesosAgentSpecTemplates;
+    this.mesosAgentSpecTemplates = Util.fixNull(mesosAgentSpecTemplates);
     this.frameworkName = frameworkName;
 
     this.frameworkId = frameworkId;
@@ -143,16 +140,10 @@ public class MesosCloud extends AbstractCloudImpl {
       this.frameworkId = UUID.randomUUID().toString();
     }
 
-    this.mesosApi =
-        MesosApi.getInstance(
-            this.master,
-            this.jenkinsURL,
-            this.agentUser,
-            this.frameworkName,
-            this.frameworkId,
-            this.role,
-            this.sslCert,
-            this.dcosAuthorization);
+    logger.info(
+        "Created Mesos cloud instance for framework {} and endpoint {}",
+        this.frameworkId,
+        this.master);
   }
 
   private Object readResolve() throws IOException {
@@ -182,23 +173,6 @@ public class MesosCloud extends AbstractCloudImpl {
     } else {
       this.sslCert = Optional.empty();
       this.dcosAuthorization = Optional.empty();
-    }
-
-    try {
-      this.mesosApi =
-          MesosApi.getInstance(
-              this.master,
-              this.jenkinsURL,
-              this.agentUser,
-              this.frameworkName,
-              this.frameworkId,
-              this.role,
-              this.sslCert,
-              this.dcosAuthorization);
-      logger.info("Initialized Mesos API object after deserialization.");
-    } catch (InterruptedException | ExecutionException e) {
-      logger.error("Failed initialize Mesos API object", e);
-      throw new RuntimeException("Failed to initialize Mesos API object after deserialization.", e);
     }
 
     return this;
@@ -282,7 +256,9 @@ public class MesosCloud extends AbstractCloudImpl {
    * @return A future reference to the launched node.
    */
   public Future<Node> startAgent(String name, MesosAgentSpecTemplate spec)
-      throws IOException, FormException, URISyntaxException {
+      throws InterruptedException, ExecutionException, IOException, FormException,
+          URISyntaxException {
+    final MesosApi mesosApi = MesosApi.getInstance(this);
     return mesosApi
         .enqueueAgent(name, spec)
         .thenCompose(
@@ -376,11 +352,7 @@ public class MesosCloud extends AbstractCloudImpl {
   }
 
   @Extension
-  public static class DescriptorImpl extends Descriptor<Cloud> {
-
-    public DescriptorImpl() {
-      load();
-    }
+  public static final class DescriptorImpl extends Descriptor<Cloud> {
 
     @Override
     public String getDisplayName() {
@@ -593,13 +565,18 @@ public class MesosCloud extends AbstractCloudImpl {
     return this.role;
   }
 
-  /** @return Number of launching agents that are not connected yet. */
-  public synchronized int getPending() {
-    return toIntExact(
-        mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
+  public Optional<DcosAuthorization> getAuthorization() {
+    return dcosAuthorization;
   }
 
-  public MesosApi getMesosApi() {
-    return this.mesosApi;
+  public Optional<String> getSslCert() {
+    return sslCert;
+  }
+
+  /** @return Number of launching agents that are not connected yet. */
+  public synchronized int getPending() throws InterruptedException, ExecutionException {
+    final MesosApi mesosApi = MesosApi.getInstance(this);
+    return toIntExact(
+        mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
   }
 }

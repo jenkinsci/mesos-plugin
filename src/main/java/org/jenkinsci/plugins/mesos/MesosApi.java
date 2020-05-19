@@ -50,10 +50,30 @@ public class MesosApi {
   static HashMap<String, MesosApi> sessions = new HashMap<>();
 
   /**
-   * Fetching an existing connection or constructs a new one. See {@link MesosApi#MesosApi(String,
-   * URL, String, String, String, String, Optional, Optional)} for parameters.
+   * Fetching an existing connection or constructs a new one.
+   *
+   * <p>This is modelled after the <code>KubernetesClientProvider</code> of the Kubernetes plugin.
    */
-  public static MesosApi getInstance(
+  public static synchronized MesosApi getInstance(MesosCloud cloud)
+      throws InterruptedException, ExecutionException {
+    final URL jenkinsURL;
+    try {
+      jenkinsURL = new URL(cloud.getJenkinsURL());
+    } catch (MalformedURLException ex) {
+      throw new ExecutionException("Could not parse Jenkins URL", ex);
+    }
+    return getInstance(
+        cloud.getMesosMasterUrl(),
+        jenkinsURL,
+        cloud.getAgentUser(),
+        cloud.getFrameworkName(),
+        cloud.getFrameworkId(),
+        cloud.getRole(),
+        cloud.getSslCert(),
+        cloud.getAuthorization());
+  }
+
+  private static synchronized MesosApi getInstance(
       String master,
       URL jenkinsUrl,
       String agentUser,
@@ -74,12 +94,14 @@ public class MesosApi {
               role,
               sslCert,
               authorization);
-      logger.info("Initialized Mesos API object.");
+      logger.info("Initialized Mesos API object for framework {}", frameworkId);
       sessions.put(frameworkId, session);
       return session;
     } else {
       // Override Jenkins URL and agent user if they changed.
       MesosApi session = sessions.get(frameworkId);
+      logger.debug("Fetched Mesos API object for framework {}", frameworkId);
+
       session.setJenkinsUrl(jenkinsUrl);
       session.setAgentUser(agentUser);
       return session;

@@ -168,7 +168,7 @@ public class MesosJenkinsAgentLifecycleTest {
             j.getURL().toString(),
             Collections.emptyList());
 
-    cloud.getMesosApi().setAgentTimeout(Duration.ofSeconds(1));
+    MesosApi.getInstance(cloud).setAgentTimeout(Duration.ofSeconds(1));
 
     final String name = "jenkins-agent-timeout";
 

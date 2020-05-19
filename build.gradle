@@ -21,10 +21,11 @@ repositories {
 }
 
 ext {
-    usiVersion= '0.1.43'
+    usiVersion= '0.1.45'
     scalaVersion = '2.13'
     akkaVersion = '2.6.3'
     junitJupiterVersion = '5.3.1'
+    jcascVersion = '1.35'
 }
 
 dependencies {
@@ -54,6 +55,9 @@ dependencies {
     testImplementation group: 'com.mesosphere.usi', name: "test-utils_$scalaVersion", version: usiVersion
     testImplementation 'org.awaitility:awaitility:3.1.6'
 
+    testImplementation "io.jenkins:configuration-as-code:$jcascVersion@jar"
+    testImplementation group: 'io.jenkins.configuration-as-code', name: 'test-harness', version: jcascVersion
+
     compileOnly 'com.github.spotbugs:spotbugs-annotations:3.1.3'
 }
 
@@ -81,7 +85,7 @@ task integrationTest(type: Test) {
 }
 
 group = "org.jenkins-ci.plugins"
-version = "2.0-beta-19"
+version = "2.0-beta-20"
 description = "Allows the dynamic launch of Jenkins agent on a Mesos cluster, depending on workload"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
