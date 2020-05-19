@@ -29,8 +29,10 @@ jobs:
       run: sudo ./ci/install_docker.sh
     - name: Install Mesos
       run: sudo ./ci/install_mesos.sh 1.9.0
-    - name: Build and test with Gradle
-      run: ./gradlew clean check javadoc --info
+    - name: Build and Unit Test
+      run: ./gradlew clean check javadoc -x integrationTest --info
+    - name: Test Integration
+      run: sudo ./gradlew integrationTest --info
     - name: Archive Test Results
       if: failure()
       uses: actions/upload-artifact@v1
