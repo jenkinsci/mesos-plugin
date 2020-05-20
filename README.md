@@ -139,6 +139,14 @@ started with
 
     $ ./gradlew server 
 
+The integration tests require an installation of Mesos and Docker. You can run just the unit tests with
+
+    $ ./gradlew test
+
+and the integration tests with
+
+    $ ./gradlew integrationTest
+
 The code is formatted following the [Google Style Guide](https://github.com/google/styleguide).
 
 ### Testing On DC/OS Enterprise

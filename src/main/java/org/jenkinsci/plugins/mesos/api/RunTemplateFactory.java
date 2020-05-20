@@ -56,7 +56,7 @@ public class RunTemplateFactory {
       List<FetchUri> fetchUris,
       Optional<MesosAgentSpecTemplate.ContainerInfo> containerInfo) {
 
-    // If a container info is set we assume its Docker image defines and entrypoint.
+    // If a container info is set we assume its Docker image defines an entrypoint.
     TaskBuilder taskBuilder;
     if (containerInfo.isPresent()) {
       taskBuilder =

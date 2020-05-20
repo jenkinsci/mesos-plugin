@@ -9,6 +9,7 @@ import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.slaves.NodeProvisioner.StrategyDecision;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.slf4j.Logger;
@@ -44,7 +45,12 @@ public class MesosProvisioningStrategy extends NodeProvisioner.Strategy {
               final int availableExecutors = snapshot.getAvailableExecutors();
               final int connectingExecutors = snapshot.getConnectingExecutors();
               final int additionalPlannedCapacity = strategyState.getAdditionalPlannedCapacity();
-              final int pending = cloud.getPending();
+              int pending = 0;
+              try {
+                pending = cloud.getPending();
+              } catch (InterruptedException | ExecutionException ex) {
+                logger.error("Could not get pending instances", ex);
+              }
 
               logger.info(
                   "Available executors={} connecting executors={} AdditionalPlannedCapacity={} pending={}",

@@ -1,0 +1,53 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-16.04
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Cache Gradle packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+    - name: Install Docker
+      run: sudo ./ci/install_docker.sh
+    - name: Install Mesos
+      run: sudo ./ci/install_mesos.sh 1.9.0
+    - name: Set Port Range
+      run: sudo ./ci/set_port_range.sh
+    - name: Build and Unit Test
+      run: ./gradlew clean check javadoc -x integrationTest
+    - name: Test Integration
+      run: sudo ./gradlew integrationTest
+    - name: Archive Test Results
+      if: failure()
+      uses: actions/upload-artifact@v1
+      with:
+        name: JUnit
+        path: /home/runner/work/mesos-plugin/mesos-plugin/build/test-results
+    - name: Create Sandboxes Archive
+      if: always()
+      run: ./gradlew zipSandboxes --info && sudo rm -rf sandboxes && ls build/distributions
+    - name: Archive Sandboxes
+      if: always()
+      uses: actions/upload-artifact@v1
+      with:
+        name: Sandboxes 
+        path: /home/runner/work/mesos-plugin/mesos-plugin/build/distributions/sandboxes-undefined.zip

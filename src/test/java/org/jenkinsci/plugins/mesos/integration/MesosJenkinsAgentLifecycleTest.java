@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(TestUtils.JenkinsParameterResolver.class)
+@IntegrationTest
 public class MesosJenkinsAgentLifecycleTest {
 
   @RegisterExtension static ZookeeperServerExtension zkServer = new ZookeeperServerExtension();
@@ -167,7 +168,7 @@ public class MesosJenkinsAgentLifecycleTest {
             j.getURL().toString(),
             Collections.emptyList());
 
-    cloud.getMesosApi().setAgentTimeout(Duration.ofSeconds(1));
+    MesosApi.getInstance(cloud).setAgentTimeout(Duration.ofSeconds(1));
 
     final String name = "jenkins-agent-timeout";
 
