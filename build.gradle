@@ -85,7 +85,7 @@ task integrationTest(type: Test) {
 }
 
 group = "org.jenkins-ci.plugins"
-version = "2.0-beta-20"
+version = "2.0"
 description = "Allows the dynamic launch of Jenkins agent on a Mesos cluster, depending on workload"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
