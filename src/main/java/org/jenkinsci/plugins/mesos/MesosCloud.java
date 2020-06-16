@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.mesos;
 
 import static hudson.init.InitMilestone.PLUGINS_STARTED;
-import static java.lang.Math.toIntExact;
 
 import com.codahale.metrics.Timer;
 import com.mesosphere.mesos.MasterDetector$;
@@ -571,12 +570,5 @@ public class MesosCloud extends AbstractCloudImpl {
 
   public Optional<String> getSslCert() {
     return sslCert;
-  }
-
-  /** @return Number of launching agents that are not connected yet. */
-  public synchronized int getPending() throws InterruptedException, ExecutionException {
-    final MesosApi mesosApi = MesosApi.getInstance(this);
-    return toIntExact(
-        mesosApi.getState().values().stream().filter(MesosJenkinsAgent::isPending).count());
   }
 }
