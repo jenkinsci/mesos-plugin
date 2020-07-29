@@ -81,10 +81,12 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   @Extension
   public static final class DescriptorImpl extends NodeDescriptor {
-      public String getDisplayName() { return ""; }
+    public String getDisplayName() {
+      return "";
+    }
   }
 
-    /**
+  /**
    * Polls the agent until it is online. Note: This is a non-blocking call in contrast to the
    * blocking {@link AbstractCloudComputer#waitUntilOnline}.
    *
