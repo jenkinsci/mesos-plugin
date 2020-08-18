@@ -7,6 +7,7 @@ import akka.stream.SharedKillSwitch;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.mesosphere.usi.core.models.*;
+import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import jenkins.metrics.api.Metrics;
 import org.apache.mesos.v1.Protos.TaskState;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
   private final SharedKillSwitch waitUntilOnlineKillSwitch;
 
+  @DataBoundConstructor
   public MesosJenkinsAgent(
       MesosApi api,
       String name,
@@ -74,6 +77,13 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
 
     this.waitUntilOnlineKillSwitch =
         KillSwitches.shared(String.format("wait-until-online-{}", name));
+  }
+
+  @Extension
+  public static final class DescriptorImpl extends NodeDescriptor {
+    public String getDisplayName() {
+      return "";
+    }
   }
 
   /**
