@@ -27,6 +27,7 @@ public class MesosSlaveInfo {
   private static final Logger logger = LoggerFactory.getLogger(MesosSlaveInfo.class);
 
   private transient Node.Mode mode;
+  private transient boolean reusable;
   private transient String labelString;
   private transient Double slaveCpus;
   private transient Double diskNeeded;
@@ -73,6 +74,7 @@ public class MesosSlaveInfo {
     return new MesosAgentSpecTemplate(
         this.labelString,
         this.mode,
+        this.reusable,
         this.slaveCpus.toString(),
         Integer.toString(this.slaveMem),
         this.idleTerminationMinutes,

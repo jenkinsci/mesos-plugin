@@ -10,6 +10,10 @@
 
         <f:slave-mode name="mode" node="${instance}" />
 
+        <f:entry title="${%Jenkins Agent Reusable}" field="reusable">
+                <f:checkbox clazz="required" default="false"/>
+        </f:entry>
+
         <f:entry title="${%Jenkins Agent CPUs}" field="cpus">
                 <f:textbox clazz="required" default="0.1"/>
         </f:entry>

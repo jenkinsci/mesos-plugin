@@ -58,6 +58,7 @@ public class MesosCloudProvisionTest {
         new MesosAgentSpecTemplate(
             label.toString(),
             Mode.EXCLUSIVE,
+            false,
             "0.1",
             "32",
             idleMin,
@@ -108,6 +109,7 @@ public class MesosCloudProvisionTest {
         new MesosAgentSpecTemplate(
             label.toString(),
             Mode.EXCLUSIVE,
+            false,
             "0.1",
             "32",
             idleMin,

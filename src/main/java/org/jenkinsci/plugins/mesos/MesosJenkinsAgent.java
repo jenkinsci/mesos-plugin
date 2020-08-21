@@ -80,9 +80,9 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   }
 
   @Extension
-  public static final class DescriptorImpl extends NodeDescriptor {
+  public static final class DescriptorImpl extends SlaveDescriptor {
     public String getDisplayName() {
-      return "";
+      return "MesosJenkinsAgent";
     }
   }
 

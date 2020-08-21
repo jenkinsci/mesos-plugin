@@ -15,8 +15,7 @@ immediately scheduled! Similarly, when a Jenkins slave is idle for a long time i
 is automatically shut down.
 
 ## Table of Contents
-<!-- toc -->
-- __[Prerequisite](#prerequisite)__
+<!-- toc -->- __[Prerequisite](#prerequisite)__
 - __[Installing the Plugin](#installing-the-plugin)__
   - __[Configuring the Plugin](#configuring-the-plugin)__
   - __[Adding Agent Specs](#adding-agent-specs)__

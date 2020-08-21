@@ -58,6 +58,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   public MesosAgentSpecTemplate(
       String label,
       Node.Mode mode,
+      boolean reusable,
       String cpus,
       String mem,
       int idleTerminationMinutes,
@@ -73,7 +74,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.label = label;
     this.mode = mode;
     this.idleTerminationMinutes = idleTerminationMinutes;
-    this.reusable = false; // TODO: DCOS_OSS-5048.
+    this.reusable = reusable;
     this.cpus = (cpus != null) ? Double.parseDouble(cpus) : 0.1;
     this.mem = Integer.parseInt(mem);
     this.minExecutors = minExecutors;

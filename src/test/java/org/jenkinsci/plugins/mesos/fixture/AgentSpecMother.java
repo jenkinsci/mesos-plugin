@@ -17,6 +17,7 @@ public class AgentSpecMother {
       new MesosAgentSpecTemplate(
           "label",
           Mode.EXCLUSIVE,
+          false,
           "0.1",
           "32",
           1,
@@ -34,6 +35,7 @@ public class AgentSpecMother {
       new MesosAgentSpecTemplate(
           "label",
           Mode.EXCLUSIVE,
+          false,
           "0.5",
           "512",
           3,
