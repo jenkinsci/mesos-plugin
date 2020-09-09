@@ -4,6 +4,7 @@
 
 # Ignore Gradle build output directory
 build
+target
 
 # Ignore Jenkins work dir
 work

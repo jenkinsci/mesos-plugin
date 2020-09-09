@@ -21,11 +21,11 @@ repositories {
 }
 
 ext {
-    usiVersion= '0.1.54'
+    usiVersion= '0.1.48'
     scalaVersion = '2.13'
     akkaVersion = '2.6.3'
     junitJupiterVersion = '5.6.2'
-    jcascVersion = '2.0.1'
+    jcascVersion = '1.35'
 }
 
 dependencies {
@@ -41,9 +41,9 @@ dependencies {
     api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     api group: 'com.typesafe.akka', name: "akka-slf4j_$scalaVersion", version: akkaVersion
 
-    jenkinsPlugins 'org.jenkins-ci.plugins:metrics:4.0.2.6@jar'
-    jenkinsServer 'org.jenkins-ci.plugins:metrics:4.0.2.6'
-    testRuntimeOnly 'org.jenkins-ci.plugins:metrics:4.0.2.6'
+    jenkinsPlugins 'org.jenkins-ci.plugins:metrics:4.0.2.5@jar'
+    jenkinsServer 'org.jenkins-ci.plugins:metrics:4.0.2.5'
+    testRuntimeOnly 'org.jenkins-ci.plugins:metrics:4.0.2.5'
 
     // Test dependencies
     testImplementation 'com.squareup.okhttp3:okhttp:3.14.1'
