@@ -119,7 +119,7 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
   /**
    * Creates a LaunchPod command to to create a new Jenkins agent via USI
    *
-   * @param jenkinsUrl the URL of the jenkins master.
+   * @param jenkinsUrl the URL of the Jenkins controller.
    * @param name The name of the node to launch.
    * @param role The Mesos role for the task.
    * @return a LaunchPod command to be passed to USI.

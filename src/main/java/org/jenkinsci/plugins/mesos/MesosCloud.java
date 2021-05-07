@@ -296,8 +296,8 @@ public class MesosCloud extends AbstractCloudImpl {
   }
 
   /**
-   * Checks whether the Jenkins master itself is running as a Mesos task and thus has the env var
-   * MESOS_SANDBOX defined.
+   * Checks whether the Jenkins controller itself is running as a Mesos task and thus has the env
+   * var MESOS_SANDBOX defined.
    *
    * @return
    */
