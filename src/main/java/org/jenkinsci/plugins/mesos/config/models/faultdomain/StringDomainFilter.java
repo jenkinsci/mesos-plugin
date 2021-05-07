@@ -30,7 +30,7 @@ public class StringDomainFilter extends DomainFilterModel implements DomainFilte
   /**
    * Application of the domain filter.
    *
-   * @param masterDomain The domain info of the controller.
+   * @param masterDomain The domain info of the master.
    * @param nodeDomain The domain info of and offer.
    * @return true if the region and zone is equal to the provided region and zone, false otherwise.
    */
