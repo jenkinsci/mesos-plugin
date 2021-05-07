@@ -87,7 +87,7 @@ to the jobs (configure -> Restrict where this project can run checkbox) that you
 
 ### Docker Containers ###
 
-By default, the Jenkins Agents are run in the default Mesos container. To run the Jenkins agent inside a Docker container, there are two options.
+By default, the Jenkins agents are run in the default Mesos container. To run the Jenkins agent inside a Docker container, there are two options.
 
 	1) "Use Native Docker Containerizer" : Select this option if Mesos agent(s) are configured with "--containerizers=docker" (recommended).
 
@@ -162,4 +162,3 @@ To release this plugin
 
 1. Set the version in `build.gradle`.
 2. Publish the plugin with `./gradlew publish`.
-
