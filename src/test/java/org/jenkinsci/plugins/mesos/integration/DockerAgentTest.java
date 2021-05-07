@@ -74,7 +74,7 @@ public class DockerAgentTest {
 
     MesosJenkinsAgent agent = (MesosJenkinsAgent) cloud.startAgent(name, spec).get();
 
-    // verify slave is running when the future completes;
+    // verify agent is running when the future completes;
     await().atMost(5, TimeUnit.MINUTES).until(agent::isRunning);
     assertThat(agent.isRunning(), is(true));
   }

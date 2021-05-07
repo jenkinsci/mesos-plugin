@@ -58,7 +58,7 @@ public class MesosSlaveInfo {
   private transient boolean defaultSlave;
 
   @SuppressFBWarnings("UUF_UNUSED_FIELD")
-  private transient String slaveAttributesString; // Slave attributes JSON representation.
+  private transient String slaveAttributesString; // Agent attributes JSON representation.
 
   /**
    * Resolves the old agent configuration after deserialization.
@@ -94,7 +94,7 @@ public class MesosSlaveInfo {
         return (JSONObject) JSONSerializer.toJSON(slaveAttributes);
       } catch (JSONException e) {
         logger.warn(
-            "Ignoring Mesos slave attributes JSON due to parsing error : " + slaveAttributes);
+            "Ignoring Mesos agent attributes JSON due to parsing error : " + slaveAttributes);
       }
     }
 

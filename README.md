@@ -6,12 +6,12 @@
 Jenkins on Mesos
 ----------------
 
-The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins slaves on a
+The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins agents on a
 Mesos cluster depending on the workload!
 
 Put simply, whenever the Jenkins `Build Queue` starts getting bigger, this plugin
 automatically spins up additional Jenkins agent(s) on Mesos so that jobs can be
-immediately scheduled! Similarly, when a Jenkins slave is idle for a long time it
+immediately scheduled! Similarly, when a Jenkins agent is idle for a long time it
 is automatically shut down.
 
 ## Table of Contents
@@ -25,7 +25,7 @@ is automatically shut down.
   - __[Docker Containers](#docker-containers)__
   - __[Docker Configuration](#docker-configuration)__
   - __[Over provisioning flags](#over-provisioning-flags)__
-- __[Single-Use Slave](#single-use-slave)__
+- __[Single-Use Agent](#single-use-agent)__
   - __[Freestyle jobs](#freestyle-jobs)__
   - __[Pipeline jobs](#pipeline-jobs)__
 - __[Plugin Development](#plugin-development)__
@@ -51,14 +51,14 @@ Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
 you should see an option to 'Add a new cloud' at the bottom of the page.
 
 1. Add the 'Mesos Cloud'.
-2. Give the path to the address `http://HOST:PORT` of a running Mesos master. On DC/OS this can be as simple as `https://leader.mesos:5050`.
+2. Give the path to the address `http://HOST:PORT` of a running Mesos controller. On DC/OS this can be as simple as `https://leader.mesos:5050`.
 3. Set the user name agents should start as. Ensure that the Mesos agents have have the user available.
 4. Set the Jenkins URL.
 5. Click `Save`.
 
-You can click `Test Conection` to see if the Mesos client of the plugin can find the Mesos master.
+You can click `Test Conection` to see if the Mesos client of the plugin can find the Mesos controller.
 
-If the Mesos master uses a secured connection with a custom certificate you can supply it under
+If the Mesos controller uses a secured connection with a custom certificate you can supply it under
 `Use a custom SSL certificate`.
 
 ### Adding Agent Specs ###
@@ -82,26 +82,26 @@ Simply run the environment variables `DCOS_SERVICE_ACCOUNT` containing the servi
 
 ### Configuring Jenkins Jobs ###
 
-Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Slave Info -> Label String (default is `mesos`) 
-to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific slave type inside Mesos cluster.
+Finally, just add the label name you have configured in Mesos cloud configuration -> Advanced -> Agent Info -> Label String (default is `mesos`) 
+to the jobs (configure -> Restrict where this project can run checkbox) that you want to run on a specific agent type inside Mesos cluster.
 
 ### Docker Containers ###
 
-By default, the Jenkins slaves are run in the default Mesos container. To run the Jenkins agent inside a Docker container, there are two options.
+By default, the Jenkins Agents are run in the default Mesos container. To run the Jenkins agent inside a Docker container, there are two options.
 
-	1) "Use Native Docker Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=docker" (recommended).
+	1) "Use Native Docker Containerizer" : Select this option if Mesos agent(s) are configured with "--containerizers=docker" (recommended).
 
-	2) "Use External Containerizer" : Select this option if Mesos slave(s) are configured with "--containerizers=external".
+	2) "Use External Containerizer" : Select this option if Mesos agent(s) are configured with "--containerizers=external".
 
 ### Docker Configuration ###
 
 #### Volumes ####
 
-At a minimum, a container path must be entered to mount the volume. A host path can also be specified to bind mount the container path to the host path. This will allow persistence of data between slaves on the same node. The default setting is read-write, but an option is provided for read-only use.
+At a minimum, a container path must be entered to mount the volume. A host path can also be specified to bind mount the container path to the host path. This will allow persistence of data between agents on the same node. The default setting is read-write, but an option is provided for read-only use.
 
 #### Parameters ####
 
-Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos slaves is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos slave where the Jenkins slave will run. This shouldn't cause problems in a homogenous environment where Jenkins slaves only run on particular Mesos slaves.
+Additional parameters are available for the `docker run` command, but there are too many and they change too often to list all separately. This section allows you to provide any parameter you want. Ensure that your Docker version on your Mesos agents is compatible with the parameters you add and that the values are correctly formatted. Use the full-word parameter and not the shortcut version, as these may not work properly. Also, exclude the preceding double-dash on the parameter name. For example, enter `volumes-from` and `my_container_name` to recieve the volumes from `my_container_name`. Of course `my_container_name` must already be on the Mesos agent where the Jenkins agent will run. This shouldn't cause problems in a homogenous environment where Jenkins agents only run on particular Mesos agents.
 
 ### Over provisioning flags ###
 
@@ -109,15 +109,15 @@ By default, Jenkins spawns slaves conservatively. Say, if there are 2 builds in 
 If you want to override this behaviour and spawn an executor for each build in queue immediately without waiting, you can use these flags during Jenkins startup:
 `-Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85`
 
-## Single-Use Slave ##
+## Single-Use Agent ##
 
 ### Freestyle jobs ###
 
-In the Build Environment settings, you may select "Mesos Single-Use Slave" to schedule disposal of the slave after the build finishes.
+In the Build Environment settings, you may select "Mesos Single-Use Agent" to schedule disposal of the agent after the build finishes.
 
 ### Pipeline jobs ###
 
-To schedule slave disposal from a Pipeline job:
+To schedule agent disposal from a Pipeline job:
 
     node('mylabel') {
         wrap([$class: 'MesosSingleUseSlave']) {

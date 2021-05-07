@@ -32,7 +32,7 @@ public class JenkinsConfigClient {
   /**
    * Submits a Jenkins configuration form and adds a Mesos Cloud with one agent specs.
    *
-   * @param mesosMasterUrl The URL of the Mesos master to connect to.
+   * @param mesosMasterUrl The URL of the Mesos controller to connect to.
    * @param frameworkName The Mesos framework name the plugin should use.
    * @param role
    * @param agentUser

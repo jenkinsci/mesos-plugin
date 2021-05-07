@@ -217,7 +217,7 @@ public class LaunchCommandBuilder {
     }
   }
 
-  /** @return the Jnlp url for the agent: http://[master]/computer/[slaveName]/slave-agent.jnlp */
+  /** @return the Jnlp url for the agent: http://[controller]/computer/[slaveName]/slave-agent.jnlp */
   private URL buildJnlpUrl() throws MalformedURLException {
     final String path = Paths.get("computer", this.id.value(), "slave-agent.jnlp").toString();
     return new URL(this.jenkinsMaster, path);

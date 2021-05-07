@@ -17,7 +17,7 @@ The `Dockerfile` defines a Docker image that supports DC/OS strict mode. It shou
    ```
    dcos security org service-accounts create -p jenkins.pub.pem -d "Jenkins Service Account" jenkins 
    ```
-3. Store private key as secret so that the Jenkins master can access it
+3. Store private key as secret so that the Jenkins controller can access it
    ```
    dcos security secrets create -f ./jenkins.private.pem jenkins/private_key
    ```
