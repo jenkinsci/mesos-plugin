@@ -134,7 +134,7 @@ public class MesosApi {
    * Establishes a connection to Mesos and provides a simple interface to start and stop {@link
    * MesosJenkinsAgent} instances.
    *
-   * @param master The Mesos controller address to connect to. Should be one of host:port
+   * @param master The Mesos master address to connect to. Should be one of host:port
    *     http://host:port zk://host1:port1,host2:port2,.../path
    *     zk://username:password@host1:port1,host2:port2,.../path
    * @param jenkinsUrl The Jenkins address to fetch the agent jar from.

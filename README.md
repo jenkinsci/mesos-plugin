@@ -51,14 +51,14 @@ Now go to 'Configure' page in Jenkins. If the plugin is successfully installed
 you should see an option to 'Add a new cloud' at the bottom of the page.
 
 1. Add the 'Mesos Cloud'.
-2. Give the path to the address `http://HOST:PORT` of a running Mesos controller. On DC/OS this can be as simple as `https://leader.mesos:5050`.
+2. Give the path to the address `http://HOST:PORT` of a running Mesos master. On DC/OS this can be as simple as `https://leader.mesos:5050`.
 3. Set the user name agents should start as. Ensure that the Mesos agents have have the user available.
 4. Set the Jenkins URL.
 5. Click `Save`.
 
-You can click `Test Conection` to see if the Mesos client of the plugin can find the Mesos controller.
+You can click `Test Conection` to see if the Mesos client of the plugin can find the Mesos master.
 
-If the Mesos controller uses a secured connection with a custom certificate you can supply it under
+If the Mesos master uses a secured connection with a custom certificate you can supply it under
 `Use a custom SSL certificate`.
 
 ### Adding Agent Specs ###

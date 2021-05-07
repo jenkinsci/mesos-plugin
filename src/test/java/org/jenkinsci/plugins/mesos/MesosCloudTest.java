@@ -26,7 +26,7 @@ public class MesosCloudTest {
                 "config_1.x.xml",
                 StandardCharsets.UTF_8,
                 Thread.currentThread().getContextClassLoader())
-            // Controller URL resolution requires a separate test.
+            // Master URL resolution requires a separate test.
             .replaceAll(
                 "<master>.*</master>",
                 String.format("<master>%s</master>", "http://localhost:5050"));
