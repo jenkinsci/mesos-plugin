@@ -150,7 +150,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   }
 
   /**
-   * Updates the state of the slave and takes action on certain events.
+   * Updates the state of the agent and takes action on certain events.
    *
    * @param event The state event from USI which informs about the task status.
    */
@@ -194,7 +194,7 @@ public class MesosJenkinsAgent extends AbstractCloudSlave implements EphemeralNo
   }
 
   public boolean getReusable() {
-    // TODO: implement reusable slaves DCOS_OSS-5048
+    // TODO: implement reusable agents DCOS_OSS-5048
     return reusable;
   }
 
