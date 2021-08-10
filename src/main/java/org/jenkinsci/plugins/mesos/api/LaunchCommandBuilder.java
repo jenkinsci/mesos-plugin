@@ -217,7 +217,7 @@ public class LaunchCommandBuilder {
     }
   }
 
-  /** 
+  /**
    * @return the Jnlp url for the agent: http://[controller]/computer/[agentName]/slave-agent.jnlp
    */
   private URL buildJnlpUrl() throws MalformedURLException {
