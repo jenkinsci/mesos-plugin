@@ -14,6 +14,9 @@ automatically spins up additional Jenkins agent(s) on Mesos so that jobs can be
 immediately scheduled! Similarly, when a Jenkins agent is idle for a long time it
 is automatically shut down.
 
+To learn more about building and using the plugin please visit the
+project [website](http://jenkinsci.github.io/mesos-plugin/).
+
 ## Table of Contents
 <!-- toc -->
 - __[Prerequisite](#prerequisite)__
