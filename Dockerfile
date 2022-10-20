@@ -66,7 +66,5 @@ CMD envsubst '\$PORT0 \$PORT1 \$JENKINS_CONTEXT' < /etc/nginx/nginx.conf.templat
      ${JENKINS_OPTS}                                 \
      --httpPort=${PORT1}                             \
      --webroot=${JENKINS_FOLDER}/war                 \
-     --ajp13Port=-1                                  \
      --httpListenAddress=127.0.0.1                   \
-     --ajp13ListenAddress=127.0.0.1                  \
      --prefix=${JENKINS_CONTEXT}
