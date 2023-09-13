@@ -145,6 +145,11 @@ public class MesosCloud extends AbstractCloudImpl {
         this.master);
   }
 
+  @Override
+  boolean isNameEditable() {
+    return false;
+  }
+
   private Object readResolve() throws IOException {
 
     // Migration from 1.x
