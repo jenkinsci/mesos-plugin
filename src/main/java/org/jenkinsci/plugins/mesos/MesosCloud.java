@@ -145,10 +145,11 @@ public class MesosCloud extends AbstractCloudImpl {
         this.master);
   }
 
-  @Override
-  boolean isNameEditable() {
-    return false;
-  }
+//  TODO: Uncomment when https://github.com/jenkinsci/jenkins/pull/8310 has been merged and released
+//  @Override
+//  boolean isNameEditable() {
+//    return false;
+//  }
 
   private Object readResolve() throws IOException {
 
