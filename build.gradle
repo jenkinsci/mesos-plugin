@@ -1,10 +1,10 @@
 plugins {
     id 'idea'
     id 'java-library'
-    id "com.diffplug.gradle.spotless" version "3.19.0"
+    id "com.diffplug.gradle.spotless" version "6.25.0"
     id "com.github.blueboxware.tocme" version "1.1"
-    id "com.github.spotbugs" version "1.7.1"
-    id "org.jenkins-ci.jpi" version "0.31.0"
+    id "com.github.spotbugs" version "6.0.7"
+    id "org.jenkins-ci.jpi" version "0.50.0"
 }
 
 repositories {
