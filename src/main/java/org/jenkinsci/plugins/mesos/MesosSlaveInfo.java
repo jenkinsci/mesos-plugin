@@ -11,7 +11,6 @@ import java.util.List;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.mesos.MesosAgentSpecTemplate.ContainerInfo;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
@@ -89,7 +88,7 @@ public class MesosSlaveInfo {
 
   @VisibleForTesting
   JSONObject parseSlaveAttributes(String slaveAttributes) {
-    if (StringUtils.isNotBlank(slaveAttributes)) {
+    if ((slaveAttributes != null && !slaveAttributes.isBlank())) {
       try {
         return (JSONObject) JSONSerializer.toJSON(slaveAttributes);
       } catch (JSONException e) {

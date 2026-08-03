@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
 import org.apache.mesos.v1.Protos.ContainerInfo.DockerInfo.Network;
 import org.jenkinsci.plugins.mesos.api.LaunchCommandBuilder;
 import org.jenkinsci.plugins.mesos.api.RunTemplateFactory.ContainerInfoTaskInfoBuilder;
@@ -79,8 +78,8 @@ public class MesosAgentSpecTemplate extends AbstractDescribableImpl<MesosAgentSp
     this.minExecutors = minExecutors;
     this.maxExecutors = maxExecutors;
     this.disk = (disk != null) ? Double.parseDouble(disk) : 0.0;
-    this.jnlpArgs = StringUtils.isNotBlank(jnlpArgs) ? jnlpArgs : "";
-    this.agentAttributes = StringUtils.isNotBlank(agentAttributes) ? agentAttributes : "";
+    this.jnlpArgs = (jnlpArgs != null && !jnlpArgs.isBlank()) ? jnlpArgs : "";
+    this.agentAttributes = (agentAttributes != null && !agentAttributes.isBlank()) ? agentAttributes : "";
     this.additionalURIs = (additionalURIs != null) ? additionalURIs : Collections.emptyList();
     this.containerInfo = containerInfo;
     this.domainFilterModel = domainFilterModel;
