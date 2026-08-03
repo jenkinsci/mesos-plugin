@@ -38,7 +38,6 @@ import javax.annotation.CheckForNull;
 import jenkins.metrics.api.Metrics;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -135,7 +134,7 @@ public class MesosCloud extends AbstractCloudImpl {
     this.frameworkName = frameworkName;
 
     this.frameworkId = frameworkId;
-    if (StringUtils.isEmpty(this.frameworkId)) {
+    if ((this.frameworkId == null || this.frameworkId.isEmpty())) {
       this.frameworkId = UUID.randomUUID().toString();
     }
 
@@ -416,7 +415,7 @@ public class MesosCloud extends AbstractCloudImpl {
      */
     public FormValidation doCheckFrameworkName(@QueryParameter String frameworkName) {
       frameworkName = frameworkName.trim();
-      if (StringUtils.isEmpty(frameworkName)) {
+      if ((frameworkName == null || frameworkName.isEmpty())) {
         return FormValidation.error("The framework name must not be empty.");
       } else {
         return FormValidation.ok();
@@ -432,7 +431,7 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the role is invalid or not.
      */
     public FormValidation doCheckRole(@QueryParameter String role) {
-      if (StringUtils.isEmpty(role)) {
+      if ((role == null || role.isEmpty())) {
         return FormValidation.error("The role must not be empty.");
       } else if (".".equals(role) || "..".equals(role)) {
         return FormValidation.error("The role must not be '.' or '..'.");
@@ -454,7 +453,7 @@ public class MesosCloud extends AbstractCloudImpl {
      * @return Whether the agent user is empty or not.
      */
     public FormValidation doCheckAgentUser(@QueryParameter String agentUser) {
-      if (StringUtils.isEmpty(agentUser)) {
+      if ((agentUser == null || agentUser.isEmpty())) {
         return FormValidation.error("The agent user must not be empty.");
       } else if (!agentUser.matches("[a-z_][a-z0-9_-]*[$]?")) {
         return FormValidation.error("The agent user must be a valid UNIX user name.");
